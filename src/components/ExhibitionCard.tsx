@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Exhibition } from "@/types/exhibition";
 
 type ExhibitionCardProps = {
@@ -7,7 +8,10 @@ type ExhibitionCardProps = {
 
 export function ExhibitionCard({ exhibition, compact = false }: ExhibitionCardProps) {
   return (
-    <article className={compact ? "exhibition-card compact" : "exhibition-card"}>
+    <Link
+      className={compact ? "exhibition-card compact" : "exhibition-card"}
+      href={`/exhibitions/${exhibition.id}`}
+    >
       <div
         className="exhibition-card-image"
         style={{ background: exhibition.heroTone }}
@@ -24,7 +28,7 @@ export function ExhibitionCard({ exhibition, compact = false }: ExhibitionCardPr
           <strong>{exhibition.reservable ? "예약가능" : "문의필요"}</strong>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 

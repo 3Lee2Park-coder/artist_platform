@@ -1,14 +1,20 @@
+import Link from "next/link";
+
 const bottomTabs = ["홈", "전시", "지도", "등록", "MY"];
 
-export function Header() {
+type HeaderProps = {
+  activeTab?: string;
+};
+
+export function Header({ activeTab = "홈" }: HeaderProps) {
   return (
     <>
       <header className="site-header">
         <div className="header-inner">
-          <a className="brand" href="#" aria-label="전시 방문 전환형 플랫폼 홈">
+          <Link className="brand" href="/" aria-label="전시 방문 전환형 플랫폼 홈">
             <span className="brand-mark" aria-hidden="true" />
             <span>Exhibit</span>
-          </a>
+          </Link>
 
           <form className="filter-search" aria-label="전시 검색 필터">
             <button type="button" className="filter-search-item">
@@ -29,10 +35,10 @@ export function Header() {
           </form>
 
           <nav className="desktop-nav" aria-label="주요 메뉴">
-            <a href="#">전시</a>
-            <a href="#">지도</a>
-            <a href="#">작가</a>
-            <a className="register-link" href="#">
+            <Link href="/">전시</Link>
+            <Link href="/map">지도</Link>
+            <a href="#artists">작가</a>
+            <a className="register-link" href="#register">
               등록하기
             </a>
             <a className="profile-button" href="#" aria-label="프로필" />
@@ -42,9 +48,13 @@ export function Header() {
 
       <nav className="bottom-tab" aria-label="모바일 하단 메뉴">
         {bottomTabs.map((tab) => (
-          <a key={tab} className={tab === "홈" ? "active" : undefined} href="#">
+          <Link
+            key={tab}
+            className={tab === activeTab ? "active" : undefined}
+            href={tab === "지도" ? "/map" : "/"}
+          >
             {tab}
-          </a>
+          </Link>
         ))}
       </nav>
     </>

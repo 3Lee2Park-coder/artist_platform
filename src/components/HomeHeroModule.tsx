@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   getHeroTabs,
   getRepresentativeExhibition
@@ -69,12 +70,12 @@ export function HomeHeroModule() {
             </div>
           </dl>
           <div className="hero-actions">
-            <a className="primary-button" href="#">
+            <Link className="primary-button" href={`/exhibitions/${exhibition.id}#reservation`}>
               예약하기
-            </a>
-            <a className="secondary-button" href="#">
+            </Link>
+            <Link className="secondary-button" href={`/exhibitions/${exhibition.id}`}>
               상세보기
-            </a>
+            </Link>
           </div>
           <p className="hero-note">
             위 큐레이션 탭은 홈 전체를 바꾸지 않고 이 대표 전시 영역만 변경합니다.

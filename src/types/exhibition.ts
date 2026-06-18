@@ -25,6 +25,11 @@ export type Exhibition = {
   artist: string;
   district: string;
   venue: string;
+  address: string;
+  mapPosition: {
+    lat: number;
+    lng: number;
+  };
   startDate: string;
   endDate: string;
   categories: ExhibitionCategory[];
@@ -36,6 +41,8 @@ export type Exhibition = {
   nearby?: boolean;
   heroTone: string;
   summary: string;
+  description: string;
+  reservationSlots: string[];
   artistVideo?: ArtistVideo;
 };
 
