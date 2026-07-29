@@ -1,0 +1,439 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  birthDate    String?
+  emailVerifiedAt    DateTime?
+  emailVerifyToken   String?   @unique
+  emailVerifyExpires DateTime?
+  notifyEmail        Boolean   @default(true)
+  notifyEndingSoon   Boolean   @default(true)
+  // MEMBER | ARTIST | GALLERY | ADMIN
+  role         String   @default("MEMBER")
+  artistStatus String   @default("NONE")
+  // 온보딩에서 수집하는 관람 취향 (JSON 배열)
+  interestTags  String   @default("[]")
+  visitPurposes String   @default("[]")
+  onboardedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  artistApplication   ArtistApplication?
+  exhibitions         Exhibition[]       @relation("RegisteredExhibitions")
+  reviewedExhibitions Exhibition[]       @relation("ReviewedExhibitions")
+  curations           Curation[]
+  reservations        Reservation[]
+  saves               SaveExhibition[]
+  visits              Visit[]
+  reviews             Review[]
+  eventLogs           EventLog[]
+  notificationLogs    NotificationLog[]
+  ownedSpaces         Space[]            @relation("OwnedSpaces")
+  hostedPrograms      Program[]          @relation("HostedPrograms")
+}
+
+model ArtistApplication {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  bio          String
+  portfolioUrl String?
+  activityArea String?
+  status       String   @default("PENDING")
+  // 공개 프로필 정보 (승인된 작가만 노출)
+  discipline      String?
+  instagramUrl    String?
+  profileImageUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 지속적으로 존재하는 작가의 실제 공간 (공방·쇼룸·레지던시)
+// Place(카페/식당/산책 거점)와 구분되는 1급 객체
+model Space {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  // STUDIO | SHOWROOM | RESIDENCY | SHARED_SPACE
+  type        String  @default("SHOWROOM")
+  ownerUserId String?
+  region      String  @default("서울")
+  district    String
+  address     String
+  lat         Float
+  lng         Float
+  // 공방 호수/층 (예: "지하 1층 12호")
+  floorOrUnit String?
+  shortDescription String?
+  description      String?
+  // 자유 구성 소개 본문 (텍스트/이미지 블록 JSON)
+  // [{ "type":"text","text":"..." }, { "type":"image","url":"...","caption":"..." }]
+  storyJson        String  @default("[]")
+  heroTone         String  @default("linear-gradient(135deg, #efe6da 0%, #b8a68e 55%, #5c4a3a 100%)")
+  heroImageUrl     String?
+  // 추가 이미지 URL 목록 (JSON 배열) — storyJson 미사용 시 갤러리로 표시
+  imageUrls        String  @default("[]")
+  // 방문 정책: WALK_IN | HOURS | APPOINTMENT | PROGRAM_ONLY | CLOSED
+  visitPolicy      String  @default("HOURS")
+  // 방문 안내 문구 (운영 시간·주의사항 등 자유 텍스트)
+  visitNotice      String?
+  // 요일별 운영시간 (JSON 객체, 예: {"tue":"11:00-18:00"})
+  openingHours     String  @default("{}")
+  isPublic  Boolean  @default(true)
+  // PUBLISHED | DRAFT | HIDDEN
+  status    String   @default("PUBLISHED")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner         User?          @relation("OwnedSpaces", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  exhibitions   Exhibition[]
+  programs      Program[]
+  curationStops CurationStop[]
+  visits        Visit[]
+
+  @@index([district])
+  @@index([status, isPublic])
+}
+
+// 예약/참여 가능한 작가 프로그램 (전시와 구분)
+model Program {
+  id           String  @id @default(cuid())
+  slug         String  @unique
+  title        String
+  // OPEN_STUDIO | ARTIST_TALK | WORKSHOP | TOUR
+  type         String  @default("OPEN_STUDIO")
+  spaceId      String
+  exhibitionId String?
+  hostUserId   String?
+  summary      String?
+  description  String?
+  // 자유 구성 소개 본문 (텍스트/이미지 블록 JSON)
+  storyJson    String  @default("[]")
+  heroTone     String  @default("linear-gradient(135deg, #e8e2f2 0%, #9c8db8 55%, #4a3d63 100%)")
+  heroImageUrl String?
+  // 추가 이미지 URL 목록 (JSON 배열)
+  imageUrls    String  @default("[]")
+  startDate    String
+  endDate      String
+  // 날짜별 시간·정원 (Exhibition.reservationSlots와 동일 포맷)
+  reservationSlots    String  @default("[]")
+  reservationRequired Boolean @default(true)
+  // 취소/방문 정책 안내
+  policyNote String?
+  isPublic   Boolean @default(true)
+  // PUBLISHED | DRAFT | HIDDEN
+  status    String   @default("PUBLISHED")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space        Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  exhibition   Exhibition?   @relation(fields: [exhibitionId], references: [id], onDelete: SetNull)
+  host         User?         @relation("HostedPrograms", fields: [hostUserId], references: [id], onDelete: SetNull)
+  reservations Reservation[]
+  visits       Visit[]
+
+  @@index([spaceId])
+  @@index([status, isPublic])
+}
+
+model Exhibition {
+  id             String @id
+  title          String
+  artist         String
+  region         String @default("서울")
+  district       String
+  venue          String
+  address        String
+  lat            Float
+  lng            Float
+  startDate      String
+  endDate        String
+  categories     String
+  exhibitionType String
+  // 데이터 출처: PUBLIC_API | ADMIN | ARTIST | USER_REPORT
+  source            String   @default("ADMIN")
+  curationAvailable Boolean  @default(false)
+  reservable        Boolean  @default(true)
+  todayOpen         Boolean  @default(false)
+  popular           Boolean  @default(false)
+  nearby            Boolean  @default(false)
+  heroTone          String
+  heroImageUrl      String?
+  summary           String
+  description       String
+  // 소개글 본문에 삽입되는 이미지 URL 목록 (JSON 배열)
+  descriptionImages String   @default("[]")
+  reservationSlots  String   @default("[]")
+  // 노출 상태 (운영): PUBLISHED | DRAFT | PENDING_REVIEW | HIDDEN
+  status            String   @default("PUBLISHED")
+  // 전시 라이프사이클 수동 오버라이드: null(자동) | EXTENDED | CANCELLED
+  lifecycleOverride String?
+  viewCount         Int      @default(0)
+  registeredById    String?
+  reviewedById      String?
+  // 이 전시가 열리는 공방/쇼룸 (선택)
+  spaceId           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  artistVideoTitle      String?
+  artistVideoDuration   String?
+  artistVideoPosterTone String?
+  artistVideoUrl        String?
+  artistVideoStatus     String?
+
+  registeredBy  User?                @relation("RegisteredExhibitions", fields: [registeredById], references: [id], onDelete: SetNull)
+  reviewedBy    User?                @relation("ReviewedExhibitions", fields: [reviewedById], references: [id], onDelete: SetNull)
+  space         Space?               @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  artworks      Artwork[]
+  reservations  Reservation[]
+  tags          ExhibitionTag[]
+  curations     CurationExhibition[]
+  curationStops CurationStop[]
+  saves         SaveExhibition[]
+  visits        Visit[]
+  reviews       Review[]
+  eventLogs     EventLog[]
+  programs      Program[]
+}
+
+model Artwork {
+  id           String  @id @default(cuid())
+  exhibitionId String
+  title        String
+  artist       String
+  material     String
+  price        Int?
+  imageTone    String
+  imageUrl     String?
+
+  exhibition Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  // CURATION | MOOD | PURPOSE
+  type      String   @default("CURATION")
+  createdAt DateTime @default(now())
+
+  exhibitions ExhibitionTag[]
+}
+
+model ExhibitionTag {
+  exhibitionId String
+  tagId        String
+
+  exhibition Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  tag        Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([exhibitionId, tagId])
+}
+
+model Place {
+  id         String    @id @default(cuid())
+  name       String
+  // CAFE | RESTAURANT | WALK | ETC
+  type       String    @default("CAFE")
+  region     String    @default("서울")
+  district   String
+  address    String
+  lat        Float
+  lng        Float
+  tags       String    @default("[]")
+  sourceUrl  String?
+  notes      String?
+  isActive   Boolean   @default(true)
+  usedCount  Int       @default(0)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  curations     Curation[]
+  curationStops CurationStop[]
+}
+
+model Curation {
+  id             String   @id @default(cuid())
+  title          String
+  subtitle       String?
+  description    String?
+  // 자유 구성 소개 본문 (텍스트/이미지 블록 JSON)
+  storyJson      String   @default("[]")
+  // 소개 이미지 URL 목록 (JSON 배열) — storyJson 미사용 시 갤러리
+  descriptionImages String @default("[]")
+  coverTone      String   @default("linear-gradient(135deg, #ffd9c0 0%, #ff8f6b 100%)")
+  coverImageUrl  String?
+  published      Boolean  @default(true)
+  // 홈 히어로에 우선 노출 (관리자가 지정, 여러 개면 최신 featured 우선)
+  featured       Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  neighborhood   String?
+  situationTags  String   @default("[]")
+  basePlaceId    String?
+  radiusMeters   Int      @default(800)
+  durationText   String?
+  createdById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  basePlace   Place?               @relation(fields: [basePlaceId], references: [id], onDelete: SetNull)
+  exhibitions CurationExhibition[]
+  stops       CurationStop[]
+}
+
+// 큐레이션 동선의 순서 있는 정차 지점 — 공간/전시/장소를 하나의 코스로 연결
+// 애플리케이션 레벨에서 stopType에 해당하는 대상 id 하나만 연결되도록 검증한다
+model CurationStop {
+  id         String  @id @default(cuid())
+  curationId String
+  sortOrder  Int     @default(0)
+  // SPACE | EXHIBITION | PLACE
+  stopType     String
+  spaceId      String?
+  exhibitionId String?
+  placeId      String?
+  editorialBadge String?
+  distanceText   String?
+  note           String?
+
+  curation   Curation    @relation(fields: [curationId], references: [id], onDelete: Cascade)
+  space      Space?      @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  exhibition Exhibition? @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  place      Place?      @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([curationId, sortOrder])
+}
+
+model CurationExhibition {
+  curationId     String
+  exhibitionId   String
+  sortOrder      Int     @default(0)
+  editorialBadge String?
+  distanceText   String?
+
+  curation   Curation   @relation(fields: [curationId], references: [id], onDelete: Cascade)
+  exhibition Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+
+  @@id([curationId, exhibitionId])
+}
+
+model SaveExhibition {
+  id           String   @id @default(cuid())
+  userId       String
+  exhibitionId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exhibition Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exhibitionId])
+}
+
+// 방문 기록 — 전시뿐 아니라 공간/프로그램에도 남길 수 있다 (사용자 자기 기록)
+model Visit {
+  id           String   @id @default(cuid())
+  userId       String
+  exhibitionId String?
+  spaceId      String?
+  programId    String?
+  visitedAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exhibition Exhibition? @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  space      Space?      @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  program    Program?    @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exhibitionId])
+  @@unique([userId, spaceId])
+  @@unique([userId, programId])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  userId       String
+  exhibitionId String
+  // 왓챠피디아식 추천 여부 (필수)
+  recommend    Boolean
+  // 선택 태그 (만족도/공간/재방문 등, JSON 배열)
+  moodTags     String   @default("[]")
+  memo         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exhibition Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exhibitionId])
+}
+
+// 예약 — 전시(작가와 대화) 또는 프로그램 중 정확히 하나를 대상으로 한다
+model Reservation {
+  id           String   @id @default(cuid())
+  userId       String
+  exhibitionId String?
+  programId    String?
+  visitDate    String
+  slot         String
+  status       String   @default("CONFIRMED")
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exhibition Exhibition? @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  program    Program?    @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exhibitionId, visitDate, slot])
+  @@unique([userId, programId, visitDate, slot])
+}
+
+model EventLog {
+  id            String   @id @default(cuid())
+  type          String
+  userId        String?
+  exhibitionId  String?
+  reservationId String?
+  source        String?
+  metadata      String   @default("{}")
+  createdAt     DateTime @default(now())
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  exhibition Exhibition? @relation(fields: [exhibitionId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([userId])
+  @@index([exhibitionId])
+  @@index([createdAt])
+}
+
+model NotificationLog {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  channel       String   @default("email")
+  dedupeKey     String
+  exhibitionId  String?
+  reservationId String?
+  status        String   @default("sent")
+  metadata      String   @default("{}")
+  sentAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, dedupeKey, channel])
+  @@index([type, sentAt])
+}
