@@ -105,7 +105,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const existingIds = new Set(existing.map((item) => item.id));
     const keepIds = data.artworks
       .map((item) => item.id)
-      .filter((item): item is string => Boolean(item) && existingIds.has(item));
+      .filter((item): item is string => typeof item === "string" && existingIds.has(item));
 
     await prisma.artwork.deleteMany({
       where: {
