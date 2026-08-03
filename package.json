@@ -13,6 +13,7 @@
         "db:deploy": "prisma migrate deploy",
         "db:seed": "tsx prisma/seed.ts",
         "db:setup": "prisma migrate deploy && tsx prisma/seed.ts",
+        "ops:transfer-rehearse": "tsx scripts/rehearse-ownership-transfer.ts",
         "postinstall": "prisma generate"
     },
     "prisma": {

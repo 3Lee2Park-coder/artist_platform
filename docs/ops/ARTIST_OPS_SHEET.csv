@@ -1,0 +1,3 @@
+name,email,segment,neighborhood,space_slug,space_id,exhibition_id,curation_id,curation_url,space_url,outreach_status,outreach_sent_at,reply_status,signup_done,email_verified,artist_approved,ownership_transferred,notes
+예시작가,artist@example.com,A,성수,example-space,, , ,https://APP/curations/ID,https://APP/spaces/example-space,draft,,,no,no,no,no,운영자 대리등록
+모집작가,prospect@example.com,C,,,,,,,,draft,,,no,no,no,no,Type C 가치제안 모집(공간없음)

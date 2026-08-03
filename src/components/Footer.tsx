@@ -5,13 +5,17 @@ export function Footer() {
     <footer className="footer">
       <div>
         <strong>Exhibit</strong>
-        <p>개인 작가의 전시 발견, 작품 탐색, 예약 전환을 돕는 MVP 프로토타입입니다.</p>
+        <p>
+          개인 작가의 공간·전시 발견과 동네 코스, 예약까지 이어 주는 플랫폼입니다.
+        </p>
       </div>
       <nav aria-label="푸터 메뉴">
-        <Link href="/">전시</Link>
+        <Link href="/">홈</Link>
+        <Link href="/spaces">공간</Link>
+        <Link href="/exhibitions">전시</Link>
         <Link href="/map">지도</Link>
-        <a href="#">작가 권한 요청</a>
-        <a href="#">문의</a>
+        <Link href="/for-artists">작가·공간 파트너</Link>
+        <Link href="/register">등록 허브</Link>
       </nav>
     </footer>
   );

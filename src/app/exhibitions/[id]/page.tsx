@@ -1,12 +1,22 @@
 import { ArtworkCard } from "@/components/ArtworkCard";
 import { ExhibitionCard } from "@/components/ExhibitionCard";
+import { ExhibitionReviewPanel } from "@/components/ExhibitionReviewPanel";
+import { ExhibitionVenueMap } from "@/components/ExhibitionVenueMap";
+import { ShareActionButton } from "@/components/ShareActionButton";
+import { ExhibitionStickyBar } from "@/components/ExhibitionStickyBar";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { ReservationWidget } from "@/components/ReservationWidget";
+import { getSession } from "@/lib/auth";
+import { logEvent } from "@/lib/events";
 import {
-    exhibitions,
-    getArtworksByExhibitionId,
-    getExhibitionById
-} from "@/data/exhibitions";
+  SOURCE_BADGE,
+  getAllExhibitions,
+  getArtworksByExhibitionId,
+  getExhibitionById,
+  getExhibitionReviews,
+  getViewerExhibitionState
+} from "@/lib/exhibitions";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -14,17 +24,16 @@ type ExhibitionDetailPageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{
+    from?: string;
+    curationId?: string;
+    registered?: string;
+  }>;
 };
-
-export function generateStaticParams() {
-  return exhibitions.map((exhibition) => ({
-    id: exhibition.id
-  }));
-}
 
 export async function generateMetadata({ params }: ExhibitionDetailPageProps) {
   const { id } = await params;
-  const exhibition = getExhibitionById(id);
+  const exhibition = await getExhibitionById(id);
 
   if (!exhibition) {
     return {
@@ -39,23 +48,47 @@ export async function generateMetadata({ params }: ExhibitionDetailPageProps) {
 }
 
 export default async function ExhibitionDetailPage({
-  params
+  params,
+  searchParams
 }: ExhibitionDetailPageProps) {
   const { id } = await params;
-  const exhibition = getExhibitionById(id);
+  const { from, curationId, registered } = await searchParams;
+  const exhibition = await getExhibitionById(id);
+  const session = await getSession();
 
   if (!exhibition) {
     notFound();
   }
 
-  const exhibitionArtworks = getArtworksByExhibitionId(exhibition.id);
-  const relatedExhibitions = exhibitions
+  const fromCuration = from === "curation" && Boolean(curationId);
+  await logEvent({
+    type: "EXHIBITION_VIEW",
+    userId: session?.id,
+    exhibitionId: exhibition.id,
+    source: fromCuration ? "curation" : "detail_page",
+    metadata: fromCuration ? { curationId, from: "curation" } : undefined
+  });
+
+  const exhibitionArtworks = await getArtworksByExhibitionId(exhibition.id);
+  const allExhibitions = await getAllExhibitions();
+  const relatedExhibitions = allExhibitions
     .filter(
       (item) =>
         item.id !== exhibition.id &&
         item.categories.some((category) => exhibition.categories.includes(category))
     )
     .slice(0, 3);
+
+  const viewerState = await getViewerExhibitionState(exhibition.id, session?.id);
+  const { reviews, stats, myReview } = await getExhibitionReviews(
+    exhibition.id,
+    session?.id
+  );
+  const badge = SOURCE_BADGE[exhibition.source];
+  const descriptionParagraphs = exhibition.description
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   return (
     <>
@@ -70,50 +103,40 @@ export default async function ExhibitionDetailPage({
           <strong>{exhibition.title}</strong>
         </nav>
 
+        {registered === "1" ? (
+          <div className="status-banner ok" style={{ marginBottom: 16 }}>
+            전시가 등록되었습니다. 홈의 «작가 등록 전시»·검색·전체 전시에
+            노출됩니다.{" "}
+            <Link href="/exhibitions?source=artist">작가 전시 목록 보기</Link>
+            {" · "}
+            <Link href="/my">MY에서 노출 상태 확인</Link>
+          </div>
+        ) : null}
+
         <section className="detail-hero">
           <div
             className="detail-hero-image"
-            style={{ background: exhibition.heroTone }}
+            style={
+              exhibition.heroImageUrl
+                ? {
+                    backgroundImage: `url(${exhibition.heroImageUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center"
+                  }
+                : { background: exhibition.heroTone }
+            }
             aria-label={`${exhibition.title} 대표 이미지`}
-          />
+          >
+            <span className={`source-badge ${badge.tone}`}>{badge.label}</span>
+          </div>
 
-          <aside id="reservation" className="reservation-widget">
-            <p className="eyebrow">Reservation</p>
-            <h2>방문 예약</h2>
-            <p>
-              예약은 회원만 가능합니다. 비회원은 네이버 또는 이메일 가입 후 이어서
-              예약합니다.
-            </p>
-            {exhibition.reservable ? (
-              <>
-                <div className="slot-grid" aria-label="예약 가능 시간">
-                  {exhibition.reservationSlots.map((slot) => (
-                    <button key={slot} type="button" className="slot-button">
-                      {slot}
-                    </button>
-                  ))}
-                </div>
-                <button type="button" className="primary-button full-width">
-                  예약하기
-                </button>
-              </>
-            ) : (
-              <div className="reservation-disabled">
-                이 전시는 현재 직접 예약 대신 문의를 통해 방문 가능 여부를 확인합니다.
-              </div>
-            )}
-            <div className="reservation-actions">
-              <button type="button" className="secondary-button">
-                문의하기
-              </button>
-              <button type="button" className="secondary-button">
-                저장하기
-              </button>
-            </div>
-            <p className="policy-note">
-              반복 노쇼 제한 상태의 회원은 예약 확정 버튼이 비활성화됩니다.
-            </p>
-          </aside>
+          <div id="reservation">
+            <ReservationWidget
+              exhibition={exhibition}
+              isLoggedIn={Boolean(session)}
+              userName={session?.name}
+            />
+          </div>
         </section>
 
         <section className="detail-layout">
@@ -130,7 +153,18 @@ export default async function ExhibitionDetailPage({
               <div>
                 <dt>장소</dt>
                 <dd>
-                  {exhibition.district} · {exhibition.venue}
+                  {exhibition.space ? (
+                    <>
+                      <Link className="text-link" href={`/spaces/${exhibition.space.slug}`}>
+                        {exhibition.space.name}
+                      </Link>{" "}
+                      · {exhibition.region} {exhibition.district}
+                    </>
+                  ) : (
+                    <>
+                      {exhibition.region} {exhibition.district} · {exhibition.venue}
+                    </>
+                  )}
                 </dd>
               </div>
               <div>
@@ -147,7 +181,22 @@ export default async function ExhibitionDetailPage({
 
             <div className="detail-description">
               <h2>전시 소개</h2>
-              <p>{exhibition.description}</p>
+              {descriptionParagraphs.map((paragraph, index) => (
+                <p key={`desc-${index}`}>{paragraph}</p>
+              ))}
+              {exhibition.descriptionImages.length > 0 ? (
+                <div className="detail-description-gallery">
+                  {exhibition.descriptionImages.map((src, index) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={`desc-img-${index}`}
+                      src={src}
+                      alt={`${exhibition.title} 소개 이미지 ${index + 1}`}
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
           </article>
 
@@ -158,6 +207,28 @@ export default async function ExhibitionDetailPage({
               <li>{exhibition.reservable ? "온라인 예약 가능" : "문의 후 방문"}</li>
               <li>{exhibition.exhibitionType}</li>
             </ul>
+            <div className="share-action-stack">
+              <ShareActionButton
+                label="전시 공유"
+                title={exhibition.title}
+                text={`${exhibition.title} · ${exhibition.venue}에서 만나는 전시`}
+                path={`/share/exhibitions/${exhibition.id}`}
+                eventType="EXHIBITION_SHARE"
+                exhibitionId={exhibition.id}
+                source="detail_side_card"
+              />
+              {exhibition.source === "ARTIST" ? (
+                <ShareActionButton
+                  label="작가 홍보 링크"
+                  title={`${exhibition.title} 예약 안내`}
+                  text={`작가와 만날 수 있는 전시 ${exhibition.title}을 확인해보세요.`}
+                  path={`/share/exhibitions/${exhibition.id}?from=artist`}
+                  eventType="ARTIST_SHARE"
+                  exhibitionId={exhibition.id}
+                  source="artist_detail_side_card"
+                />
+              ) : null}
+            </div>
           </aside>
         </section>
 
@@ -172,47 +243,58 @@ export default async function ExhibitionDetailPage({
               className="detail-video-poster"
               style={{ background: exhibition.artistVideo.posterTone }}
             >
-              <span>Play</span>
-              <strong>{exhibition.artistVideo.duration}</strong>
+              {exhibition.artistVideo.videoUrl ? (
+                <video
+                  controls
+                  className="detail-video-player"
+                  src={exhibition.artistVideo.videoUrl}
+                  poster={exhibition.heroImageUrl}
+                />
+              ) : (
+                <>
+                  <span>Play</span>
+                  <strong>{exhibition.artistVideo.duration}</strong>
+                </>
+              )}
             </div>
           </section>
         ) : null}
 
-        <section className="detail-section">
-          <div className="section-header">
-            <div>
-              <p className="eyebrow">Artworks</p>
-              <h2>전시 작품</h2>
-              <p className="section-description">
-                가격 공개 여부와 판매 가능 여부는 작가가 등록한 작품 정보 기준으로 표시됩니다.
-              </p>
+        {exhibitionArtworks.length > 0 ? (
+          <section className="detail-section">
+            <div className="section-header">
+              <div>
+                <p className="eyebrow">Artworks</p>
+                <h2>전시 작품</h2>
+              </div>
             </div>
-          </div>
-          <div className="artwork-grid">
-            {exhibitionArtworks.map((artwork) => (
-              <ArtworkCard key={artwork.id} artwork={artwork} />
-            ))}
-          </div>
-        </section>
+            <div className="artwork-grid">
+              {exhibitionArtworks.map((artwork) => (
+                <ArtworkCard key={artwork.id} artwork={artwork} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-        <section className="detail-section venue-section">
-          <div>
-            <p className="eyebrow">Venue</p>
-            <h2>장소와 지도</h2>
-            <p>
-              {exhibition.address}
-              <br />
-              Naver Map SDK 연동 시 좌표({exhibition.mapPosition.lat},{" "}
-              {exhibition.mapPosition.lng})를 Marker로 사용합니다.
-            </p>
-            <Link className="secondary-button" href="/map">
-              지도 화면에서 보기
-            </Link>
-          </div>
-          <div className="detail-map-preview" aria-label="Naver Map 미리보기">
-            <span className="detail-map-pin">{exhibition.district}</span>
-          </div>
-        </section>
+        <ExhibitionVenueMap
+          exhibitionId={exhibition.id}
+          title={exhibition.title}
+          venue={exhibition.venue}
+          address={exhibition.address}
+          region={exhibition.region}
+          district={exhibition.district}
+          lat={exhibition.mapPosition.lat}
+          lng={exhibition.mapPosition.lng}
+        />
+
+        <ExhibitionReviewPanel
+          exhibitionId={exhibition.id}
+          isLoggedIn={Boolean(session)}
+          initialVisited={viewerState.visited}
+          stats={stats}
+          reviews={reviews}
+          myReview={myReview}
+        />
 
         {relatedExhibitions.length > 0 ? (
           <section className="detail-section">
@@ -230,6 +312,13 @@ export default async function ExhibitionDetailPage({
           </section>
         ) : null}
       </main>
+
+      <ExhibitionStickyBar
+        exhibitionId={exhibition.id}
+        reservable={exhibition.reservable}
+        isLoggedIn={Boolean(session)}
+        initialSaved={viewerState.saved}
+      />
 
       <Footer />
     </>

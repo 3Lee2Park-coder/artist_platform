@@ -1,16 +1,13 @@
 "use client";
 
-import {
-    getHeroTabs,
-    getRepresentativeExhibition
-} from "@/data/exhibitions";
-import type { HeroTabKey } from "@/types/exhibition";
+import type { Exhibition, HeroTabKey } from "@/types/exhibition";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const tabLabels: Record<HeroTabKey, string> = {
   today_open: "오늘오픈",
   this_week: "이번주",
+  upcoming: "전시예정",
   nearby: "근처",
   회화: "회화",
   사진: "사진",
@@ -18,10 +15,48 @@ const tabLabels: Record<HeroTabKey, string> = {
   복합: "복합"
 };
 
-export function HomeHeroModule() {
-  const tabs = useMemo(() => getHeroTabs(), []);
-  const [selectedKey, setSelectedKey] = useState<HeroTabKey>("today_open");
-  const exhibition = getRepresentativeExhibition(selectedKey);
+type HomeHeroModuleProps = {
+  tabs: HeroTabKey[];
+  exhibitionsByTab: Record<HeroTabKey, Exhibition[]>;
+};
+
+export function HomeHeroModule({ tabs, exhibitionsByTab }: HomeHeroModuleProps) {
+  const availableTabs = tabs.filter((tab) => (exhibitionsByTab[tab] ?? []).length > 0);
+  const [selectedKey, setSelectedKey] = useState<HeroTabKey>(
+    availableTabs[0] ?? tabs[0] ?? "today_open"
+  );
+  const [slideIndexByTab, setSlideIndexByTab] = useState<Partial<Record<HeroTabKey, number>>>({});
+  const resolvedKey =
+    (exhibitionsByTab[selectedKey] ?? []).length > 0
+      ? selectedKey
+      : (availableTabs[0] ?? selectedKey);
+  const exhibitions = exhibitionsByTab[resolvedKey] ?? [];
+  const currentIndex = Math.min(
+    slideIndexByTab[resolvedKey] ?? 0,
+    Math.max(exhibitions.length - 1, 0)
+  );
+  const exhibition = exhibitions[currentIndex];
+
+  if (!exhibition) {
+    return null;
+  }
+
+  function moveSlide(direction: -1 | 1) {
+    setSlideIndexByTab((prev) => {
+      const total = exhibitions.length;
+
+      if (total <= 1) {
+        return prev;
+      }
+
+      const nextIndex = (currentIndex + direction + total) % total;
+
+      return {
+        ...prev,
+        [resolvedKey]: nextIndex
+      };
+    });
+  }
 
   return (
     <section className="home-hero-module" aria-labelledby="hero-title">
@@ -31,7 +66,11 @@ export function HomeHeroModule() {
             key={tab}
             type="button"
             className={tab === selectedKey ? "hero-tab active" : "hero-tab"}
-            onClick={() => setSelectedKey(tab)}
+            disabled={(exhibitionsByTab[tab] ?? []).length === 0}
+            onClick={() => {
+              setSelectedKey(tab);
+              setSlideIndexByTab((prev) => ({ ...prev, [tab]: prev[tab] ?? 0 }));
+            }}
           >
             {tabLabels[tab]}
           </button>
@@ -41,10 +80,31 @@ export function HomeHeroModule() {
       <article className="hero-exhibition">
         <div
           className="hero-image"
-          style={{ background: exhibition.heroTone }}
+          style={
+            exhibition.heroImageUrl
+              ? {
+                  backgroundImage: `url(${exhibition.heroImageUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center"
+                }
+              : { background: exhibition.heroTone }
+          }
           aria-label={`${exhibition.title} 대표 이미지`}
         >
-          <span>{tabLabels[selectedKey]}</span>
+          <span>{tabLabels[resolvedKey]}</span>
+          {exhibitions.length > 1 ? (
+            <div className="hero-slide-controls" aria-label="전시 슬라이드">
+              <button type="button" onClick={() => moveSlide(-1)} aria-label="이전 전시">
+                이전
+              </button>
+              <strong>
+                {currentIndex + 1} / {exhibitions.length}
+              </strong>
+              <button type="button" onClick={() => moveSlide(1)} aria-label="다음 전시">
+                다음
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div className="hero-copy">
@@ -59,7 +119,7 @@ export function HomeHeroModule() {
             <div>
               <dt>장소</dt>
               <dd>
-                {exhibition.district} · {exhibition.venue}
+                {exhibition.region} {exhibition.district} · {exhibition.venue}
               </dd>
             </div>
             <div>
@@ -77,9 +137,6 @@ export function HomeHeroModule() {
               상세보기
             </Link>
           </div>
-          <p className="hero-note">
-            위 큐레이션 탭은 홈 전체를 바꾸지 않고 이 대표 전시 영역만 변경합니다.
-          </p>
         </div>
       </article>
     </section>
