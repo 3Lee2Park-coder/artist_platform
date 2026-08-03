@@ -19,7 +19,8 @@ import {
   getFeaturedArtworks,
   getListedExhibitions,
   getPeriodExhibitionGroups,
-  getPublishedCurations
+  getPublishedCurations,
+  type CurationSummary
 } from "@/lib/exhibitions";
 import { getActivePrograms, getProgramRemainingSeats } from "@/lib/programs";
 import { getPublicSpaces } from "@/lib/spaces";
@@ -29,11 +30,20 @@ import type { Exhibition } from "@/types/exhibition";
 /** 세션이 있어도 전시 목록은 60초 캐시를 재사용 (unstable_cache) */
 export const revalidate = 60;
 
-function mergeAnnotatedExhibitions(
-  exhibitions: Exhibition[],
+function mergeAnnotatedExhibitions<T extends Exhibition>(
+  exhibitions: T[],
   annotatedById: Map<string, Exhibition>
-) {
-  return exhibitions.map((exhibition) => annotatedById.get(exhibition.id) ?? exhibition);
+): T[] {
+  return exhibitions.map((exhibition) => {
+    const annotated = annotatedById.get(exhibition.id);
+    if (!annotated) return exhibition;
+    // saved/visited만 덮어쓰고, CurationExhibitionItem 등의 확장 필드는 유지
+    return {
+      ...exhibition,
+      saved: annotated.saved,
+      visited: annotated.visited
+    };
+  });
 }
 
 export default async function HomePage() {
@@ -96,7 +106,7 @@ export default async function HomePage() {
     getProgramRemainingSeats(programs.map((program) => program.id))
   ]);
 
-  const curations = curationsRaw.map((curation) => ({
+  const curations: CurationSummary[] = curationsRaw.map((curation) => ({
     ...curation,
     exhibitions: mergeAnnotatedExhibitions(curation.exhibitions, annotatedById)
   }));
@@ -107,7 +117,7 @@ export default async function HomePage() {
   }));
 
   const hasClusterContent = spaces.length > 0;
-  const situationalCurations = [...curations].sort(
+  const situationalCurations: CurationSummary[] = [...curations].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
