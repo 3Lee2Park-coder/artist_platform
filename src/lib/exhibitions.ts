@@ -13,6 +13,7 @@ import type {
   ExhibitionSource,
   HeroTabKey
 } from "@/types/exhibition";
+import { unstable_cache } from "next/cache";
 
 type DbExhibition = Awaited<ReturnType<typeof fetchExhibitionsFromDb>>[number];
 
@@ -148,25 +149,36 @@ async function fetchExhibitionsFromDb() {
   });
 }
 
+/** Vercel/서버리스에서 매 요청 전체 테이블 스캔을 피하기 위한 짧은 TTL 캐시 */
+const getCachedExhibitionRecords = unstable_cache(
+  async () => fetchExhibitionsFromDb(),
+  ["exhibitions-published-v1"],
+  { revalidate: 60, tags: ["exhibitions"] }
+);
+
 function hasDisplayImage(exhibition: Exhibition): boolean {
   return Boolean(exhibition.heroImageUrl?.trim());
 }
 
 export async function getAllExhibitions(): Promise<Exhibition[]> {
-  const records = await fetchExhibitionsFromDb();
+  const records = await getCachedExhibitionRecords();
   return records.map(toExhibition);
 }
 
-export async function getActiveExhibitions(today = getTodayKST()) {
+export function filterActiveExhibitions(
+  exhibitions: Exhibition[],
+  today = getTodayKST()
+) {
   const current = toDate(today);
-  const exhibitions = await getAllExhibitions();
-
   return exhibitions.filter((exhibition) => {
     const startsAt = toDate(exhibition.startDate);
     const endsAt = toDate(exhibition.endDate);
-
     return startsAt <= current && endsAt >= current;
   });
+}
+
+export async function getActiveExhibitions(today = getTodayKST()) {
+  return filterActiveExhibitions(await getAllExhibitions(), today);
 }
 
 function isPlatformArtistSource(source: Exhibition["source"]) {
@@ -341,6 +353,17 @@ export async function getAllArtworks() {
   return records.map(toArtwork);
 }
 
+/** 홈 등에서 쓰는 소량 작품 — 전체 artworks 테이블 로드를 피함 */
+export async function getFeaturedArtworks(limit = 12) {
+  const records = await prisma.artwork.findMany({
+    where: { imageUrl: { not: null } },
+    orderBy: { title: "asc" },
+    take: limit
+  });
+
+  return records.map(toArtwork);
+}
+
 export type PeriodGroupKey =
   | "artist"
   | "this_week"
@@ -393,9 +416,10 @@ function pickTimedExhibitions(
 }
 
 export async function getPeriodExhibitionGroups(
-  today = getTodayKST()
+  today = getTodayKST(),
+  listedInput?: Exhibition[]
 ): Promise<PeriodExhibitionGroup[]> {
-  const listed = await getListedExhibitions(today);
+  const listed = listedInput ?? (await getListedExhibitions(today));
   const active = listed.filter((exhibition) => {
     const startsAt = toDate(exhibition.startDate);
     const endsAt = toDate(exhibition.endDate);

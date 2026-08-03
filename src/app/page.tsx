@@ -12,10 +12,11 @@ import { SpaceDiscoverySection } from "@/components/SpaceDiscoverySection";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getSession } from "@/lib/auth";
+import { getTodayKST } from "@/lib/date";
 import {
   annotateViewerState,
-  getActiveExhibitions,
-  getAllArtworks,
+  filterActiveExhibitions,
+  getFeaturedArtworks,
   getListedExhibitions,
   getPeriodExhibitionGroups,
   getPublishedCurations
@@ -23,18 +24,61 @@ import {
 import { getActivePrograms, getProgramRemainingSeats } from "@/lib/programs";
 import { getPublicSpaces } from "@/lib/spaces";
 import { getTalkRemainingByExhibitionIds } from "@/lib/talk-availability";
+import type { Exhibition } from "@/types/exhibition";
 
-export const dynamic = "force-dynamic";
+/** 세션이 있어도 전시 목록은 60초 캐시를 재사용 (unstable_cache) */
+export const revalidate = 60;
+
+function mergeAnnotatedExhibitions(
+  exhibitions: Exhibition[],
+  annotatedById: Map<string, Exhibition>
+) {
+  return exhibitions.map((exhibition) => annotatedById.get(exhibition.id) ?? exhibition);
+}
 
 export default async function HomePage() {
   const session = await getSession();
   const userId = session?.id;
+  const today = getTodayKST();
 
-  const activeExhibitionsRaw = await getActiveExhibitions();
-  const listedExhibitionsRaw = await getListedExhibitions();
-  const activeExhibitions = await annotateViewerState(activeExhibitionsRaw, userId);
-  const listedExhibitions = await annotateViewerState(listedExhibitionsRaw, userId);
+  const [listedRaw, spaces, programs, artworks, curationsRaw] = await Promise.all([
+    getListedExhibitions(today),
+    getPublicSpaces(),
+    getActivePrograms(),
+    getFeaturedArtworks(12),
+    getPublishedCurations()
+  ]);
 
+  const activeRaw = filterActiveExhibitions(listedRaw, today);
+  const homeListedRaw = listedRaw.slice(0, 36);
+
+  const annotatePool = new Map<string, Exhibition>();
+  for (const exhibition of [...homeListedRaw, ...activeRaw]) {
+    annotatePool.set(exhibition.id, exhibition);
+  }
+  for (const curation of curationsRaw) {
+    for (const exhibition of curation.exhibitions) {
+      annotatePool.set(exhibition.id, exhibition);
+    }
+  }
+
+  const periodGroupsRaw = await getPeriodExhibitionGroups(today, listedRaw);
+  for (const group of periodGroupsRaw) {
+    for (const exhibition of group.exhibitions) {
+      annotatePool.set(exhibition.id, exhibition);
+    }
+  }
+
+  const annotatedPool = await annotateViewerState(
+    Array.from(annotatePool.values()),
+    userId
+  );
+  const annotatedById = new Map(
+    annotatedPool.map((exhibition) => [exhibition.id, exhibition])
+  );
+
+  const listedExhibitions = mergeAnnotatedExhibitions(homeListedRaw, annotatedById);
+  const activeExhibitions = mergeAnnotatedExhibitions(activeRaw, annotatedById);
   const mapExhibitions = activeExhibitions.filter(
     (exhibition) => exhibition.source !== "PUBLIC_API"
   );
@@ -46,31 +90,21 @@ export default async function HomePage() {
         exhibition.reservationSchedule.some((day) => day.slots.length > 0)
     )
     .slice(0, 8);
-  const talkRemainingById = await getTalkRemainingByExhibitionIds(
-    talkExhibitions.map((exhibition) => exhibition.id)
-  );
 
-  const spaces = await getPublicSpaces();
-  const programs = await getActivePrograms();
-  const programRemainingById = await getProgramRemainingSeats(
-    programs.map((program) => program.id)
-  );
+  const [talkRemainingById, programRemainingById] = await Promise.all([
+    getTalkRemainingByExhibitionIds(talkExhibitions.map((exhibition) => exhibition.id)),
+    getProgramRemainingSeats(programs.map((program) => program.id))
+  ]);
 
-  const artworks = await getAllArtworks();
-  const curationsRaw = await getPublishedCurations();
-  const curations = await Promise.all(
-    curationsRaw.map(async (curation) => ({
-      ...curation,
-      exhibitions: await annotateViewerState(curation.exhibitions, userId)
-    }))
-  );
-  const periodGroupsRaw = await getPeriodExhibitionGroups();
-  const periodGroups = await Promise.all(
-    periodGroupsRaw.map(async (group) => ({
-      ...group,
-      exhibitions: await annotateViewerState(group.exhibitions, userId)
-    }))
-  );
+  const curations = curationsRaw.map((curation) => ({
+    ...curation,
+    exhibitions: mergeAnnotatedExhibitions(curation.exhibitions, annotatedById)
+  }));
+
+  const periodGroups = periodGroupsRaw.map((group) => ({
+    ...group,
+    exhibitions: mergeAnnotatedExhibitions(group.exhibitions, annotatedById)
+  }));
 
   const hasClusterContent = spaces.length > 0;
   const situationalCurations = [...curations].sort(
@@ -106,7 +140,7 @@ export default async function HomePage() {
 
         <ArtworkDiscoverySection artworks={artworks} />
 
-        <AllExhibitionsSection exhibitions={listedExhibitions.slice(0, 36)} />
+        <AllExhibitionsSection exhibitions={listedExhibitions} />
 
         <SupplierCtaSection />
       </main>

@@ -8,7 +8,7 @@ import {
 } from "@/lib/exhibitions";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata = {
   title: "전시 | Exhibit",

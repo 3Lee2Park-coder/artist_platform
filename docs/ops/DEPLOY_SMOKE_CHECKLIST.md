@@ -1,6 +1,21 @@
 # 배포 · 메일 · 이관 스모크 체크리스트
 
-## 0. 배포 전에 “도메인만 남았나?”
+## 0. 속도·트래픽 확인 (Vercel)
+
+Vercel 대시보드 프로젝트에서:
+
+| 메뉴 | 보는 것 |
+|------|---------|
+| **Analytics** (또는 Web Analytics) | 페이지뷰·트래픽. 무료 플랜은 켜야 할 수 있음 |
+| **Speed Insights** | Real User LCP/INP 등. 프로젝트에서 Enable 후 재배포 |
+| **Deployments → 해당 배포 → 빌드/함수 로그** | SSR 함수 실행 시간 힌트 |
+| **Usage** | 대역폭·함수 실행량 |
+
+임시 `*.vercel.app` 도메인 자체가 느린 경우는 드뭅니다. 홈 SSR·DB 조회량이 체감 속도의 대부분입니다.
+
+---
+
+## 0b. 배포 전에 “도메인만 남았나?”
 
 로컬/Vercel에 Supabase·Resend·CRON·AUTH 등이 이미 들어가 있다면:
 
