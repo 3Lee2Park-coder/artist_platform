@@ -23,9 +23,9 @@ export async function Header({ activeTab = "홈" }: HeaderProps) {
     <>
       <header className="site-header">
         <div className="header-inner">
-          <Link className="brand" href="/" aria-label="전시 방문 전환형 플랫폼 홈">
+          <Link className="brand" href="/" aria-label="Sokkup 홈">
             <span className="brand-mark" aria-hidden="true" />
-            <span>Exhibit</span>
+            <span>Sokkup</span>
           </Link>
 
           <Suspense fallback={<div className="filter-search filter-search-skeleton" />}>
@@ -58,7 +58,7 @@ export async function Header({ activeTab = "홈" }: HeaderProps) {
             >
               지도
             </Link>
-            <Link href="/register">등록하기</Link>
+            <Link href="/register">공간 열기</Link>
             {session ? (
               <Link
                 href="/my"

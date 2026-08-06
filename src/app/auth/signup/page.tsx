@@ -39,11 +39,11 @@ export default function SignupPage() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <p className="eyebrow">Signup</p>
-        <h1>회원가입</h1>
+        <p className="eyebrow">시작하기</p>
+        <h1>가입하고 동네 전시를 열어 보세요</h1>
         <p className="auth-description">
-          가입 후 이메일 인증을 완료하면 예약·저장·전시 등록을 이용할 수 있습니다. 휴대폰
-          SMS 인증과 네이버 등 소셜 로그인은 배포 이후 추가 예정입니다.
+          이메일 인증만 마치면 저장·예약·방문 기록을 쓸 수 있습니다. 작가라면 승인 후
+          공간과 전시를 직접 열 수 있어요. (휴대폰 SMS·소셜 로그인은 이후 예정)
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -100,7 +100,7 @@ export default function SignupPage() {
           {error ? <p className="form-error">{error}</p> : null}
 
           <button type="submit" className="primary-button full-width" disabled={loading}>
-            {loading ? "가입 중..." : "회원가입"}
+            {loading ? "가입하는 중…" : "가입하고 시작하기"}
           </button>
         </form>
 

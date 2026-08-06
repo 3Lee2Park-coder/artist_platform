@@ -120,7 +120,9 @@ export function ProgramReservationWidget({
       return;
     }
 
-    setMessage(`${visitDate} ${selectedSlot} 예약이 확정되었습니다.`);
+    setMessage(
+      `${visitDate} ${selectedSlot} 참여가 예약되었습니다. 현장에서 만나요.`
+    );
     router.refresh();
   }
 
@@ -130,7 +132,7 @@ export function ProgramReservationWidget({
         <p className="eyebrow">{program.typeLabel}</p>
         <h2>참여 안내</h2>
         <div className="reservation-disabled">
-          이 프로그램은 예약 없이 운영 시간에 방문해 참여할 수 있습니다.
+          예약 없이, 운영 시간에 바로 들러 참여할 수 있어요.
         </div>
       </aside>
     );
@@ -139,16 +141,16 @@ export function ProgramReservationWidget({
   return (
     <aside id="reservation" className="reservation-widget">
       <p className="eyebrow">{program.typeLabel}</p>
-      <h2>프로그램 예약</h2>
+      <h2>자리에서 만나기</h2>
 
       {!isLoggedIn ? (
         <p>
-          예약은 회원만 가능합니다.{" "}
+          예약은 가입 후 이용할 수 있어요.{" "}
           <Link href={`/auth/login?redirect=/programs/${program.slug}`}>로그인</Link>{" "}
-          또는 <Link href="/auth/signup">회원가입</Link> 후 이어서 예약합니다.
+          또는 <Link href="/auth/signup">가입하고 시작</Link>해 주세요.
         </p>
       ) : (
-        <p>{userName}님, 참여할 날짜와 시간을 선택해 예약을 확정하세요.</p>
+        <p>{userName}님, 날짜와 시간을 고르면 참여 자리가 열립니다.</p>
       )}
 
       <form onSubmit={handleSubmit}>
@@ -213,10 +215,10 @@ export function ProgramReservationWidget({
           disabled={loading || !selectedSlot}
         >
           {loading
-            ? "예약 중..."
+            ? "예약하는 중…"
             : isLoggedIn
-              ? "예약 확정"
-              : "로그인 후 예약하기"}
+              ? "참여 예약하기"
+              : "로그인하고 예약하기"}
         </button>
       </form>
 

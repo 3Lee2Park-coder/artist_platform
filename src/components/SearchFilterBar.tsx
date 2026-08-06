@@ -105,7 +105,7 @@ export function SearchFilterBar() {
     CURATION_OPTIONS.find((option) => option.value === curation)?.label ?? "전체";
 
   return (
-    <form className="filter-search" aria-label="전시 검색 필터" onSubmit={handleSubmit}>
+    <form className="filter-search" aria-label="동네 전시 찾기" onSubmit={handleSubmit}>
       <button
         type="button"
         className="filter-search-item"
@@ -130,7 +130,7 @@ export function SearchFilterBar() {
         <span>큐레이션</span>
         <strong>{curationLabel}</strong>
       </button>
-      <button type="submit" className="search-submit" aria-label="검색">
+      <button type="submit" className="search-submit" aria-label="찾아보기">
         ⌕
       </button>
 
@@ -248,7 +248,7 @@ export function SearchFilterBar() {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="전시명, 작가, 장소"
+                  placeholder="전시·작가·동네·공간"
                 />
               </label>
             </div>
@@ -259,7 +259,7 @@ export function SearchFilterBar() {
               닫기
             </button>
             <button type="submit" className="primary-button">
-              검색
+              찾아보기
             </button>
           </div>
         </div>

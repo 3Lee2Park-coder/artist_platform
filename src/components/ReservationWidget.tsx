@@ -129,25 +129,29 @@ export function ReservationWidget({
       return;
     }
 
-    setMessage(`${visitDate} ${selectedSlot} 대화 예약이 확정되었습니다.`);
+    setMessage(
+      `${visitDate} ${selectedSlot} 대화가 예약되었습니다. 현장에서 작가와 직접 만나 보세요.`
+    );
     router.refresh();
   }
 
   return (
     <aside id="reservation" className="reservation-widget">
-      <p className="eyebrow">Artist talk</p>
-      <h2>작가와 대화 예약</h2>
+      <p className="eyebrow">작가와 대화</p>
+      <h2>직접 이야기해 보세요</h2>
 
       {!isLoggedIn ? (
         <p>
-          예약은 회원만 가능합니다.{" "}
+          대화 예약은 가입 후 이용할 수 있어요.{" "}
           <Link href={`/auth/login?redirect=/exhibitions/${exhibition.id}#reservation`}>
             로그인
           </Link>{" "}
-          또는 <Link href="/auth/signup">회원가입</Link> 후 이어서 예약합니다.
+          또는 <Link href="/auth/signup">가입하고 시작</Link>해 주세요.
         </p>
       ) : (
-        <p>{userName}님, 대화 가능한 날짜와 시간을 선택해 예약을 확정하세요.</p>
+        <p>
+          {userName}님, 날짜와 시간을 고르면 작가와의 대화 자리가 열립니다.
+        </p>
       )}
 
       {exhibition.reservable ? (
@@ -215,15 +219,15 @@ export function ReservationWidget({
             disabled={loading || !selectedSlot}
           >
             {loading
-              ? "예약 중..."
+              ? "예약하는 중…"
               : isLoggedIn
-                ? "대화 예약 확정"
-                : "로그인 후 예약하기"}
+                ? "대화 예약하기"
+                : "로그인하고 예약하기"}
           </button>
         </form>
       ) : (
         <div className="reservation-disabled">
-          이 전시는 현재 직접 예약 대신 문의를 통해 방문 가능 여부를 확인합니다.
+          이 전시는 온라인 예약 대신, 문의로 방문 가능 여부를 확인해요.
         </div>
       )}
     </aside>

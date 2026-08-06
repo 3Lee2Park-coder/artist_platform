@@ -51,14 +51,14 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
 
   const coverStyle = featuredCuration?.coverImageUrl
     ? {
-        backgroundImage: `linear-gradient(105deg, rgba(248,246,241,0.96) 0%, rgba(248,246,241,0.88) 42%, rgba(248,246,241,0.35) 70%, rgba(248,246,241,0.12) 100%), url(${featuredCuration.coverImageUrl})`,
+        backgroundImage: `linear-gradient(105deg, rgba(243,243,241,0.96) 0%, rgba(243,243,241,0.88) 42%, rgba(26,26,26,0.28) 70%, rgba(26,26,26,0.12) 100%), url(${featuredCuration.coverImageUrl})`,
         backgroundSize: "cover",
         backgroundPosition: "center"
       }
     : {
         backgroundImage:
           featuredCuration?.coverTone ??
-          "linear-gradient(135deg, #f3ece2 0%, #d9c4a8 45%, #6b5644 100%)"
+          "linear-gradient(135deg, #ebebe9 0%, #5a6b7d 52%, #1a1a1a 100%)"
       };
 
   return (
@@ -69,15 +69,15 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
     >
       <div className="home-focus-inner">
         <div className="home-focus-copy">
-          <p className="home-focus-eyebrow">{neighborhood} · 작가의 공간</p>
+          <p className="home-focus-eyebrow">{neighborhood} · 동네에서 직접</p>
           <h1 id="home-focus-title">
-            작품이 취향을 만나는 순간
+            작가의 공간에서
             <br />
-            도시를 새롭게 만나다.
+            작품과 사람을 만나다
           </h1>
           <p className="home-focus-lead">
-          공방과 전시를 중심으로, 함께 들르기 좋은 카페와 맛집까지.
-          작품을 따라 걷다 보면 어느새 나만의 취향과 새로운 도시를 만나게 됩니다.
+            울타리 밖의 공방·쇼룸을 동네 코스로 이어 드립니다.
+            지도와 방문 안내로, 지금 갈 수 있는 전시를 더 쉽고 재미있게 걸어 보세요.
           </p>
 
           <div className="home-focus-actions">
@@ -87,9 +87,9 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
                 href={`/curations/${featuredCuration.id}`}
               >
                 <span className="home-focus-cta-full">
-                  {featuredCuration.title} 보기
+                  {featuredCuration.title} 걷기
                 </span>
-                <span className="home-focus-cta-short">코스 보기</span>
+                <span className="home-focus-cta-short">코스 걷기</span>
               </Link>
             ) : (
               <Link className="primary-button" href="/spaces">
@@ -97,12 +97,12 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
               </Link>
             )}
             <Link className="secondary-button" href="/map?layer=curation">
-              지도에서 보기
+              지도에서 찾기
             </Link>
           </div>
 
           <p className="home-focus-note">
-            방문 후 기록은 MY에서 쌓을 수 있습니다.
+            방문 기록은 MY에 쌓이며, 다시 찾을 때 도움이 됩니다.
           </p>
         </div>
 

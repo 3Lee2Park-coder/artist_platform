@@ -281,7 +281,7 @@ export function ExhibitionsDirectoryClient({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="전시명 · 작가 · 장소 · 동네"
+            placeholder="전시·작가·동네 — 지금 갈 곳을 찾아보세요"
             aria-label="전시 검색"
           />
         </form>
@@ -352,13 +352,13 @@ export function ExhibitionsDirectoryClient({
         <div className="exhub-empty">
           <h2>
             {searching
-              ? "검색 조건에 맞는 전시가 없습니다"
-              : "아직 등록된 전시가 없어요"}
+              ? "이 조건으로는 아직 길이 없어요"
+              : "아직 열린 전시가 없어요"}
           </h2>
           <p>
             {searching
-              ? "날짜·지역·큐레이션 조건을 바꾸거나 초기화해 다시 찾아보세요."
-              : "필터를 넓히거나, 작가라면 첫 전시를 올려 이 공간을 채워 주세요."}
+              ? "날짜·동네·키워드를 조금 넓혀 다시 찾아보거나, 필터를 비워 전체로 열어 보세요."
+              : "다른 동네 코스를 둘러보거나, 작가라면 첫 전시를 직접 열어 이 길을 만들어 주세요."}
           </p>
           <div className="exhub-empty-actions">
             <button
@@ -376,11 +376,11 @@ export function ExhibitionsDirectoryClient({
                 setQuery("");
               }}
             >
-              필터 초기화
+              조건 비우기
             </button>
             {searching ? (
               <Link className="primary-button" href="/exhibitions">
-                전체 전시 보기
+                전체 전시 둘러보기
               </Link>
             ) : (
               <Link className="primary-button" href="/register/exhibition">

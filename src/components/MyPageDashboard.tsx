@@ -358,26 +358,47 @@ export function MyPageDashboard({
       )}
 
       {isArtist && tab === "artist" && (
-        <>
+        <div className="my-artist-workspace">
+          <div className="register-b2b-banner my-artist-growth">
+            <p className="register-b2b-kicker">Grow together</p>
+            <p className="register-b2b-headline">
+              Grow Your Space.
+              <br />
+              Show Your Work. Reach Further.
+            </p>
+            <p className="register-b2b-lead">
+              우리와 함께 성장해 보세요. 공간·전시·프로그램을 직접 열고, 동네를 걷는
+              관객과의 연결을 넓혀 갑니다.
+            </p>
+            <div className="hub-actions my-artist-growth-actions">
+              <Link className="primary-button" href="/register">
+                등록 허브 열기
+              </Link>
+              <Link className="secondary-button" href="/for-artists">
+                작가 안내 보기
+              </Link>
+            </div>
+          </div>
+
           {(artistSpaces.length > 0 ||
             artistExhibitions.length > 0 ||
             artistPrograms.length > 0) && (
-            <section className="register-card wide my-section ownership-notice">
+            <section className="my-artist-block ownership-notice">
               <p className="eyebrow">연결된 항목</p>
-              <h2>운영이 연결한 공간·전시를 MY에서 관리할 수 있습니다</h2>
+              <h2>운영이 연결한 공간·전시를 여기서 관리할 수 있습니다</h2>
               <p className="auth-description">
-                대리 등록 후 소유권이 연결된 경우에도 아래 목록에 표시됩니다. 사진·방문
+                대리 등록 후 소유권이 연결된 항목도 아래에 표시됩니다. 사진·방문
                 정책·일정을 확인해 주세요.
               </p>
             </section>
           )}
 
-          <section className="register-card wide my-section">
+          <section className="my-artist-block">
             <div className="my-section-heading">
               <div>
-                <h2>작가 등록</h2>
+                <h2>새 등록</h2>
                 <p className="auth-description">
-                  공간·전시·프로그램을 등록할 수 있습니다. 공간과 프로그램은 검수 후
+                  공간·전시·프로그램을 올릴 수 있습니다. 공간과 프로그램은 검수 후
                   공개됩니다.
                 </p>
               </div>
@@ -395,10 +416,10 @@ export function MyPageDashboard({
             </div>
           </section>
 
-          <section className="register-card wide my-section">
+          <section className="my-artist-block">
             <div className="my-section-heading">
               <div>
-                <h2>내 공간 관리</h2>
+                <h2>내 공간</h2>
                 <p className="auth-description">
                   등록한 공방·쇼룸을 수정합니다. DRAFT는 관리자 검수 후 공개됩니다.
                 </p>
@@ -439,10 +460,10 @@ export function MyPageDashboard({
             )}
           </section>
 
-          <section className="register-card wide my-section">
+          <section className="my-artist-block">
             <div className="my-section-heading">
               <div>
-                <h2>내 프로그램 관리</h2>
+                <h2>내 프로그램</h2>
                 <p className="auth-description">
                   오픈 스튜디오·작가 대화 일정을 수정합니다.
                 </p>
@@ -483,10 +504,10 @@ export function MyPageDashboard({
             )}
           </section>
 
-          <section className="register-card wide my-section">
+          <section className="my-artist-block">
             <div className="my-section-heading">
               <div>
-                <h2>내 전시 관리</h2>
+                <h2>내 전시</h2>
                 <p className="auth-description">등록한 전시를 수정하거나 새 전시를 등록합니다.</p>
               </div>
             </div>
@@ -579,8 +600,8 @@ export function MyPageDashboard({
             )}
           </section>
 
-          <section className="register-card wide my-section">
-            <h2>큐레이션 · 예약 현황</h2>
+          <section className="my-artist-block">
+            <h2>예약 현황</h2>
             <p className="auth-description">시간대별 예약 인원과 방문/노쇼 상태를 관리합니다.</p>
 
             {artistSlotSummary.length > 0 ? (
@@ -634,7 +655,7 @@ export function MyPageDashboard({
             )}
           </section>
 
-          <section className="register-card wide my-section">
+          <section className="my-artist-block">
             <h2>전체 예약 로그</h2>
             {artistReservations.length > 0 ? (
               <div className="my-table-wrap">
@@ -669,7 +690,7 @@ export function MyPageDashboard({
               <div className="empty-state">예약 로그가 없습니다.</div>
             )}
           </section>
-        </>
+        </div>
       )}
     </main>
   );

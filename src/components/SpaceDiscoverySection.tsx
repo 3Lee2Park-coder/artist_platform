@@ -95,13 +95,28 @@ export function SpaceDiscoverySection({ spaces }: SpaceDiscoverySectionProps) {
       };
     }
 
-    // 기본: 신당 우선(클러스터 시드) → 없으면 전체 프로그램/방문 가능 순
-    const sindang = spaces.filter((space) => space.district.includes("신당"));
-    const base = sindang.length >= 2 ? sindang : spaces;
+    // 기본(추천 동네): 중구 공간 우선 → 없으면 신당(중구 하위) → 전체
+    const junggu = spaces.filter(
+      (space) =>
+        space.district.includes("중구") || space.address?.includes("중구")
+    );
+    const sindangFallback = spaces.filter((space) =>
+      space.district.includes("신당")
+    );
+    const base =
+      junggu.length >= 1
+        ? junggu
+        : sindangFallback.length >= 1
+          ? sindangFallback
+          : spaces;
     return {
       sorted: sortByVisitAndProgram(base),
       districtLabel:
-        sindang.length >= 2 ? "신당의 공방과 쇼룸" : "공방과 쇼룸 둘러보기",
+        junggu.length >= 1
+          ? "중구의 공방과 쇼룸"
+          : sindangFallback.length >= 1
+            ? "중구(신당)의 공방과 쇼룸"
+            : "공방과 쇼룸 둘러보기",
       nearbyCount: 0
     };
   }, [spaces, coords, sortMode]);
@@ -119,11 +134,11 @@ export function SpaceDiscoverySection({ spaces }: SpaceDiscoverySectionProps) {
         description={
           sortMode === "nearby" && coords
             ? nearbyCount > 0
-              ? "현재 위치 기준으로 가까운 공간을 먼저 보여 드립니다."
-              : "근처 공간이 적어, 가장 가까운 순으로 보여 드립니다."
-            : "프로그램이 열린 공방은 배지로 먼저 확인해 보세요. 위치 권한을 허용하면 가까운 순으로 바뀝니다."
+              ? "지금 위치에서 가까운 공간부터 둘러보세요."
+              : "근처가 적어, 가장 가까운 순으로 보여 드립니다."
+            : "프로그램이 열린 공방은 배지로 먼저 확인하세요. 위치 권한을 켜면 가까운 순으로 바뀝니다."
         }
-        actionLabel="전체 공간"
+        actionLabel="공간 전체 보기"
         actionHref="/spaces"
       />
 

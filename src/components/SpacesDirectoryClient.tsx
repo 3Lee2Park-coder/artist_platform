@@ -26,7 +26,7 @@ export function SpacesDirectoryClient({ spaces }: SpacesDirectoryClientProps) {
   if (spaces.length === 0) {
     return (
       <div className="empty-state">
-        아직 소개 중인 공간이 없습니다. 첫 공간을 준비하고 있어요.
+        아직 열린 공간이 없어요. 작가라면 첫 공방·쇼룸을 직접 열어 이 길을 만들어 주세요.
       </div>
     );
   }

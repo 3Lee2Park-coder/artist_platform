@@ -466,16 +466,36 @@ export function ExhibitionRegisterForm() {
 
       <div className="form-actions">
         {step > 1 ? (
-          <button type="button" className="secondary-button" onClick={() => setStep(step - 1)}>
+          <button
+            key="prev-step"
+            type="button"
+            className="secondary-button"
+            onClick={() => setStep((prev) => prev - 1)}
+          >
             이전
           </button>
         ) : null}
         {step < 3 ? (
-          <button type="button" className="primary-button" onClick={() => setStep(step + 1)}>
+          <button
+            key="next-step"
+            type="button"
+            className="primary-button"
+            onClick={(event) => {
+              // type="button"→"submit" DOM 재사용으로 클릭이 제출로 이어지는 것 방지
+              event.preventDefault();
+              event.stopPropagation();
+              setStep((prev) => prev + 1);
+            }}
+          >
             다음
           </button>
         ) : (
-          <button type="submit" className="primary-button" disabled={loading}>
+          <button
+            key="submit-exhibition"
+            type="submit"
+            className="primary-button"
+            disabled={loading}
+          >
             {loading ? "등록 중..." : "전시 공개"}
           </button>
         )}

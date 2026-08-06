@@ -44,10 +44,11 @@ export function LoginForm() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <p className="eyebrow">Login</p>
+        <p className="eyebrow">다시 오신 것을 환영해요</p>
         <h1>로그인</h1>
         <p className="auth-description">
-          통합 회원으로 로그인하면 예약, 저장, 전시 등록 신청을 이어서 진행할 수 있습니다.
+          로그인하면 저장·예약·방문 기록을 이어서 쓸 수 있어요. 작가라면 공간 열기도
+          바로 이어집니다.
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -57,7 +58,7 @@ export function LoginForm() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="member@exhibit.kr"
+              placeholder="you@email.com"
               required
             />
           </label>
@@ -80,10 +81,7 @@ export function LoginForm() {
         </form>
 
         <p className="auth-footer">
-          아직 계정이 없나요? <Link href="/auth/signup">회원가입</Link>
-        </p>
-        <p className="auth-demo">
-          데모 계정: member@exhibit.kr / artist@exhibit.kr (비밀번호 demo1234)
+          아직 계정이 없나요? <Link href="/auth/signup">가입하고 시작하기</Link>
         </p>
       </section>
     </main>

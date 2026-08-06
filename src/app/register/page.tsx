@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 export const metadata = {
-  title: "등록 허브 | Exhibit"
+  title: "등록 허브 | Sokkup"
 };
 
 export default async function RegisterHubPage() {
@@ -46,16 +46,29 @@ export default async function RegisterHubPage() {
       <Header activeTab="등록" />
       <main className="register-page">
         <section className="register-card wide">
+          <div className="register-b2b-banner">
+            <p className="register-b2b-kicker">For artists &amp; spaces</p>
+            <p className="register-b2b-headline">
+              Grow Your Space.
+              <br />
+              Show Your Work. Reach Further.
+            </p>
+            <p className="register-b2b-lead">
+              단순한 등록이 아닙니다. 작품을 직접 보여주고, 동네를 걷는 관객과의
+              연결을 넓히세요. 작업이 있는 곳을 열어 비즈니스의 다음 단계를
+              만들어가세요.
+            </p>
+          </div>
+
           <p className="eyebrow">작가 등록</p>
-          <h1>한 번에 하나씩, 순서대로</h1>
+          <h1 className="register-hub-title">한 번에 하나씩, 순서대로</h1>
           <p className="auth-description">
-            Airbnb 호스트 등록처럼 단계를 따라가면 됩니다. 작가 승인 후 공간 →
-            전시·프로그램 순으로 열 수 있습니다. 공간·프로그램은 관리자 검수 뒤
-            공개됩니다.
+            단계를 따라가면 됩니다. 작가 승인 후 공간 → 전시·프로그램 순으로 열 수
+            있습니다. 공간·프로그램은 관리자 검수 뒤 공개됩니다.
           </p>
           <p className="field-hint">
             서비스를 먼저 이해하고 싶다면{" "}
-            <Link href="/for-artists">작가·공간 파트너 안내</Link>를 읽어 보세요.
+            <Link href="/for-artists">작가로 열기 안내</Link>를 읽어 보세요.
           </p>
 
           <ol className="register-progress">

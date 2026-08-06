@@ -567,7 +567,9 @@ export function CurationDetailClient({
                 );
               })
             ) : (
-              <div className="empty-state">조건에 맞는 전시가 없습니다.</div>
+              <div className="empty-state">
+                이 조건으로는 코스 안 전시가 없어요. 필터를 넓혀 다시 찾아보세요.
+              </div>
             )}
           </div>
         </div>

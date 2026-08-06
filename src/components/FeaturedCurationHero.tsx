@@ -83,9 +83,9 @@ export function FeaturedCurationHero({ curations }: FeaturedCurationHeroProps) {
     <section className="featured-curation-hero" aria-labelledby="featured-course-title">
       <div className="featured-curation-nav" aria-label="지역 코스 선택">
         <div className="featured-curation-nav-copy">
-          <p className="featured-curation-nav-kicker">Curated Routes</p>
+          <p className="featured-curation-nav-kicker">동네 코스</p>
           <p className="featured-curation-nav-lead">
-            <strong>자유 동선형 지역 코스</strong>를 골라 보세요
+            <strong>지금 걸어볼 동네</strong>를 골라 보세요
           </p>
         </div>
 
@@ -133,9 +133,9 @@ export function FeaturedCurationHero({ curations }: FeaturedCurationHeroProps) {
 
       <div className="featured-curation-plane" style={coverStyle}>
         <div className="featured-curation-copy">
-          <p className="featured-curation-brand">Exhibit</p>
+          <p className="featured-curation-brand">Sokkup</p>
           <p className="featured-curation-eyebrow">
-            {activeNeighborhood} · 오늘의 지역 코스
+            {activeNeighborhood} · 오늘의 동네 코스
           </p>
           <h1 id="featured-course-title">{curation.title}</h1>
           {curation.subtitle ? (
@@ -147,7 +147,7 @@ export function FeaturedCurationHero({ curations }: FeaturedCurationHeroProps) {
           ) : null}
           <div className="featured-curation-actions">
             <Link className="primary-button" href={`/curations/${curation.id}`}>
-              코스 보기
+              코스 걷기
             </Link>
             <span className="featured-curation-count">
               전시 {curation.exhibitions.length}곳
