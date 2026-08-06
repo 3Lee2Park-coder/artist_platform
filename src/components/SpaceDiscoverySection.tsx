@@ -12,6 +12,24 @@ type SpaceDiscoverySectionProps = {
 
 type SortMode = "nearby" | "program" | "default";
 
+/** 홈 발견 섹션에만 남길 DEMO 공간 (오픈 스튜디오 — 신당 공방 A) */
+const KEEP_DEMO_SPACE_IDS = new Set(["space-sindang-demo-a"]);
+
+function isDemoSpace(space: SpaceSummary) {
+  return (
+    space.name.includes("DEMO") ||
+    space.slug.includes("demo") ||
+    space.shortDescription?.includes("DEMO") === true
+  );
+}
+
+function filterDiscoverySpaces(spaces: SpaceSummary[]) {
+  return spaces.filter((space) => {
+    if (!isDemoSpace(space)) return true;
+    return KEEP_DEMO_SPACE_IDS.has(space.id);
+  });
+}
+
 const toneOrder: Record<string, number> = {
   ok: 0,
   caution: 1,
@@ -34,6 +52,7 @@ export function SpaceDiscoverySection({ spaces }: SpaceDiscoverySectionProps) {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoDenied, setGeoDenied] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("default");
+  const visibleSpaces = useMemo(() => filterDiscoverySpaces(spaces), [spaces]);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -54,12 +73,12 @@ export function SpaceDiscoverySection({ spaces }: SpaceDiscoverySectionProps) {
   }, []);
 
   const { sorted, districtLabel, nearbyCount } = useMemo(() => {
-    if (spaces.length === 0) {
+    if (visibleSpaces.length === 0) {
       return { sorted: [], districtLabel: "작가의 공간", nearbyCount: 0 };
     }
 
     if (sortMode === "nearby" && coords) {
-      const withDistance = spaces.map((space) => ({
+      const withDistance = visibleSpaces.map((space) => ({
         space,
         meters: distanceMeters(coords, { lat: space.lat, lng: space.lng })
       }));
@@ -89,18 +108,18 @@ export function SpaceDiscoverySection({ spaces }: SpaceDiscoverySectionProps) {
 
     if (sortMode === "program") {
       return {
-        sorted: sortByVisitAndProgram(spaces),
+        sorted: sortByVisitAndProgram(visibleSpaces),
         districtLabel: "프로그램이 열린 공간",
         nearbyCount: 0
       };
     }
 
     // 기본(추천 동네): 중구 공간 우선 → 없으면 신당(중구 하위) → 전체
-    const junggu = spaces.filter(
+    const junggu = visibleSpaces.filter(
       (space) =>
         space.district.includes("중구") || space.address?.includes("중구")
     );
-    const sindangFallback = spaces.filter((space) =>
+    const sindangFallback = visibleSpaces.filter((space) =>
       space.district.includes("신당")
     );
     const base =
@@ -108,7 +127,7 @@ export function SpaceDiscoverySection({ spaces }: SpaceDiscoverySectionProps) {
         ? junggu
         : sindangFallback.length >= 1
           ? sindangFallback
-          : spaces;
+          : visibleSpaces;
     return {
       sorted: sortByVisitAndProgram(base),
       districtLabel:
@@ -119,9 +138,9 @@ export function SpaceDiscoverySection({ spaces }: SpaceDiscoverySectionProps) {
             : "공방과 쇼룸 둘러보기",
       nearbyCount: 0
     };
-  }, [spaces, coords, sortMode]);
+  }, [visibleSpaces, coords, sortMode]);
 
-  if (spaces.length === 0) {
+  if (visibleSpaces.length === 0) {
     return null;
   }
 

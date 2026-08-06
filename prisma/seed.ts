@@ -297,33 +297,7 @@ const exhibitions = [
   }
 ];
 
-// 신당창작아케이드 검증용 DEMO 데이터 — 실제 작가/공방 정보가 아니며, 실측 후 교체해야 한다
-const demoSindangExhibition = {
-  id: "sindang-demo-hands",
-  title: "머무는 손 (DEMO)",
-  artist: "데모 작가",
-  district: "신당",
-  venue: "신당 공방 A (DEMO)",
-  address: "서울 중구 퇴계로 431 일대 (DEMO 위치)",
-  lat: 37.5659,
-  lng: 127.0182,
-  startDate: "2026-07-15",
-  endDate: "2026-08-31",
-  categories: JSON.stringify(["복합"]),
-  exhibitionType: "개인 대관형 전시",
-  source: "ARTIST",
-  curationAvailable: true,
-  reservable: false,
-  todayOpen: true,
-  heroTone: "linear-gradient(135deg, #f3ece2 0%, #c9a988 52%, #6b503c 100%)",
-  summary:
-    "(DEMO) 공방에서 만들어지는 공예 오브제의 과정을 소개하는 작은 전시입니다. 실제 전시 데이터로 교체가 필요합니다.",
-  description:
-    "(DEMO 데이터) 신당창작아케이드 공방에서 진행되는 상시 전시 예시입니다.\n\n실제 작가 동의와 정보 확인 후 이 데이터를 교체해주세요.",
-  descriptionImages: JSON.stringify([]),
-  reservationSlots: JSON.stringify([])
-};
-
+// Soft-launch용 DEMO는 공방 A + 오픈 스튜디오 프로그램만 유지한다.
 const demoSpaces = [
   {
     id: "space-sindang-demo-a",
@@ -331,7 +305,7 @@ const demoSpaces = [
     name: "신당 공방 A (DEMO)",
     type: "STUDIO",
     region: "서울",
-    district: "신당",
+    district: "중구",
     address: "서울 중구 퇴계로 431 일대 (DEMO 위치)",
     lat: 37.5659,
     lng: 127.0182,
@@ -351,46 +325,6 @@ const demoSpaces = [
       sun: "11:00-18:00"
     }),
     sortOrder: 0
-  },
-  {
-    id: "space-sindang-demo-b",
-    slug: "sindang-demo-showroom-b",
-    name: "신당 쇼룸 B (DEMO)",
-    type: "SHOWROOM",
-    region: "서울",
-    district: "신당",
-    address: "서울 중구 퇴계로 431 일대 (DEMO 위치)",
-    lat: 37.5657,
-    lng: 127.0176,
-    floorOrUnit: "지하 1층 (DEMO)",
-    shortDescription: "(DEMO) 금속과 돌을 다루는 장신구 쇼룸",
-    description:
-      "(DEMO 데이터) 예약자 우선으로 운영되는 쇼룸 예시입니다. 실제 정보로 교체해주세요.",
-    heroTone: "linear-gradient(135deg, #e8e6ef 0%, #9a94b8 55%, #423d5c 100%)",
-    visitPolicy: "APPOINTMENT",
-    visitNotice: "(DEMO) 방문 전 인스타그램 DM으로 연락을 권장합니다.",
-    openingHours: JSON.stringify({}),
-    sortOrder: 1
-  },
-  {
-    id: "space-sindang-demo-c",
-    slug: "sindang-demo-residency-c",
-    name: "신당 레지던시 C (DEMO)",
-    type: "RESIDENCY",
-    region: "서울",
-    district: "신당",
-    address: "서울 중구 퇴계로 431 일대 (DEMO 위치)",
-    lat: 37.5655,
-    lng: 127.0189,
-    floorOrUnit: "지하 1층 (DEMO)",
-    shortDescription: "(DEMO) 도자 작업 과정을 프로그램으로만 공개하는 공방",
-    description:
-      "(DEMO 데이터) 프로그램 시간에만 방문할 수 있는 공방 예시입니다. 실제 정보로 교체해주세요.",
-    heroTone: "linear-gradient(135deg, #e2ede8 0%, #8fb8a5 55%, #3d5c4e 100%)",
-    visitPolicy: "PROGRAM_ONLY",
-    visitNotice: "(DEMO) 오픈 스튜디오 예약자만 입장할 수 있습니다.",
-    openingHours: JSON.stringify({}),
-    sortOrder: 2
   }
 ];
 
@@ -754,32 +688,16 @@ async function main() {
     });
   }
 
-  // 신당 DEMO 공간 (공방/쇼룸/레지던시)
-  for (const [index, space] of demoSpaces.entries()) {
-    const ownerUserId = index === 0 ? artistUser.id : null;
+  // DEMO 공간 — 공방 A만 유지
+  for (const space of demoSpaces) {
     await prisma.space.upsert({
       where: { id: space.id },
-      update: { ...space, ownerUserId },
-      create: { ...space, ownerUserId }
+      update: { ...space, ownerUserId: artistUser.id },
+      create: { ...space, ownerUserId: artistUser.id }
     });
   }
 
-  // 신당 DEMO 전시 — 공방 A에서 열리는 상시 전시 예시
-  await prisma.exhibition.upsert({
-    where: { id: demoSindangExhibition.id },
-    update: {
-      ...demoSindangExhibition,
-      registeredById: artistUser.id,
-      spaceId: "space-sindang-demo-a"
-    },
-    create: {
-      ...demoSindangExhibition,
-      registeredById: artistUser.id,
-      spaceId: "space-sindang-demo-a"
-    }
-  });
-
-  // 신당 DEMO 프로그램 (오픈 스튜디오)
+  // DEMO 프로그램 (오픈 스튜디오 — 공방 A)
   await prisma.program.upsert({
     where: { id: demoProgram.id },
     update: { ...demoProgram, hostUserId: artistUser.id },
@@ -824,19 +742,19 @@ async function main() {
   await prisma.curationExhibition.deleteMany();
   await prisma.curation.deleteMany();
 
-  // 신당창작아케이드 첫 큐레이션 (DEMO) — 공간 + 전시 + 주변 장소를 하나의 동선으로
+  // 중구(신당) DEMO 큐레이션 — 공방 A + 주변 장소만
   const sindangCuration = await prisma.curation.create({
     data: {
-      title: "신당창작아케이드를 처음 만나는 90분 (DEMO)",
-      subtitle: "신당 · 공방 2곳 + 쇼룸 1곳 · 걸어서 이어지는 동선",
+      title: "신당창작아케이드를 처음 만나는 코스 (DEMO)",
+      subtitle: "중구 · 공방 A + 주변 카페 · 걸어서 이어지는 동선",
       description:
-        "(DEMO 데이터) 신당역 지하에 이어진 공방들을 처음 방문하는 사람을 위한 코스 예시입니다.\n실제 답사와 작가 동의 후 내용을 교체해주세요.",
+        "(DEMO 데이터) 중구 신당 일대 공방을 처음 방문하는 사람을 위한 코스 예시입니다.\n실제 답사와 작가 동의 후 내용을 교체해주세요.",
       coverTone: "linear-gradient(135deg, #f3ece2 0%, #c9a988 45%, #4a3b2e 100%)",
       sortOrder: 0,
-      neighborhood: "신당",
+      neighborhood: "중구",
       situationTags: JSON.stringify(["주말", "천천히", "공예"]),
       radiusMeters: 500,
-      durationText: "약 90분",
+      durationText: "약 60분",
       createdById: adminUser.id
     }
   });
@@ -855,24 +773,6 @@ async function main() {
       {
         curationId: sindangCuration.id,
         sortOrder: 1,
-        stopType: "EXHIBITION",
-        exhibitionId: "sindang-demo-hands",
-        editorialBadge: "공방 안 전시",
-        distanceText: "같은 공간",
-        note: "(DEMO) 공방 A에서 이어지는 작은 전시입니다."
-      },
-      {
-        curationId: sindangCuration.id,
-        sortOrder: 2,
-        stopType: "SPACE",
-        spaceId: "space-sindang-demo-b",
-        editorialBadge: "예약자 우선",
-        distanceText: "도보 2분",
-        note: "(DEMO) 장신구 쇼룸 — 방문 전 연락을 권장합니다."
-      },
-      {
-        curationId: sindangCuration.id,
-        sortOrder: 3,
         stopType: "PLACE",
         placeId: "place-sindang-demo-cafe",
         editorialBadge: "쉬어가기",
@@ -880,17 +780,6 @@ async function main() {
         note: "(DEMO) 관람 후 이야기 나누기 좋은 자리입니다."
       }
     ]
-  });
-
-  // 하위 호환 — 전시형 stop은 CurationExhibition에도 반영
-  await prisma.curationExhibition.create({
-    data: {
-      curationId: sindangCuration.id,
-      exhibitionId: "sindang-demo-hands",
-      sortOrder: 0,
-      editorialBadge: "공방 안 전시",
-      distanceText: "같은 공간"
-    }
   });
 
   for (const [index, curation] of curations.entries()) {
