@@ -288,7 +288,7 @@ export function AdminDashboard({
 
   async function handleMemberAction(
     id: string,
-    action: "verify" | "resend" | "delete"
+    action: "verify" | "resend" | "delete" | "approveArtist"
   ) {
     setMemberBusyId(id);
     setMessage("");
@@ -319,7 +319,11 @@ export function AdminDashboard({
         ? "이메일 인증을 완료 처리했습니다."
         : action === "resend"
           ? "인증 메일을 다시 보냈습니다."
-          : "미인증 계정을 삭제했습니다. 이제 같은 이메일로 다시 가입할 수 있습니다."
+          : action === "approveArtist"
+            ? data.already
+              ? "이미 작가로 승인된 회원입니다."
+              : "작가로 승인했습니다. 작가님이 다시 로그인하면 등록 메뉴를 쓸 수 있습니다."
+            : "미인증 계정을 삭제했습니다. 이제 같은 이메일로 다시 가입할 수 있습니다."
     );
     router.refresh();
   }
@@ -1589,10 +1593,10 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
         <section className="register-card wide my-section">
           <h2>회원 관리</h2>
           <p className="auth-description">
-            가입·이메일 인증 상태를 확인합니다. 미인증 계정은 인증 메일 재발송, 강제
-            인증, 삭제(빈 계정만)가 가능합니다. 인증이 끝난 계정은 가입 화면에서
-            “이미 가입된 이메일”로 막히며, 미인증 계정은 같은 이메일로 다시 가입하면
-            정보가 갱신되고 인증 메일이 다시 갑니다.
+            가입·이메일 인증·작가 승인을 한곳에서 처리합니다. 미인증 계정은 인증 메일
+            재발송·강제 인증·삭제(빈 계정만)가 가능합니다. 이메일 인증이 끝난 회원은
+            작가 신청 없이 「작가 승인」으로 바로 작가 권한을 줄 수 있습니다. 승인 후
+            작가님은 다시 로그인하면 공간·전시 등록을 쓸 수 있습니다.
           </p>
           <div className="hub-actions" style={{ marginBottom: 16 }}>
             <button
@@ -1617,6 +1621,11 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
               {visibleMembers.map((member) => {
                 const verified = Boolean(member.emailVerifiedAt);
                 const busy = memberBusyId === member.id;
+                const isArtistApproved = member.artistStatus === "APPROVED";
+                const canApproveArtist =
+                  verified &&
+                  member.role !== "ADMIN" &&
+                  !isArtistApproved;
                 const canDelete =
                   !verified &&
                   member.role !== "ADMIN" &&
@@ -1679,7 +1688,31 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                           ) : null}
                         </>
                       ) : (
-                        <span className="field-hint">인증 완료</span>
+                        <>
+                          {isArtistApproved ? (
+                            <span className="field-hint">이메일·작가 승인 완료</span>
+                          ) : (
+                            <span className="field-hint">이메일 인증 완료</span>
+                          )}
+                          {canApproveArtist ? (
+                            <button
+                              type="button"
+                              className="primary-button"
+                              disabled={busy}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `${member.name} (${member.email}) 님을 작가로 바로 승인할까요까요?\n작가 신청 절차 없이 공간·전시 등록 권한이 열립니다.`
+                                  )
+                                ) {
+                                  handleMemberAction(member.id, "approveArtist");
+                                }
+                              }}
+                            >
+                              {busy ? "처리 중…" : "작가 승인"}
+                            </button>
+                          ) : null}
+                        </>
                       )}
                     </div>
                   </article>

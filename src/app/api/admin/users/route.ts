@@ -61,7 +61,7 @@ export async function GET() {
 
 const patchSchema = z.object({
   id: z.string().min(1),
-  action: z.enum(["verify", "resend"])
+  action: z.enum(["verify", "resend", "approveArtist"])
 });
 
 export async function PATCH(request: Request) {
@@ -91,6 +91,54 @@ export async function PATCH(request: Request) {
       }
     });
     return NextResponse.json({ ok: true, action: "verify" });
+  }
+
+  if (action === "approveArtist") {
+    if (user.role === "ADMIN") {
+      return NextResponse.json(
+        { error: "관리자 계정에는 작가 승인을 적용하지 않습니다." },
+        { status: 400 }
+      );
+    }
+
+    if (!user.emailVerifiedAt) {
+      return NextResponse.json(
+        { error: "이메일 인증이 끝난 회원만 작가로 승인할 수 있습니다." },
+        { status: 400 }
+      );
+    }
+
+    if (user.artistStatus === "APPROVED" && user.role === "ARTIST") {
+      return NextResponse.json({ ok: true, action: "approveArtist", already: true });
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id },
+        data: { artistStatus: "APPROVED", role: "ARTIST" }
+      }),
+      prisma.artistApplication.updateMany({
+        where: { userId: id },
+        data: { status: "APPROVED" }
+      })
+    ]);
+
+    const existingApplication = await prisma.artistApplication.findUnique({
+      where: { userId: id },
+      select: { id: true }
+    });
+
+    if (!existingApplication) {
+      await prisma.artistApplication.create({
+        data: {
+          userId: id,
+          bio: "관리자가 직접 승인한 작가입니다.",
+          status: "APPROVED"
+        }
+      });
+    }
+
+    return NextResponse.json({ ok: true, action: "approveArtist" });
   }
 
   if (user.emailVerifiedAt) {
