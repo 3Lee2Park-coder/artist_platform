@@ -33,7 +33,11 @@ export default function SignupPage() {
       return;
     }
 
-    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+    const verifyQuery = new URLSearchParams({ email });
+    if (data.emailSent === false) {
+      verifyQuery.set("emailFailed", "1");
+    }
+    router.push(`/auth/verify-email?${verifyQuery.toString()}`);
   }
 
   return (
@@ -43,7 +47,7 @@ export default function SignupPage() {
         <h1>가입하고 동네 전시를 열어 보세요</h1>
         <p className="auth-description">
           이메일 인증만 마치면 저장·예약·방문 기록을 쓸 수 있습니다. 작가라면 승인 후
-          공간과 전시를 직접 열 수 있어요. (휴대폰 SMS·소셜 로그인은 이후 예정)
+          공간과 전시를 직접 열 수 있어요.
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>

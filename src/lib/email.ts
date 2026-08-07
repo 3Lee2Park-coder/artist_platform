@@ -8,7 +8,11 @@ type SendEmailInput = {
 };
 
 function getFromAddress() {
-  return process.env.EMAIL_FROM?.trim() || "Exhibit <onboarding@resend.dev>";
+  return process.env.EMAIL_FROM?.trim() || "Sokkup <onboarding@resend.dev>";
+}
+
+function isTestFromAddress(from: string) {
+  return /@resend\.dev>/i.test(from) || /@resend\.dev$/i.test(from);
 }
 
 function getAppBaseUrl() {
@@ -39,9 +43,16 @@ export async function sendEmail({ to, subject, html, text }: SendEmailInput) {
     return { ok: false as const, skipped: true as const };
   }
 
+  const from = getFromAddress();
+  if (isTestFromAddress(from)) {
+    console.warn(
+      "[email] EMAIL_FROM still uses resend.dev — only the Resend account email can receive mail. Set EMAIL_FROM to a verified domain (e.g. Sokkup <noreply@sokkup.kr>)."
+    );
+  }
+
   const resend = new Resend(apiKey);
   const result = await resend.emails.send({
-    from: getFromAddress(),
+    from,
     to,
     subject,
     html,
@@ -58,16 +69,16 @@ export async function sendEmail({ to, subject, html, text }: SendEmailInput) {
 
 export function buildVerificationEmail(name: string, verifyUrl: string) {
   return {
-    subject: "[Exhibit] 이메일 인증을 완료해 주세요",
+    subject: "[Sokkup] 이메일 인증을 완료해 주세요",
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
-        <p>${name}님, Exhibit 가입을 환영합니다.</p>
+        <p>${name}님, Sokkup 가입을 환영합니다.</p>
         <p>아래 버튼을 눌러 이메일 인증을 완료해 주세요. 링크는 24시간 동안 유효합니다.</p>
         <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 18px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">이메일 인증하기</a></p>
         <p style="font-size:13px;color:#666;">버튼이 동작하지 않으면 아래 주소를 복사해 브라우저에 붙여넣으세요.<br/>${verifyUrl}</p>
       </div>
     `,
-    text: `${name}님, Exhibit 이메일 인증 링크: ${verifyUrl}`
+    text: `${name}님, Sokkup 이메일 인증 링크: ${verifyUrl}`
   };
 }
 
@@ -82,7 +93,7 @@ export function buildReservationConfirmEmail(input: {
 }) {
   const kindLabel = input.kindLabel ?? "전시";
   return {
-    subject: `[Exhibit] ${input.exhibitionTitle} 예약이 확정되었습니다`,
+    subject: `[Sokkup] ${input.exhibitionTitle} 예약이 확정되었습니다`,
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
         <p>${input.name}님, 예약이 확정되었습니다.</p>
@@ -110,7 +121,7 @@ export function buildArtistReservationNoticeEmail(input: {
   kindLabel: string;
 }) {
   return {
-    subject: `[Exhibit] ${input.title}에 새 예약이 있습니다`,
+    subject: `[Sokkup] ${input.title}에 새 예약이 있습니다`,
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
         <p>${input.artistName}님, ${input.kindLabel}에 새 예약이 들어왔습니다.</p>
@@ -135,7 +146,7 @@ export function buildEndingSoonEmail(input: {
   detailUrl: string;
 }) {
   return {
-    subject: `[Exhibit] 저장하신 전시가 D-${input.daysLeft}입니다`,
+    subject: `[Sokkup] 저장하신 전시가 D-${input.daysLeft}입니다`,
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
         <p>${input.name}님, 저장해 두신 전시 <strong>${input.exhibitionTitle}</strong>의 종료일이 ${input.endDate}입니다.</p>

@@ -9,10 +9,18 @@ function VerifyEmailContent() {
   const router = useRouter();
   const token = searchParams.get("token");
   const email = searchParams.get("email");
+  const emailFailed = searchParams.get("emailFailed") === "1";
   const [status, setStatus] = useState<"waiting" | "verifying" | "success" | "error">(
     token ? "verifying" : "waiting"
   );
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+    emailFailed
+      ? "가입은 완료됐지만 인증 메일 발송에 실패했습니다. 아래 버튼으로 다시 보내 주세요."
+      : ""
+  );
+  const [messageTone, setMessageTone] = useState<"success" | "error" | "">(
+    emailFailed ? "error" : ""
+  );
   const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
@@ -30,11 +38,13 @@ function VerifyEmailContent() {
 
       if (!response.ok) {
         setStatus("error");
+        setMessageTone("error");
         setMessage(data.error ?? "인증에 실패했습니다.");
         return;
       }
 
       setStatus("success");
+      setMessageTone("success");
       setMessage(
         "인증이 완료되었습니다. 이제 저장·예약·방문을 시작할 수 있어요. 로그인으로 이동합니다."
       );
@@ -50,13 +60,27 @@ function VerifyEmailContent() {
     }
 
     setResendLoading(true);
-    await fetch("/api/auth/resend-verification", {
+    setMessage("");
+    setMessageTone("");
+    const response = await fetch("/api/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
     });
+    const data = await response.json().catch(() => ({}));
     setResendLoading(false);
-    setMessage("인증 메일을 다시 보냈습니다. 메일함을 확인해 주세요.");
+
+    if (!response.ok) {
+      setMessageTone("error");
+      setMessage(
+        data.error ??
+          "인증 메일 발송에 실패했습니다. 스팸함을 확인하거나 잠시 후 다시 시도해 주세요."
+      );
+      return;
+    }
+
+    setMessageTone("success");
+    setMessage("인증 메일을 다시 보냈습니다. 메일함·스팸함을 확인해 주세요.");
   }
 
   return (
@@ -72,11 +96,16 @@ function VerifyEmailContent() {
         ) : (
           <>
             <p className="auth-description">
-              {email ? `${email} ` : ""}로 인증 메일을 보냈습니다. 메일함의 링크를 누르면
-              가입이 끝나요. 그다음 동네 전시를 저장·예약할 수 있습니다.
+              {emailFailed
+                ? "인증 메일을 받지 못하셨다면 아래 버튼으로 다시 받아 주세요."
+                : `${email ? `${email} ` : ""}로 인증 메일을 보냈습니다. 메일함의 링크를 누르면 가입이 끝나요. 그다음 동네 전시를 저장·예약할 수 있습니다.`}
             </p>
-            {message ? <p className="form-success">{message}</p> : null}
-            {status === "error" ? <p className="form-error">{message}</p> : null}
+            {message && messageTone === "success" ? (
+              <p className="form-success">{message}</p>
+            ) : null}
+            {message && messageTone === "error" ? (
+              <p className="form-error">{message}</p>
+            ) : null}
             <button
               type="button"
               className="secondary-button full-width"

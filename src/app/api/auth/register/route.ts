@@ -56,10 +56,12 @@ export async function POST(request: Request) {
       }
     });
 
-    await issueEmailVerification(user.id);
+    const emailResult = await issueEmailVerification(user.id);
 
     return NextResponse.json({
       requiresVerification: true,
+      emailSent: emailResult.sent,
+      emailError: emailResult.sent ? undefined : emailResult.error,
       user: {
         id: user.id,
         email: user.email,

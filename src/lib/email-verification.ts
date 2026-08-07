@@ -42,7 +42,25 @@ export async function issueEmailVerification(userId: string) {
     text: template.text
   });
 
-  return { sent: result.ok, skipped: !result.ok && "skipped" in result };
+  if (result.ok) {
+    return { sent: true as const };
+  }
+
+  if ("skipped" in result && result.skipped) {
+    return {
+      sent: false as const,
+      skipped: true as const,
+      error: "메일 발송 설정(RESEND_API_KEY)이 없습니다."
+    };
+  }
+
+  return {
+    sent: false as const,
+    error:
+      "error" in result && result.error
+        ? result.error
+        : "인증 메일 발송에 실패했습니다."
+  };
 }
 
 export async function verifyEmailToken(token: string) {

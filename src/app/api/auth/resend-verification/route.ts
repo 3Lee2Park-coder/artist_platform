@@ -28,9 +28,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, alreadyVerified: true });
     }
 
-    await issueEmailVerification(user.id);
+    const emailResult = await issueEmailVerification(user.id);
 
-    return NextResponse.json({ ok: true });
+    if (!emailResult.sent) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            emailResult.error ??
+            "인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요."
+        },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, emailSent: true });
   } catch {
     return NextResponse.json(
       { error: "인증 메일 재전송 중 오류가 발생했습니다." },
