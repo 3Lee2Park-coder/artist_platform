@@ -37,22 +37,50 @@ export async function POST(request: Request) {
 
     const { email, password, name, birthDate, phone } = parsed.data;
     const existing = await prisma.user.findUnique({ where: { email } });
+    const passwordHash = await hashPassword(password);
+    const phoneValue = phone?.replace(/-/g, "") || null;
 
+    // 미인증 계정은 "이미 가입"으로 막지 않고, 정보 갱신 후 인증 메일을 다시 보냅니다.
     if (existing) {
-      return NextResponse.json(
-        { error: "이미 가입된 이메일입니다." },
-        { status: 409 }
-      );
+      if (existing.emailVerifiedAt || existing.role === "ADMIN") {
+        return NextResponse.json(
+          { error: "이미 가입된 이메일입니다." },
+          { status: 409 }
+        );
+      }
+
+      const user = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          passwordHash,
+          name,
+          birthDate,
+          phone: phoneValue
+        }
+      });
+
+      const emailResult = await issueEmailVerification(user.id);
+
+      return NextResponse.json({
+        requiresVerification: true,
+        restarted: true,
+        emailSent: emailResult.sent,
+        emailError: emailResult.sent ? undefined : emailResult.error,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
+      });
     }
 
-    const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
         name,
         birthDate,
-        phone: phone?.replace(/-/g, "") || null
+        phone: phoneValue
       }
     });
 

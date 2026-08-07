@@ -167,6 +167,21 @@ type OwnershipProgramRow = {
   hostEmail: string | null;
 };
 
+type MemberRow = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  artistStatus: string;
+  emailVerifiedAt: string | null;
+  createdAt: string;
+  phone: string | null;
+  exhibitionCount: number;
+  spaceCount: number;
+  programCount: number;
+  reservationCount: number;
+};
+
 type AdminDashboardProps = {
   applications: Application[];
   curations: CurationRow[];
@@ -181,6 +196,7 @@ type AdminDashboardProps = {
   ownershipSpaces: OwnershipSpaceRow[];
   ownershipExhibitions: OwnershipExhibitionRow[];
   ownershipPrograms: OwnershipProgramRow[];
+  members: MemberRow[];
 };
 
 const SITUATION_OPTIONS = [
@@ -211,7 +227,8 @@ export function AdminDashboard({
   reviewPrograms,
   ownershipSpaces,
   ownershipExhibitions,
-  ownershipPrograms
+  ownershipPrograms,
+  members
 }: AdminDashboardProps) {
   const router = useRouter();
   const [tab, setTab] = useState<
@@ -220,6 +237,7 @@ export function AdminDashboard({
     | "applications"
     | "review"
     | "ownership"
+    | "members"
     | "events"
   >("curations");
   const [message, setMessage] = useState("");
@@ -227,6 +245,8 @@ export function AdminDashboard({
     {}
   );
   const [transferringKey, setTransferringKey] = useState<string | null>(null);
+  const [memberBusyId, setMemberBusyId] = useState<string | null>(null);
+  const [memberFilter, setMemberFilter] = useState<"all" | "unverified">("all");
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -258,6 +278,51 @@ export function AdminDashboard({
     notes: ""
   });
   const [creatingPlace, setCreatingPlace] = useState(false);
+
+  const visibleMembers = useMemo(() => {
+    if (memberFilter === "unverified") {
+      return members.filter((member) => !member.emailVerifiedAt);
+    }
+    return members;
+  }, [members, memberFilter]);
+
+  async function handleMemberAction(
+    id: string,
+    action: "verify" | "resend" | "delete"
+  ) {
+    setMemberBusyId(id);
+    setMessage("");
+
+    const response =
+      action === "delete"
+        ? await fetch("/api/admin/users", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+          })
+        : await fetch("/api/admin/users", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, action })
+          });
+
+    const data = await response.json().catch(() => ({}));
+    setMemberBusyId(null);
+
+    if (!response.ok) {
+      setMessage(data.error ?? "회원 처리에 실패했습니다.");
+      return;
+    }
+
+    setMessage(
+      action === "verify"
+        ? "이메일 인증을 완료 처리했습니다."
+        : action === "resend"
+          ? "인증 메일을 다시 보냈습니다."
+          : "미인증 계정을 삭제했습니다. 이제 같은 이메일로 다시 가입할 수 있습니다."
+    );
+    router.refresh();
+  }
 
   const basePlace = places.find((place) => place.id === basePlaceId) ?? null;
 
@@ -744,6 +809,13 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
           </button>
           <button
             type="button"
+            className={tab === "members" ? "my-tab active" : "my-tab"}
+            onClick={() => setTab("members")}
+          >
+            회원 ({members.length})
+          </button>
+          <button
+            type="button"
             className={tab === "events" ? "my-tab active" : "my-tab"}
             onClick={() => setTab("events")}
           >
@@ -751,7 +823,11 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
           </button>
         </div>
 
-        {message ? <p className="form-success">{message}</p> : null}
+        {message ? (
+          <p className={message.includes("실패") ? "form-error" : "form-success"}>
+            {message}
+          </p>
+        ) : null}
       </section>
 
       {tab === "curations" && (
@@ -1507,6 +1583,113 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
             )}
           </section>
         </>
+      )}
+
+      {tab === "members" && (
+        <section className="register-card wide my-section">
+          <h2>회원 관리</h2>
+          <p className="auth-description">
+            가입·이메일 인증 상태를 확인합니다. 미인증 계정은 인증 메일 재발송, 강제
+            인증, 삭제(빈 계정만)가 가능합니다. 인증이 끝난 계정은 가입 화면에서
+            “이미 가입된 이메일”로 막히며, 미인증 계정은 같은 이메일로 다시 가입하면
+            정보가 갱신되고 인증 메일이 다시 갑니다.
+          </p>
+          <div className="hub-actions" style={{ marginBottom: 16 }}>
+            <button
+              type="button"
+              className={memberFilter === "all" ? "primary-button" : "secondary-button"}
+              onClick={() => setMemberFilter("all")}
+            >
+              전체
+            </button>
+            <button
+              type="button"
+              className={
+                memberFilter === "unverified" ? "primary-button" : "secondary-button"
+              }
+              onClick={() => setMemberFilter("unverified")}
+            >
+              미인증만 ({members.filter((member) => !member.emailVerifiedAt).length})
+            </button>
+          </div>
+          {visibleMembers.length > 0 ? (
+            <div className="my-list">
+              {visibleMembers.map((member) => {
+                const verified = Boolean(member.emailVerifiedAt);
+                const busy = memberBusyId === member.id;
+                const canDelete =
+                  !verified &&
+                  member.role !== "ADMIN" &&
+                  member.exhibitionCount +
+                    member.spaceCount +
+                    member.programCount +
+                    member.reservationCount ===
+                    0;
+                return (
+                  <article key={member.id} className="my-list-card ownership-card">
+                    <div>
+                      <h3>{member.name}</h3>
+                      <p>{member.email}</p>
+                      <p className="field-hint">
+                        {member.role} · 작가 {member.artistStatus} ·{" "}
+                        {verified ? "이메일 인증됨" : "미인증"} · 가입{" "}
+                        {new Date(member.createdAt).toLocaleDateString("ko-KR")}
+                      </p>
+                      <p className="field-hint">
+                        전시 {member.exhibitionCount} · 공간 {member.spaceCount} ·
+                        프로그램 {member.programCount} · 예약 {member.reservationCount}
+                      </p>
+                    </div>
+                    <div className="hub-actions">
+                      {!verified ? (
+                        <>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            disabled={busy}
+                            onClick={() => handleMemberAction(member.id, "resend")}
+                          >
+                            {busy ? "처리 중…" : "인증 메일"}
+                          </button>
+                          <button
+                            type="button"
+                            className="primary-button"
+                            disabled={busy}
+                            onClick={() => handleMemberAction(member.id, "verify")}
+                          >
+                            {busy ? "처리 중…" : "강제 인증"}
+                          </button>
+                          {canDelete ? (
+                            <button
+                              type="button"
+                              className="secondary-button warn-button"
+                              disabled={busy}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `${member.email} 미인증 계정을 삭제할까요? 삭제 후 같은 이메일로 다시 가입할 수 있습니다.`
+                                  )
+                                ) {
+                                  handleMemberAction(member.id, "delete");
+                                }
+                              }}
+                            >
+                              삭제
+                            </button>
+                          ) : null}
+                        </>
+                      ) : (
+                        <span className="field-hint">인증 완료</span>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state">표시할 회원이 없습니다.</div>
+          )}
+        </section>
       )}
 
       {tab === "applications" && (

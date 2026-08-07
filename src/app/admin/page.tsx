@@ -28,6 +28,29 @@ export default async function AdminPage() {
     orderBy: { createdAt: "desc" }
   });
 
+  const members = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 300,
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      artistStatus: true,
+      emailVerifiedAt: true,
+      createdAt: true,
+      phone: true,
+      _count: {
+        select: {
+          exhibitions: true,
+          ownedSpaces: true,
+          hostedPrograms: true,
+          reservations: true
+        }
+      }
+    }
+  });
+
   const curations = await prisma.curation.findMany({
     orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
     include: {
@@ -341,6 +364,20 @@ export default async function AdminPage() {
           spaceName: program.space.name,
           hostName: program.host?.name ?? null,
           hostEmail: program.host?.email ?? null
+        }))}
+        members={members.map((user) => ({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          artistStatus: user.artistStatus,
+          emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
+          createdAt: user.createdAt.toISOString(),
+          phone: user.phone,
+          exhibitionCount: user._count.exhibitions,
+          spaceCount: user._count.ownedSpaces,
+          programCount: user._count.hostedPrograms,
+          reservationCount: user._count.reservations
         }))}
       />
       <Footer />
