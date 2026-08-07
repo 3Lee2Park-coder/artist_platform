@@ -2535,6 +2535,18 @@
     color: var(--muted);
   }
 
+  .auth-field-hint {
+    margin-top: -4px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+
+  .auth-field-hint.error {
+    color: #b42318;
+  }
+
   .field-hint {
     margin: -8px 0 0;
     color: var(--secondary);

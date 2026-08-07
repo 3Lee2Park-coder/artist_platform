@@ -9,15 +9,25 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const passwordMismatch =
+    passwordConfirm.length > 0 && password !== passwordConfirm;
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setError("");
+
+    if (password !== passwordConfirm) {
+      setError("비밀번호가 서로 다릅니다.");
+      return;
+    }
+
+    setLoading(true);
 
     const response = await fetch("/api/auth/register", {
       method: "POST",
@@ -98,12 +108,33 @@ export default function SignupPage() {
               placeholder="8자 이상"
               minLength={8}
               required
+              autoComplete="new-password"
             />
+          </label>
+          <label>
+            비밀번호 확인
+            <input
+              type="password"
+              value={passwordConfirm}
+              onChange={(event) => setPasswordConfirm(event.target.value)}
+              placeholder="비밀번호를 한 번 더 입력"
+              minLength={8}
+              required
+              autoComplete="new-password"
+              aria-invalid={passwordMismatch}
+            />
+            {passwordMismatch ? (
+              <span className="auth-field-hint error">비밀번호가 서로 다릅니다.</span>
+            ) : null}
           </label>
 
           {error ? <p className="form-error">{error}</p> : null}
 
-          <button type="submit" className="primary-button full-width" disabled={loading}>
+          <button
+            type="submit"
+            className="primary-button full-width"
+            disabled={loading || passwordMismatch}
+          >
             {loading ? "가입하는 중…" : "가입하고 시작하기"}
           </button>
         </form>
