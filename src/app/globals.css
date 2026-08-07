@@ -1535,9 +1535,30 @@
   }
   
   .detail-hero-image {
-    min-height: 620px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 360px;
     border-radius: 34px;
+    overflow: hidden;
+    background: #ece8e1;
     box-shadow: var(--shadow);
+  }
+
+  .detail-hero-photo {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(78vh, 820px);
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .detail-hero-fallback {
+    width: 100%;
+    min-height: 420px;
+    align-self: stretch;
   }
   
   .reservation-widget {
@@ -1824,7 +1845,15 @@
     }
   
     .detail-hero-image {
-      min-height: 460px;
+      min-height: 280px;
+    }
+
+    .detail-hero-photo {
+      max-height: min(70vh, 640px);
+    }
+
+    .detail-hero-fallback {
+      min-height: 320px;
     }
   
     .detail-info-grid {
@@ -2197,8 +2226,16 @@
     }
 
     .detail-hero-image {
-      min-height: 220px;
+      min-height: 200px;
       border-radius: 16px;
+    }
+
+    .detail-hero-photo {
+      max-height: min(62vh, 480px);
+    }
+
+    .detail-hero-fallback {
+      min-height: 220px;
     }
 
     .detail-hero #reservation,
@@ -3714,14 +3751,11 @@
   }
 
   /* ── 상세: 소개 이미지 & 스티키 바 ──────────────────── */
-  .detail-hero-image {
-    position: relative;
-  }
-
   .detail-hero-image .source-badge {
     position: absolute;
     top: 16px;
     left: 16px;
+    z-index: 1;
   }
 
   .detail-description-gallery {

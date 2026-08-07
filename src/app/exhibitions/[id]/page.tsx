@@ -114,20 +114,23 @@ export default async function ExhibitionDetailPage({
         ) : null}
 
         <section className="detail-hero">
-          <div
-            className="detail-hero-image"
-            style={
-              exhibition.heroImageUrl
-                ? {
-                    backgroundImage: `url(${exhibition.heroImageUrl})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center"
-                  }
-                : { background: exhibition.heroTone }
-            }
-            aria-label={`${exhibition.title} 대표 이미지`}
-          >
+          <div className="detail-hero-image">
             <span className={`source-badge ${badge.tone}`}>{badge.label}</span>
+            {exhibition.heroImageUrl ? (
+              <img
+                className="detail-hero-photo"
+                src={exhibition.heroImageUrl}
+                alt={`${exhibition.title} 대표 이미지`}
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <div
+                className="detail-hero-fallback"
+                style={{ background: exhibition.heroTone }}
+                aria-label={`${exhibition.title} 대표 이미지`}
+              />
+            )}
           </div>
 
           <div id="reservation">
