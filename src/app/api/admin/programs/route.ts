@@ -32,8 +32,8 @@ const createSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "slug는 소문자·숫자·하이픈만 사용할 수 있습니다."),
   title: z.string().min(2),
   type: z.enum(PROGRAM_TYPES).default("OPEN_STUDIO"),
-  spaceId: z.string().min(1),
-  exhibitionId: z.string().optional().nullable(),
+  spaceId: z.string().min(1).optional().nullable(),
+  exhibitionId: z.string().min(1).optional().nullable(),
   hostEmail: z.string().email().optional().nullable(),
   summary: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { hostEmail, schedule, exhibitionId, ...rest } = parsed.data;
+  const { hostEmail, schedule, exhibitionId, spaceId, ...rest } = parsed.data;
 
   if (rest.endDate < rest.startDate) {
     return NextResponse.json(
@@ -86,9 +86,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const space = await prisma.space.findUnique({ where: { id: rest.spaceId } });
-  if (!space) {
-    return NextResponse.json({ error: "공간을 찾을 수 없습니다." }, { status: 404 });
+  if (!spaceId && !exhibitionId) {
+    return NextResponse.json(
+      { error: "공간 또는 전시를 지정해주세요." },
+      { status: 400 }
+    );
+  }
+
+  if (spaceId) {
+    const space = await prisma.space.findUnique({ where: { id: spaceId } });
+    if (!space) {
+      return NextResponse.json({ error: "공간을 찾을 수 없습니다." }, { status: 404 });
+    }
+  }
+
+  if (exhibitionId) {
+    const exhibition = await prisma.exhibition.findUnique({
+      where: { id: exhibitionId }
+    });
+    if (!exhibition) {
+      return NextResponse.json({ error: "전시를 찾을 수 없습니다." }, { status: 404 });
+    }
   }
 
   let hostUserId: string | null = null;
@@ -111,6 +129,7 @@ export async function POST(request: Request) {
   const program = await prisma.program.create({
     data: {
       ...rest,
+      spaceId: spaceId || null,
       exhibitionId: exhibitionId || null,
       summary: rest.summary || null,
       description: rest.description || null,

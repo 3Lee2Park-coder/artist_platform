@@ -2,7 +2,9 @@ import { ExhibitionEditForm } from "@/components/ExhibitionEditForm";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getSession, isApprovedArtist } from "@/lib/auth";
+import { parseJsonStringArray } from "@/lib/json";
 import { prisma } from "@/lib/prisma";
+import { resolveMediaUrl } from "@/lib/storage-url";
 import { notFound, redirect } from "next/navigation";
 
 type EditPageProps = {
@@ -34,7 +36,12 @@ export default async function ExhibitionEditPage({ params }: EditPageProps) {
     redirect("/my");
   }
 
-  const { artworks, ...exhibitionFields } = exhibition;
+  const { artworks, descriptionImages, heroImageUrl, ...exhibitionFields } =
+    exhibition;
+
+  const resolvedDescriptionImages = parseJsonStringArray(descriptionImages)
+    .map((url) => resolveMediaUrl(url))
+    .filter((url): url is string => Boolean(url));
 
   return (
     <>
@@ -45,13 +52,17 @@ export default async function ExhibitionEditPage({ params }: EditPageProps) {
           <h1>전시 수정</h1>
           <p className="auth-description">{exhibition.title}</p>
           <ExhibitionEditForm
-            exhibition={exhibitionFields}
+            exhibition={{
+              ...exhibitionFields,
+              heroImageUrl: resolveMediaUrl(heroImageUrl) ?? null,
+              descriptionImages: resolvedDescriptionImages
+            }}
             artworks={artworks.map((item) => ({
               id: item.id,
               title: item.title,
               material: item.material,
               price: item.price,
-              imageUrl: item.imageUrl
+              imageUrl: resolveMediaUrl(item.imageUrl) ?? null
             }))}
           />
         </section>

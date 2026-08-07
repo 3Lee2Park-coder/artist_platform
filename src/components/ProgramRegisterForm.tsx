@@ -3,6 +3,7 @@
 import { RichIntroEditor } from "@/components/RichIntroEditor";
 import { TalkScheduleEditor } from "@/components/TalkScheduleEditor";
 import { slugify } from "@/lib/date";
+import { programDatesWithinExhibition } from "@/lib/programs";
 import type { ReservationDay } from "@/lib/reservation-slots";
 import { parseReservationSchedule } from "@/lib/reservation-slots";
 import {
@@ -14,13 +15,24 @@ import {
   type StoryBlock
 } from "@/lib/story";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type OwnedSpace = {
   id: string;
   name: string;
   slug: string;
   status: string;
+};
+
+export type ProgramExhibitionOption = {
+  id: string;
+  title: string;
+  venue: string;
+  district: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  spaceId: string | null;
 };
 
 const PROGRAM_TYPES = [
@@ -35,7 +47,8 @@ export type ProgramFormInitial = {
   slug: string;
   title: string;
   type: string;
-  spaceId: string;
+  spaceId: string | null;
+  exhibitionId?: string | null;
   summary: string | null;
   description: string | null;
   storyJson?: string | null;
@@ -50,12 +63,21 @@ export type ProgramFormInitial = {
 
 type ProgramRegisterFormProps = {
   spaces: OwnedSpace[];
+  exhibitions?: ProgramExhibitionOption[];
   mode?: "create" | "edit";
   initial?: ProgramFormInitial;
   isAdmin?: boolean;
 };
 
-async function uploadFile(file: File, folder: string) {
+type VenueKey = `space:${string}` | `exhibition:${string}` | "";
+
+function toVenueKey(initial?: ProgramFormInitial): VenueKey {
+  if (initial?.exhibitionId) return `exhibition:${initial.exhibitionId}`;
+  if (initial?.spaceId) return `space:${initial.spaceId}`;
+  return "";
+}
+
+async function uploadProgramFile(file: File, folder: string) {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("folder", folder);
@@ -67,6 +89,7 @@ async function uploadFile(file: File, folder: string) {
 
 export function ProgramRegisterForm({
   spaces,
+  exhibitions = [],
   mode = "create",
   initial,
   isAdmin = false
@@ -75,12 +98,17 @@ export function ProgramRegisterForm({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const defaultVenue: VenueKey =
+    toVenueKey(initial) ||
+    (exhibitions[0] ? `exhibition:${exhibitions[0].id}` : "") ||
+    (spaces[0] ? `space:${spaces[0].id}` : "");
+
   const [title, setTitle] = useState(initial?.title ?? "");
   const [slugPreview, setSlugPreview] = useState(initial?.slug ?? "");
   const [type, setType] = useState<(typeof PROGRAM_TYPES)[number]["value"]>(
     (initial?.type as (typeof PROGRAM_TYPES)[number]["value"]) ?? "OPEN_STUDIO"
   );
-  const [spaceId, setSpaceId] = useState(initial?.spaceId ?? spaces[0]?.id ?? "");
+  const [venueKey, setVenueKey] = useState<VenueKey>(defaultVenue);
   const [summary, setSummary] = useState(initial?.summary ?? "");
   const [startDate, setStartDate] = useState(initial?.startDate ?? "");
   const [endDate, setEndDate] = useState(initial?.endDate ?? "");
@@ -106,25 +134,44 @@ export function ProgramRegisterForm({
     return [createTextBlock()];
   });
 
+  const selectedExhibition = useMemo(() => {
+    if (!venueKey.startsWith("exhibition:")) return null;
+    const id = venueKey.slice("exhibition:".length);
+    return exhibitions.find((item) => item.id === id) ?? null;
+  }, [venueKey, exhibitions]);
+
+  const dateHint = useMemo(() => {
+    if (!selectedExhibition || !startDate || !endDate) return "";
+    if (endDate < startDate) return "종료일은 시작일 이후여야 합니다.";
+    return (
+      programDatesWithinExhibition(startDate, endDate, selectedExhibition) ?? ""
+    );
+  }, [selectedExhibition, startDate, endDate]);
+
   useEffect(() => {
     if (mode === "edit") return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSlugPreview(
       slugify(title).replace(/^exhibition-/, "program-") || "프로그램-제목-입력"
     );
   }, [title, mode]);
 
-  if (spaces.length === 0) {
+  if (spaces.length === 0 && exhibitions.length === 0) {
     return (
       <section className="register-card wide">
         <p className="eyebrow">Program register</p>
         <h1>프로그램 등록</h1>
         <p className="auth-description">
-          프로그램을 등록하려면 먼저 본인 소유의 공간을 등록해야 합니다.
+          프로그램을 등록하려면 본인 소유의 공간, 또는 진행 중·예정인 전시를 먼저
+          등록해야 합니다. 전시 기간 동안 그 공간에서 작가 프로그램을 열 수 있습니다.
         </p>
-        <a className="primary-button" href="/register/space">
-          공간 먼저 등록하기
-        </a>
+        <div className="hub-actions">
+          <a className="primary-button" href="/register/space">
+            공간 등록
+          </a>
+          <a className="secondary-button" href="/register/exhibition">
+            전시 등록
+          </a>
+        </div>
       </section>
     );
   }
@@ -132,12 +179,35 @@ export function ProgramRegisterForm({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
+
+    if (!venueKey) {
+      setError("진행 공간 또는 전시를 선택해주세요.");
+      return;
+    }
+
+    if (endDate < startDate) {
+      setError("종료일은 시작일 이후여야 합니다.");
+      return;
+    }
+
+    if (selectedExhibition) {
+      const rangeError = programDatesWithinExhibition(
+        startDate,
+        endDate,
+        selectedExhibition
+      );
+      if (rangeError) {
+        setError(rangeError);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       let nextHero = heroImageUrl || null;
       if (heroImageFile) {
-        nextHero = await uploadFile(heroImageFile, "programs");
+        nextHero = await uploadProgramFile(heroImageFile, "programs");
       }
 
       const cleanedSchedule = schedule
@@ -147,9 +217,22 @@ export function ProgramRegisterForm({
           slots: day.slots.filter((slot) => slot.time)
         }));
 
+      for (const day of cleanedSchedule) {
+        if (day.date < startDate || day.date > endDate) {
+          throw new Error(`예약일 ${day.date}이 프로그램 기간을 벗어납니다.`);
+        }
+      }
+
       const storyJson = serializeStoryBlocks(storyBlocks);
       const description = storyBlocksToPlainText(storyBlocks) || null;
       const imageUrls = storyBlocksToImageUrls(storyBlocks);
+
+      const isExhibitionVenue = venueKey.startsWith("exhibition:");
+      const selectedId = venueKey.split(":")[1] ?? "";
+      const spaceId = isExhibitionVenue
+        ? selectedExhibition?.spaceId ?? null
+        : selectedId;
+      const exhibitionId = isExhibitionVenue ? selectedId : null;
 
       const payload = {
         slug:
@@ -161,6 +244,7 @@ export function ProgramRegisterForm({
         title,
         type,
         spaceId,
+        exhibitionId,
         summary: summary || null,
         description,
         storyJson,
@@ -216,8 +300,8 @@ export function ProgramRegisterForm({
         {mode === "edit"
           ? "소개·일정·예약 정책을 수정할 수 있습니다."
           : isAdmin
-            ? "관리자 계정으로 등록하면 검수 없이 바로 공개됩니다."
-            : "오픈 스튜디오·작가와의 대화·워크숍을 등록합니다. 소개는 텍스트와 이미지로 자유롭게 구성하세요."}
+            ? "관리자 계정으로 등록하면 검수 없이 바로 공개됩니다. 공간뿐 아니라 진행·예정 전시에도 프로그램을 연결할 수 있습니다."
+            : "공간 또는 진행·예정 전시를 골라 오픈 스튜디오·작가와의 대화·워크숍을 등록합니다. 전시에 연결하면 프로그램 기간이 전시 기간 안에 있어야 합니다."}
       </p>
 
       <div className="story-form-grid">
@@ -272,26 +356,84 @@ export function ProgramRegisterForm({
           </label>
 
           <label>
-            진행 공간
+            진행 장소
             <select
-              value={spaceId}
-              onChange={(event) => setSpaceId(event.target.value)}
+              value={venueKey}
+              onChange={(event) => {
+                const next = event.target.value as VenueKey;
+                setVenueKey(next);
+                if (next.startsWith("exhibition:")) {
+                  const exhibition = exhibitions.find(
+                    (item) => item.id === next.slice("exhibition:".length)
+                  );
+                  if (exhibition) {
+                    setStartDate(exhibition.startDate);
+                    setEndDate(exhibition.endDate);
+                  }
+                }
+              }}
               required
             >
-              {spaces.map((space) => (
-                <option key={space.id} value={space.id}>
-                  {space.name}
-                  {space.status !== "PUBLISHED" ? ` (${space.status})` : ""}
-                </option>
-              ))}
+              {exhibitions.length > 0 ? (
+                <optgroup label="진행·예정 전시">
+                  {exhibitions.map((exhibition) => {
+                    const title =
+                      exhibition.title.length > 36
+                        ? `${exhibition.title.slice(0, 36)}…`
+                        : exhibition.title;
+                    return (
+                      <option
+                        key={exhibition.id}
+                        value={`exhibition:${exhibition.id}`}
+                        title={`${exhibition.title} · ${exhibition.venue} (${exhibition.startDate}~${exhibition.endDate})`}
+                      >
+                        [전시] {title} · {exhibition.venue} (
+                        {exhibition.startDate.slice(5)}~{exhibition.endDate.slice(5)})
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              ) : null}
+              {spaces.length > 0 ? (
+                <optgroup label="내 공간">
+                  {spaces.map((space) => {
+                    const name =
+                      space.name.length > 40
+                        ? `${space.name.slice(0, 40)}…`
+                        : space.name;
+                    return (
+                      <option
+                        key={space.id}
+                        value={`space:${space.id}`}
+                        title={space.name}
+                      >
+                        [공간] {name}
+                        {space.status !== "PUBLISHED" ? ` (${space.status})` : ""}
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              ) : null}
             </select>
           </label>
+          {selectedExhibition ? (
+            <p className="field-hint">
+              전시 기간: {selectedExhibition.startDate} ~ {selectedExhibition.endDate}
+              . 프로그램·예약일은 이 기간 안에 있어야 합니다.
+            </p>
+          ) : (
+            <p className="field-hint">
+              전시를 고르면 해당 전시 공간에서 작가 프로그램을 열 수 있습니다.
+            </p>
+          )}
 
           <label>
             시작일
             <input
               type="date"
               value={startDate}
+              min={selectedExhibition?.startDate}
+              max={selectedExhibition?.endDate}
               onChange={(event) => setStartDate(event.target.value)}
               required
             />
@@ -301,10 +443,13 @@ export function ProgramRegisterForm({
             <input
               type="date"
               value={endDate}
+              min={selectedExhibition?.startDate ?? startDate}
+              max={selectedExhibition?.endDate}
               onChange={(event) => setEndDate(event.target.value)}
               required
             />
           </label>
+          {dateHint ? <p className="auth-field-hint error">{dateHint}</p> : null}
 
           <label className="checkbox-row">
             <input
@@ -347,7 +492,6 @@ export function ProgramRegisterForm({
           </label>
           {heroImageUrl && !heroImageFile ? (
             <div className="story-form-hero-preview">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={heroImageUrl} alt="대표 이미지 미리보기" />
             </div>
           ) : null}
@@ -357,7 +501,11 @@ export function ProgramRegisterForm({
       {error ? <p className="form-error">{error}</p> : null}
 
       <div className="review-form-actions">
-        <button type="submit" className="primary-button" disabled={loading}>
+        <button
+          type="submit"
+          className="primary-button"
+          disabled={loading || Boolean(dateHint)}
+        >
           {loading
             ? "저장 중..."
             : mode === "edit"

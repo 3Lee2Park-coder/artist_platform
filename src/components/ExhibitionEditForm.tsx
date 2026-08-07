@@ -43,6 +43,7 @@ type ExhibitionEditFormProps = {
     reservable: boolean;
     todayOpen: boolean;
     heroImageUrl: string | null;
+    descriptionImages?: string[];
     artistVideoTitle: string | null;
     artistVideoDuration: string | null;
     artistVideoUrl: string | null;
@@ -132,6 +133,12 @@ export function ExhibitionEditForm({
   const [heroPreviewUrl, setHeroPreviewUrl] = useState(
     exhibition.heroImageUrl ?? ""
   );
+  const [descriptionImages, setDescriptionImages] = useState<string[]>(
+    exhibition.descriptionImages ?? []
+  );
+  const [descriptionImageFiles, setDescriptionImageFiles] = useState<File[]>(
+    []
+  );
   const [artistVideoFile, setArtistVideoFile] = useState<File | null>(null);
   const [talkSchedule, setTalkSchedule] = useState<ReservationDay[]>(() => {
     const parsed = parseReservationSchedule(exhibition.reservationSlots);
@@ -205,6 +212,13 @@ export function ExhibitionEditForm({
         artistVideoUrl = await uploadFile(artistVideoFile, "exhibitions/video");
       }
 
+      const nextDescriptionImages = [...descriptionImages];
+      for (const file of descriptionImageFiles) {
+        nextDescriptionImages.push(
+          await uploadFile(file, "exhibitions/description")
+        );
+      }
+
       const artworkPayload = [];
       for (const artwork of artworks) {
         if (!artwork.title.trim()) continue;
@@ -249,6 +263,7 @@ export function ExhibitionEditForm({
           reservable: talk.reservable,
           todayOpen,
           heroImageUrl,
+          descriptionImages: nextDescriptionImages,
           artistVideoTitle: artistVideoTitle || undefined,
           artistVideoDuration: artistVideoDuration || undefined,
           artistVideoUrl,
@@ -335,6 +350,54 @@ export function ExhibitionEditForm({
         전시 소개
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} required />
       </label>
+
+      <div className="media-field">
+        <p className="field-label">소개글 이미지 (선택, 여러 장 가능)</p>
+        <p className="field-hint" style={{ marginTop: 0 }}>
+          전시 등록 Step 2에서 올린 상세 이미지입니다. 삭제하거나 새 이미지를 추가할 수
+          있습니다.
+        </p>
+        {descriptionImages.length > 0 ? (
+          <div className="description-image-grid">
+            {descriptionImages.map((src) => (
+              <div key={src} className="description-image-item">
+                <img src={src} alt="소개글 이미지" />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDescriptionImages((prev) =>
+                      prev.filter((item) => item !== src)
+                    )
+                  }
+                >
+                  삭제
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="media-preview empty">등록된 소개글 이미지가 없습니다</div>
+        )}
+        <label>
+          이미지 추가
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            onChange={(e) =>
+              setDescriptionImageFiles(
+                e.target.files ? Array.from(e.target.files) : []
+              )
+            }
+          />
+        </label>
+        {descriptionImageFiles.length > 0 ? (
+          <p className="field-hint">
+            새로 선택한 이미지 {descriptionImageFiles.length}장이 저장 시 추가됩니다.
+          </p>
+        ) : null}
+      </div>
+
       <div>
         <p className="field-label">작가와 대화 일정 · 정원</p>
         <TalkScheduleEditor

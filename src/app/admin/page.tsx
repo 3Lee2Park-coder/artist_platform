@@ -141,6 +141,7 @@ export default async function AdminPage() {
     orderBy: { createdAt: "desc" },
     include: {
       space: { select: { name: true } },
+      exhibition: { select: { title: true, venue: true } },
       host: { select: { name: true, email: true } }
     }
   });
@@ -169,6 +170,7 @@ export default async function AdminPage() {
     take: 200,
     include: {
       space: { select: { name: true } },
+      exhibition: { select: { title: true, venue: true } },
       host: { select: { name: true, email: true } }
     }
   });
@@ -334,7 +336,11 @@ export default async function AdminPage() {
           isPublic: program.isPublic,
           startDate: program.startDate,
           endDate: program.endDate,
-          spaceName: program.space.name,
+          spaceName:
+            program.space?.name ??
+            program.exhibition?.venue ??
+            program.exhibition?.title ??
+            "장소 미정",
           hostName: program.host?.name ?? null,
           hostEmail: program.host?.email ?? null
         }))}
@@ -361,7 +367,11 @@ export default async function AdminPage() {
           slug: program.slug,
           title: program.title,
           status: program.status,
-          spaceName: program.space.name,
+          spaceName:
+            program.space?.name ??
+            program.exhibition?.venue ??
+            program.exhibition?.title ??
+            "장소 미정",
           hostName: program.host?.name ?? null,
           hostEmail: program.host?.email ?? null
         }))}

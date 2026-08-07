@@ -64,6 +64,7 @@ export async function getVisitArchive(
           heroTone: true,
           heroImageUrl: true,
           space: { select: { name: true, district: true } },
+          exhibition: { select: { title: true, venue: true, district: true } },
           host: { select: { name: true } }
         }
       }
@@ -105,16 +106,24 @@ export async function getVisitArchive(
         };
       }
       if (visit.program) {
+        const venueName =
+          visit.program.space?.name ??
+          visit.program.exhibition?.venue ??
+          visit.program.exhibition?.title ??
+          null;
         return {
           id: visit.id,
           kind: "PROGRAM",
           kindLabel: VISIT_KIND_LABEL.PROGRAM,
           refId: visit.program.id,
           title: visit.program.title,
-          subtitle: [visit.program.host?.name, visit.program.space.name]
+          subtitle: [visit.program.host?.name, venueName]
             .filter(Boolean)
             .join(" · ") || null,
-          district: visit.program.space.district,
+          district:
+            visit.program.space?.district ??
+            visit.program.exhibition?.district ??
+            "",
           href: `/programs/${visit.program.slug}`,
           heroTone: visit.program.heroTone || FALLBACK_TONE,
           heroImageUrl: resolveMediaUrl(visit.program.heroImageUrl) ?? null,

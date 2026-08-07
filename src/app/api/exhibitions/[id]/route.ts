@@ -58,6 +58,7 @@ const updateSchema = z.object({
   artistVideoDuration: z.string().optional(),
   artistVideoPosterTone: z.string().optional(),
   artistVideoUrl: z.string().optional(),
+  descriptionImages: z.array(z.string()).optional(),
   reservationSchedule: scheduleSchema.optional(),
   reservationSlots: z.array(z.string()).optional(),
   artworks: z.array(artworkUpdateSchema).optional()
@@ -159,6 +160,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         : {}),
       ...(data.summary ? { summary: data.summary } : {}),
       ...(data.description ? { description: data.description } : {}),
+      ...(data.descriptionImages !== undefined
+        ? { descriptionImages: JSON.stringify(data.descriptionImages) }
+        : {}),
       ...(data.startDate ? { startDate: data.startDate } : {}),
       ...(data.endDate ? { endDate: data.endDate } : {}),
       ...(data.reservable !== undefined ? { reservable: data.reservable } : {}),

@@ -98,7 +98,8 @@ export async function POST(request: Request) {
       const program = await prisma.program.findUnique({
         where: { id: programId },
         include: {
-          space: { select: { name: true, ownerUserId: true } }
+          space: { select: { name: true, ownerUserId: true } },
+          exhibition: { select: { venue: true, title: true, registeredById: true } }
         }
       });
 
@@ -119,14 +120,22 @@ export async function POST(request: Request) {
       target = {
         kind: "program",
         title: program.title,
-        venue: program.space.name,
+        venue:
+          program.space?.name ??
+          program.exhibition?.venue ??
+          program.exhibition?.title ??
+          "장소 미정",
         startDate: program.startDate,
         endDate: program.endDate,
         reservationSlots: program.reservationSlots,
         detailPath: `/programs/${program.slug}`,
         exhibitionId: null,
         programId: program.id,
-        hostUserId: program.hostUserId ?? program.space.ownerUserId,
+        hostUserId:
+          program.hostUserId ??
+          program.space?.ownerUserId ??
+          program.exhibition?.registeredById ??
+          null,
         kindLabel: "프로그램"
       };
     }

@@ -242,10 +242,15 @@ export default async function MyPage() {
   const artistPrograms = isArtist
     ? await prisma.program.findMany({
         where: {
-          OR: [{ hostUserId: session.id }, { space: { ownerUserId: session.id } }]
+          OR: [
+            { hostUserId: session.id },
+            { space: { ownerUserId: session.id } },
+            { exhibition: { registeredById: session.id } }
+          ]
         },
         include: {
-          space: { select: { id: true, name: true, slug: true } }
+          space: { select: { id: true, name: true, slug: true } },
+          exhibition: { select: { id: true, title: true, venue: true } }
         },
         orderBy: { createdAt: "desc" }
       })
@@ -260,7 +265,8 @@ export default async function MyPage() {
               program: {
                 OR: [
                   { hostUserId: session.id },
-                  { space: { ownerUserId: session.id } }
+                  { space: { ownerUserId: session.id } },
+                  { exhibition: { registeredById: session.id } }
                 ]
               }
             }
@@ -275,7 +281,8 @@ export default async function MyPage() {
             select: {
               id: true,
               title: true,
-              space: { select: { name: true, district: true } }
+              space: { select: { name: true, district: true } },
+              exhibition: { select: { venue: true, district: true, title: true } }
             }
           }
         },
@@ -304,8 +311,15 @@ export default async function MyPage() {
           exhibition: {
             id: reservation.program.id,
             title: reservation.program.title,
-            venue: reservation.program.space.name,
-            district: reservation.program.space.district
+            venue:
+              reservation.program.space?.name ??
+              reservation.program.exhibition?.venue ??
+              reservation.program.exhibition?.title ??
+              "장소 미정",
+            district:
+              reservation.program.space?.district ??
+              reservation.program.exhibition?.district ??
+              ""
           },
           user: reservation.user
         };

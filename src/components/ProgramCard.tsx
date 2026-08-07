@@ -45,7 +45,9 @@ export function ProgramCard({ program, remainingSeats }: ProgramCardProps) {
 
       <div className="program-card-body">
         <p className="program-card-kicker">
-          {program.space.district} · {program.space.name}
+          {program.venue.district
+            ? `${program.venue.district} · ${program.venue.name}`
+            : program.venue.name}
         </p>
         <Link href={`/programs/${program.slug}`} className="program-card-title">
           {program.title}

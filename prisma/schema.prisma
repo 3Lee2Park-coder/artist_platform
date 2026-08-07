@@ -116,7 +116,8 @@ model Program {
   title        String
   // OPEN_STUDIO | ARTIST_TALK | WORKSHOP | TOUR
   type         String  @default("OPEN_STUDIO")
-  spaceId      String
+  // 공간 또는 전시 중 최소 하나 필요 (전시 연계 프로그램은 space 없이 가능)
+  spaceId      String?
   exhibitionId String?
   hostUserId   String?
   summary      String?
@@ -140,13 +141,14 @@ model Program {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  space        Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  space        Space?        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   exhibition   Exhibition?   @relation(fields: [exhibitionId], references: [id], onDelete: SetNull)
   host         User?         @relation("HostedPrograms", fields: [hostUserId], references: [id], onDelete: SetNull)
   reservations Reservation[]
   visits       Visit[]
 
   @@index([spaceId])
+  @@index([exhibitionId])
   @@index([status, isPublic])
 }
 

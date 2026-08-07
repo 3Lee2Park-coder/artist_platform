@@ -59,6 +59,7 @@ type ProgramItem = {
   startDate: string;
   endDate: string;
   space?: { id: string; name: string; slug: string } | null;
+  exhibition?: { id: string; title: string; venue: string } | null;
 };
 
 type SlotSummary = {
@@ -476,8 +477,11 @@ export function MyPageDashboard({
                     <div>
                       <h3>{program.title}</h3>
                       <p>
-                        {program.space?.name ?? "공간"} · {program.startDate} -{" "}
-                        {program.endDate} · {program.status}
+                        {program.space?.name ??
+                          program.exhibition?.venue ??
+                          program.exhibition?.title ??
+                          "장소"}{" "}
+                        · {program.startDate} - {program.endDate} · {program.status}
                       </p>
                     </div>
                     <div className="hub-actions">

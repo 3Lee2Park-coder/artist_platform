@@ -1,6 +1,7 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getSession, isApprovedArtist } from "@/lib/auth";
+import { getTodayKST } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
@@ -11,6 +12,7 @@ export const metadata = {
 export default async function RegisterHubPage() {
   const session = await getSession();
   const approved = Boolean(session && isApprovedArtist(session));
+  const today = getTodayKST();
 
   const artistStatus = session
     ? (
@@ -26,6 +28,20 @@ export default async function RegisterHubPage() {
       ? await prisma.space.count({ where: { ownerUserId: session.id } })
       : 0;
 
+  const activeExhibitionCount =
+    session && approved
+      ? await prisma.exhibition.count({
+          where: {
+            registeredById: session.id,
+            source: { not: "PUBLIC_API" },
+            status: { in: ["PUBLISHED", "DRAFT"] },
+            endDate: { gte: today }
+          }
+        })
+      : 0;
+
+  const canRegisterProgram = ownedSpaceCount > 0 || activeExhibitionCount > 0;
+
   const stepState = {
     account: Boolean(session),
     artist:
@@ -38,7 +54,7 @@ export default async function RegisterHubPage() {
             : "locked",
     space: approved ? "ready" : "locked",
     exhibition: approved ? "ready" : "locked",
-    program: approved ? (ownedSpaceCount > 0 ? "ready" : "need-space") : "locked"
+    program: approved ? (canRegisterProgram ? "ready" : "need-venue") : "locked"
   } as const;
 
   return (
@@ -63,8 +79,9 @@ export default async function RegisterHubPage() {
           <p className="eyebrow">작가 등록</p>
           <h1 className="register-hub-title">한 번에 하나씩, 순서대로</h1>
           <p className="auth-description">
-            단계를 따라가면 됩니다. 작가 승인 후 공간 → 전시·프로그램 순으로 열 수
-            있습니다. 공간·프로그램은 관리자 검수 뒤 공개됩니다.
+            단계를 따라가면 됩니다. 작가 승인 후 공간·전시를 등록하고, 내 공간 또는
+            진행·예정 전시에 프로그램을 연결할 수 있습니다. 공간·프로그램은 관리자
+            검수 뒤 공개됩니다.
           </p>
           <p className="field-hint">
             서비스를 먼저 이해하고 싶다면{" "}
@@ -181,19 +198,24 @@ export default async function RegisterHubPage() {
               <p className="hub-card-step">Step 4b</p>
               <h2>프로그램 등록</h2>
               <p>
-                오픈 스튜디오·워크숍 등.{" "}
-                {ownedSpaceCount === 0 && approved
-                  ? "본인 공간이 필요하니 먼저 공간을 등록해 주세요."
-                  : "본인 공간에 연결합니다."}
+                오픈 스튜디오·워크숍·작가와의 대화 등.{" "}
+                {approved && !canRegisterProgram
+                  ? "공간 또는 진행·예정 전시를 먼저 등록해 주세요."
+                  : "내 공간 또는 진행·예정 전시에 연결합니다."}
               </p>
-              {approved && ownedSpaceCount > 0 ? (
+              {approved && canRegisterProgram ? (
                 <Link className="primary-button" href="/register/program">
                   프로그램 등록하기
                 </Link>
               ) : approved ? (
-                <Link className="secondary-button" href="/register/space">
-                  먼저 공간 등록
-                </Link>
+                <div className="hub-actions">
+                  <Link className="secondary-button" href="/register/space">
+                    공간 등록
+                  </Link>
+                  <Link className="secondary-button" href="/register/exhibition">
+                    전시 등록
+                  </Link>
+                </div>
               ) : (
                 <span className="status-pill warn">승인 후 이용 가능</span>
               )}

@@ -24,7 +24,8 @@ export async function generateMetadata({ params }: ProgramDetailPageProps) {
 
   return {
     title: `${program.title} | Exhibit`,
-    description: program.summary ?? `${program.space.name}에서 열리는 ${program.typeLabel}`
+    description:
+      program.summary ?? `${program.venue.name}에서 열리는 ${program.typeLabel}`
   };
 }
 
@@ -120,10 +121,14 @@ export default async function ProgramDetailPage({ params }: ProgramDetailPagePro
               <div>
                 <dt>장소</dt>
                 <dd>
-                  <Link className="text-link" href={`/spaces/${program.space.slug}`}>
-                    {program.space.name}
-                  </Link>
-                  {program.space.floorOrUnit ? ` · ${program.space.floorOrUnit}` : ""}
+                  {program.venue.href ? (
+                    <Link className="text-link" href={program.venue.href}>
+                      {program.venue.name}
+                    </Link>
+                  ) : (
+                    program.venue.name
+                  )}
+                  {program.venue.floorOrUnit ? ` · ${program.venue.floorOrUnit}` : ""}
                 </dd>
               </div>
               <div>
@@ -168,7 +173,7 @@ export default async function ProgramDetailPage({ params }: ProgramDetailPagePro
           <aside className="detail-side-card">
             <h3>안내</h3>
             <ul>
-              <li>{program.space.address}</li>
+              {program.venue.address ? <li>{program.venue.address}</li> : null}
               <li>
                 {program.reservationRequired
                   ? "예약 확정 후 방문해주세요."
@@ -176,11 +181,13 @@ export default async function ProgramDetailPage({ params }: ProgramDetailPagePro
               </li>
               {program.policyNote ? <li>{program.policyNote}</li> : null}
             </ul>
-            <div className="share-action-stack">
-              <Link className="secondary-button" href={`/spaces/${program.space.slug}`}>
-                공간 소개 보기
-              </Link>
-            </div>
+            {program.venue.href ? (
+              <div className="share-action-stack">
+                <Link className="secondary-button" href={program.venue.href}>
+                  {program.venue.kind === "exhibition" ? "전시 상세 보기" : "공간 소개 보기"}
+                </Link>
+              </div>
+            ) : null}
           </aside>
         </section>
       </main>
