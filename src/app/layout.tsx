@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Suspense } from "react";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { BRAND } from "@/lib/brand";
 import { absoluteUrl, getSiteUrl, siteConfig } from "@/lib/site";
@@ -74,6 +75,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={poppins.variable} suppressHydrationWarning>
       <head>
+        <GoogleAnalytics />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
