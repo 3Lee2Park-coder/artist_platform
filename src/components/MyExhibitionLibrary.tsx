@@ -101,7 +101,7 @@ export function MyExhibitionLibrary({
           aria-selected={libraryTab === "saved"}
           onClick={() => setLibraryTab("saved")}
         >
-          저장함 ({savedExhibitions.length})
+          찾아둔 전시 ({savedExhibitions.length})
         </button>
         <button
           type="button"
@@ -110,7 +110,7 @@ export function MyExhibitionLibrary({
           aria-selected={libraryTab === "visited"}
           onClick={() => setLibraryTab("visited")}
         >
-          다녀온 전시 ({visitedExhibitions.length})
+          찾아낸 전시 ({visitedExhibitions.length})
         </button>
       </div>
 
@@ -175,7 +175,7 @@ export function MyExhibitionLibrary({
                   <PosterThumb exhibition={item} />
                   <div className="archive-card-body">
                     <div className="archive-badge-row">
-                      <span className="status-pill">저장함</span>
+                      <span className="status-pill">찾아둔 단서</span>
                       {item.curationAvailable ? (
                         <span className="status-pill artist-talk">작가와 대화</span>
                       ) : null}
@@ -191,7 +191,7 @@ export function MyExhibitionLibrary({
             ))}
           </div>
         ) : (
-          <div className="empty-state">저장한 전시가 없습니다.</div>
+          <div className="empty-state">아직 찾아둔 전시가 없습니다.</div>
         )
       ) : null}
 
@@ -234,8 +234,8 @@ export function MyExhibitionLibrary({
                   </Link>
                   <ShareActionButton
                     label="공유"
-                    title={`${item.title} 방문 기록`}
-                    text={`${item.title} 전시를 다녀왔어요.`}
+                    title={`${item.title} 찾기 기록`}
+                    text={`${item.title} 전시를 찾아냈어요.`}
                     path={`/share/visits/${item.visitId}`}
                     eventType="VISIT_SHARE"
                     exhibitionId={item.id}
@@ -247,7 +247,7 @@ export function MyExhibitionLibrary({
             ))}
           </div>
         ) : (
-          <div className="empty-state">아직 다녀온 전시가 없습니다.</div>
+          <div className="empty-state">아직 찾아낸 전시가 없습니다.</div>
         )
       ) : null}
     </section>

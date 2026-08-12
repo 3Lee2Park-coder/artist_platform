@@ -97,7 +97,8 @@ npm run dev
 |-----------|------|
 | `RESEND_API_KEY` | 가입 인증, 예약 확인, 저장 전시 마감 알림 |
 | `EMAIL_FROM` | 발신 주소 (Resend 도메인 인증 후 변경) |
-| `NEXT_PUBLIC_APP_URL` | 인증 링크·전시 상세 URL |
+| `NEXT_PUBLIC_APP_URL` | 인증 링크·이메일·canonical 기본 URL (프로덕션: `https://ooof.co.kr`) |
+| `NEXT_PUBLIC_SITE_URL` | SEO 전용 사이트 URL (없으면 `NEXT_PUBLIC_APP_URL` 사용) |
 | `CRON_SECRET` | `/api/cron/ending-soon` 보호 (Vercel Cron) |
 
 - 회원가입: **이름·이메일·비밀번호·생년월일** + 휴대폰(선택) → **이메일 인증** 후 로그인

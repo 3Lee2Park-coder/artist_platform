@@ -8,23 +8,17 @@ type SendEmailInput = {
 };
 
 function getFromAddress() {
-  return process.env.EMAIL_FROM?.trim() || "Sokkup <onboarding@resend.dev>";
+  return process.env.EMAIL_FROM?.trim() || "OOOF. <onboarding@resend.dev>";
 }
 
 function isTestFromAddress(from: string) {
   return /@resend\.dev>/i.test(from) || /@resend\.dev$/i.test(from);
 }
 
+import { getSiteUrl } from "@/lib/site";
+
 function getAppBaseUrl() {
-  if (process.env.NEXT_PUBLIC_APP_URL?.trim()) {
-    return process.env.NEXT_PUBLIC_APP_URL.trim();
-  }
-
-  if (process.env.VERCEL_URL?.trim()) {
-    return `https://${process.env.VERCEL_URL.trim()}`;
-  }
-
-  return "http://localhost:3000";
+  return getSiteUrl();
 }
 
 export function getAppUrl(path = "") {
@@ -46,7 +40,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailInput) {
   const from = getFromAddress();
   if (isTestFromAddress(from)) {
     console.warn(
-      "[email] EMAIL_FROM still uses resend.dev — only the Resend account email can receive mail. Set EMAIL_FROM to a verified domain (e.g. Sokkup <noreply@sokkup.kr>)."
+      "[email] EMAIL_FROM still uses resend.dev — only the Resend account email can receive mail. Set EMAIL_FROM to a verified domain (e.g. OOOF. <noreply@your-domain>)."
     );
   }
 
@@ -69,16 +63,16 @@ export async function sendEmail({ to, subject, html, text }: SendEmailInput) {
 
 export function buildVerificationEmail(name: string, verifyUrl: string) {
   return {
-    subject: "[Sokkup] 이메일 인증을 완료해 주세요",
+    subject: "[OOOF.] 이메일 인증을 완료해 주세요",
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
-        <p>${name}님, Sokkup 가입을 환영합니다.</p>
+        <p>${name}님, OOOF. 가입을 환영합니다.</p>
         <p>아래 버튼을 눌러 이메일 인증을 완료해 주세요. 링크는 24시간 동안 유효합니다.</p>
         <p><a href="${verifyUrl}" style="display:inline-block;padding:12px 18px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">이메일 인증하기</a></p>
         <p style="font-size:13px;color:#666;">버튼이 동작하지 않으면 아래 주소를 복사해 브라우저에 붙여넣으세요.<br/>${verifyUrl}</p>
       </div>
     `,
-    text: `${name}님, Sokkup 이메일 인증 링크: ${verifyUrl}`
+    text: `${name}님, OOOF. 이메일 인증 링크: ${verifyUrl}`
   };
 }
 
@@ -93,7 +87,7 @@ export function buildReservationConfirmEmail(input: {
 }) {
   const kindLabel = input.kindLabel ?? "전시";
   return {
-    subject: `[Sokkup] ${input.exhibitionTitle} 예약이 확정되었습니다`,
+    subject: `[OOOF.] ${input.exhibitionTitle} 예약이 확정되었습니다`,
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
         <p>${input.name}님, 예약이 확정되었습니다.</p>
@@ -121,7 +115,7 @@ export function buildArtistReservationNoticeEmail(input: {
   kindLabel: string;
 }) {
   return {
-    subject: `[Sokkup] ${input.title}에 새 예약이 있습니다`,
+    subject: `[OOOF.] ${input.title}에 새 예약이 있습니다`,
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
         <p>${input.artistName}님, ${input.kindLabel}에 새 예약이 들어왔습니다.</p>
@@ -138,6 +132,24 @@ export function buildArtistReservationNoticeEmail(input: {
   };
 }
 
+export function buildPlaceTipAdoptedEmail(input: {
+  name: string;
+  placeName: string;
+  placeUrl: string;
+}) {
+  return {
+    subject: `[OOOF.] 제보하신 장소가 공개되었습니다`,
+    html: `
+      <div style="font-family:sans-serif;line-height:1.6;color:#111;">
+        <p>${input.name}님, 제보해 주신 장소 <strong>${input.placeName}</strong>이(가) OOOF.에 올랐습니다.</p>
+        <p>숨은 곳을 찾아 주신 덕분에 다른 관객도 전시와 함께 그곳을 발견할 수 있어요.</p>
+        <p><a href="${input.placeUrl}" style="display:inline-block;padding:12px 18px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">장소 보기</a></p>
+      </div>
+    `,
+    text: `${input.name}님, 제보하신 ${input.placeName}이(가) 공개되었습니다. ${input.placeUrl}`
+  };
+}
+
 export function buildEndingSoonEmail(input: {
   name: string;
   exhibitionTitle: string;
@@ -146,7 +158,7 @@ export function buildEndingSoonEmail(input: {
   detailUrl: string;
 }) {
   return {
-    subject: `[Sokkup] 저장하신 전시가 D-${input.daysLeft}입니다`,
+    subject: `[OOOF.] 저장하신 전시가 D-${input.daysLeft}입니다`,
     html: `
       <div style="font-family:sans-serif;line-height:1.6;color:#111;">
         <p>${input.name}님, 저장해 두신 전시 <strong>${input.exhibitionTitle}</strong>의 종료일이 ${input.endDate}입니다.</p>

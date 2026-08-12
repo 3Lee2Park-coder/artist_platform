@@ -6,7 +6,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "전시 등록 | Exhibit"
+  title: "전시 등록"
 };
 
 export default async function ExhibitionRegisterPage() {

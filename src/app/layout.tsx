@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Suspense } from "react";
 import { NavigationProgress } from "@/components/NavigationProgress";
+import { BRAND } from "@/lib/brand";
+import { absoluteUrl, getSiteUrl, siteConfig } from "@/lib/site";
 import "./globals.css";
 
 /** Latin brand / numerals — paired with Pretendard for Hangul UI */
@@ -13,9 +15,52 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Sokkup | 동네에서 작가와 직접 만나다",
-  description:
-    "작가의 공간에서 작품과 사람을 직접 만나는 동네 전시를 찾는 곳. 코스·지도·방문 안내·예약까지."
+  metadataBase: new URL(getSiteUrl()),
+  title: {
+    default: `${BRAND.mark} | ${BRAND.campaignLine.replace(` ${BRAND.mark}`, "")}`,
+    template: `%s | ${BRAND.mark}`
+  },
+  description: BRAND.descriptor,
+  applicationName: BRAND.mark,
+  keywords: [
+    "OOOF",
+    "Olly Olly Oxen Free",
+    "동네 전시",
+    "전시 지도",
+    "작가 공간",
+    "큐레이션",
+    "전시 코스"
+  ],
+  authors: [{ name: BRAND.mark }],
+  creator: BRAND.mark,
+  publisher: BRAND.mark,
+  openGraph: {
+    type: "website",
+    locale: siteConfig.locale,
+    url: absoluteUrl("/"),
+    siteName: BRAND.mark,
+    title: `${BRAND.mark} | 못 찾겠다, 꾀꼬리?`,
+    description: BRAND.descriptor
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${BRAND.mark} | 못 찾겠다, 꾀꼬리?`,
+    description: BRAND.descriptor
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1
+    }
+  },
+  formatDetection: {
+    telephone: false
+  }
 };
 
 export default function RootLayout({

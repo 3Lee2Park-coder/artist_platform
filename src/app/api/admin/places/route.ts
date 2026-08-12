@@ -22,6 +22,10 @@ const placeSchema = z.object({
   tags: z.array(z.string()).default([]),
   sourceUrl: z.string().url().optional().or(z.literal("")),
   notes: z.string().optional(),
+  editorialNote: z.string().optional(),
+  imageUrl: z.string().url().optional().or(z.literal("")),
+  homeFeatured: z.boolean().optional(),
+  homeSortOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
 
@@ -78,6 +82,10 @@ export async function POST(request: Request) {
       tags: JSON.stringify(data.tags),
       sourceUrl: data.sourceUrl || null,
       notes: data.notes || null,
+      editorialNote: data.editorialNote || null,
+      imageUrl: data.imageUrl || null,
+      homeFeatured: data.homeFeatured ?? false,
+      homeSortOrder: data.homeSortOrder ?? 0,
       isActive: data.isActive ?? true
     }
   });
@@ -89,7 +97,11 @@ const patchSchema = z.object({
   id: z.string().min(1),
   isActive: z.boolean().optional(),
   notes: z.string().optional(),
+  editorialNote: z.string().optional().nullable(),
   sourceUrl: z.string().optional(),
+  imageUrl: z.string().optional().nullable(),
+  homeFeatured: z.boolean().optional(),
+  homeSortOrder: z.number().int().optional(),
   tags: z.array(z.string()).optional()
 });
 
@@ -104,14 +116,28 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "입력값이 올바르지 않습니다." }, { status: 400 });
   }
 
-  const { id, isActive, notes, sourceUrl, tags } = parsed.data;
+  const {
+    id,
+    isActive,
+    notes,
+    editorialNote,
+    sourceUrl,
+    imageUrl,
+    homeFeatured,
+    homeSortOrder,
+    tags
+  } = parsed.data;
 
   const place = await prisma.place.update({
     where: { id },
     data: {
       ...(typeof isActive === "boolean" ? { isActive } : {}),
       ...(notes !== undefined ? { notes } : {}),
+      ...(editorialNote !== undefined ? { editorialNote } : {}),
       ...(sourceUrl !== undefined ? { sourceUrl: sourceUrl || null } : {}),
+      ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
+      ...(typeof homeFeatured === "boolean" ? { homeFeatured } : {}),
+      ...(typeof homeSortOrder === "number" ? { homeSortOrder } : {}),
       ...(tags ? { tags: JSON.stringify(tags) } : {})
     }
   });

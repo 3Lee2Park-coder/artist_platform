@@ -37,13 +37,20 @@ export async function generateMetadata({ params }: ExhibitionDetailPageProps) {
 
   if (!exhibition) {
     return {
-      title: "전시를 찾을 수 없습니다 | Exhibit"
+      title: "전시를 찾을 수 없습니다",
+      robots: { index: false }
     };
   }
 
   return {
-    title: `${exhibition.title} | Exhibit`,
-    description: exhibition.summary
+    title: exhibition.title,
+    description: exhibition.summary,
+    alternates: { canonical: `/exhibitions/${exhibition.id}` },
+    openGraph: {
+      title: exhibition.title,
+      description: exhibition.summary,
+      images: exhibition.heroImageUrl ? [exhibition.heroImageUrl] : undefined
+    }
   };
 }
 

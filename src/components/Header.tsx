@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ProfileButton } from "@/components/ProfileButton";
+import {
+  HeaderAuthFallback,
+  HeaderAuthNav
+} from "@/components/HeaderAuthNav";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
-import { getSession } from "@/lib/auth";
 
 const bottomTabs = [
   { label: "홈", href: "/" },
@@ -17,15 +19,18 @@ type HeaderProps = {
 };
 
 export async function Header({ activeTab = "홈" }: HeaderProps) {
-  const session = await getSession();
-
   return (
     <>
       <header className="site-header">
         <div className="header-inner">
-          <Link className="brand" href="/" aria-label="Sokkup 홈">
+          <Link
+            className="brand"
+            href="/"
+            aria-label="OOOF. 홈 — Olly Olly Oxen Free"
+            title="OOOF. · Olly Olly Oxen Free"
+          >
             <span className="brand-mark" aria-hidden="true" />
-            <span>Sokkup</span>
+            <span className="brand-wordmark">OOOF.</span>
           </Link>
 
           <Suspense fallback={<div className="filter-search filter-search-skeleton" />}>
@@ -42,10 +47,7 @@ export async function Header({ activeTab = "홈" }: HeaderProps) {
             <Link
               href="/exhibitions"
               className={
-                [
-                  "nav-featured",
-                  activeTab === "전시" ? "active" : ""
-                ]
+                ["nav-featured", activeTab === "전시" ? "active" : ""]
                   .filter(Boolean)
                   .join(" ")
               }
@@ -59,17 +61,9 @@ export async function Header({ activeTab = "홈" }: HeaderProps) {
               지도
             </Link>
             <Link href="/register">공간 열기</Link>
-            {session ? (
-              <Link
-                href="/my"
-                className={activeTab === "MY" ? "active" : undefined}
-              >
-                {session.name}
-              </Link>
-            ) : (
-              <Link href="/auth/login">로그인</Link>
-            )}
-            <ProfileButton isLoggedIn={Boolean(session)} userName={session?.name} />
+            <Suspense fallback={<HeaderAuthFallback />}>
+              <HeaderAuthNav activeTab={activeTab} />
+            </Suspense>
           </nav>
         </div>
       </header>
@@ -89,7 +83,9 @@ export async function Header({ activeTab = "홈" }: HeaderProps) {
               className={classes || undefined}
               href={tab.href}
             >
-              {tab.label === "전시" ? <span className="tab-featured-dot" aria-hidden="true" /> : null}
+              {tab.label === "전시" ? (
+                <span className="tab-featured-dot" aria-hidden="true" />
+              ) : null}
               <span className="tab-label">{tab.label}</span>
             </Link>
           );

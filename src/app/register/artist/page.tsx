@@ -6,7 +6,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "작가 승인 신청 | Exhibit"
+  title: "작가 승인 신청"
 };
 
 export default async function ArtistApplyPage() {

@@ -6,9 +6,12 @@ import { getActivePrograms } from "@/lib/programs";
 import { getPublicSpaces } from "@/lib/spaces";
 
 export const metadata = {
-  title: "지도에서 찾기 | Exhibit",
-  description: "큐레이션 동선, 작가 공간, 전시를 지도에서 한 번에 확인합니다."
+  title: "지도에서 찾기",
+  description: "큐레이션 동선, 작가 공간, 전시를 지도에서 한 번에 확인합니다.",
+  alternates: { canonical: "/map" }
 };
+
+export const revalidate = 60;
 
 type MapPageProps = {
   searchParams: Promise<{ layer?: string; focus?: string }>;

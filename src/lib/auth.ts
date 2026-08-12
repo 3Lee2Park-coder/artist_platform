@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { displayName } from "@/lib/nickname";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
@@ -6,16 +7,21 @@ import { cookies } from "next/headers";
 export type UserRole = "MEMBER" | "ARTIST" | "GALLERY" | "ADMIN";
 export type ArtistStatus = "NONE" | "PENDING" | "APPROVED" | "REJECTED";
 
-const SESSION_COOKIE = "exhibit_session";
+const SESSION_COOKIE = "ooof_session";
+/** Legacy cookie from Exhibit working name — read + clear on migrate */
+const LEGACY_SESSION_COOKIE = "exhibit_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
 export type SessionUser = {
   id: string;
   email: string;
   name: string;
+  nickname: string | null;
   role: UserRole;
   artistStatus: ArtistStatus;
 };
+
+export { displayName };
 
 function getAuthSecret() {
   const secret = process.env.AUTH_SECRET;
@@ -40,6 +46,7 @@ export async function createSession(user: SessionUser) {
     id: user.id,
     email: user.email,
     name: user.name,
+    nickname: user.nickname,
     role: user.role,
     artistStatus: user.artistStatus
   })
@@ -56,16 +63,20 @@ export async function createSession(user: SessionUser) {
     maxAge: SESSION_MAX_AGE,
     path: "/"
   });
+  cookieStore.delete(LEGACY_SESSION_COOKIE);
 }
 
 export async function destroySession() {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(LEGACY_SESSION_COOKIE);
 }
 
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const token =
+    cookieStore.get(SESSION_COOKIE)?.value ??
+    cookieStore.get(LEGACY_SESSION_COOKIE)?.value;
 
   if (!token) {
     return null;
@@ -76,6 +87,8 @@ export async function getSession(): Promise<SessionUser | null> {
     const id = payload.id as string;
     const email = payload.email as string;
     const name = payload.name as string;
+    const nickname =
+      typeof payload.nickname === "string" ? payload.nickname : null;
     const role = payload.role as UserRole;
     const artistStatus = payload.artistStatus as ArtistStatus;
 
@@ -83,7 +96,14 @@ export async function getSession(): Promise<SessionUser | null> {
       return null;
     }
 
-    return { id, email, name, role: role as UserRole, artistStatus: artistStatus as ArtistStatus };
+    return {
+      id,
+      email,
+      name,
+      nickname,
+      role: role as UserRole,
+      artistStatus: artistStatus as ArtistStatus
+    };
   } catch {
     return null;
   }
@@ -106,6 +126,7 @@ export async function getUserById(id: string) {
       id: true,
       email: true,
       name: true,
+      nickname: true,
       role: true,
       artistStatus: true,
       interestTags: true,
@@ -113,6 +134,10 @@ export async function getUserById(id: string) {
       onboardedAt: true
     }
   });
+}
+
+export function sessionDisplayName(session: SessionUser) {
+  return displayName(session);
 }
 
 export function isApprovedArtist(session: SessionUser | null) {

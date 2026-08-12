@@ -43,10 +43,10 @@ export function SupplierCtaSection() {
     <section className="home-section home-section-footer">
       <div className="supplier-cta">
         <div>
-          <p className="supplier-cta-title">작업이 있는 곳을 직접 열어 보세요</p>
+          <p className="supplier-cta-title">문을 열면, 찾아옵니다</p>
           <p className="supplier-cta-sub">
-            공간·전시·프로그램 등록은 무료입니다. 관객에게 다가가는 창구를 같이
-            만들어 갑시다.
+            공간·전시·프로그램 등록은 무료입니다. 숨은 작업실이 동네 코스에서
+            관객에게 발견되도록, 같이 길을 엽시다.
           </p>
         </div>
         <Link href="/for-artists" className="secondary-button">

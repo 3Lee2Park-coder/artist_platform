@@ -69,15 +69,17 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
     >
       <div className="home-focus-inner">
         <div className="home-focus-copy">
-          <p className="home-focus-eyebrow">{neighborhood} · 동네에서 직접</p>
+          <p className="home-focus-eyebrow">
+            {neighborhood} · 못 찾겠다, 꾀꼬리!
+          </p>
           <h1 id="home-focus-title">
-            작가의 공간에서
+            이번주 술래가
             <br />
-            작품과 사람을 만나다
+            발견한 코스
           </h1>
           <p className="home-focus-lead">
-            울타리 밖의 공방·쇼룸을 동네 코스로 이어 드립니다.
-            지도와 방문 안내로, 지금 갈 수 있는 전시를 더 쉽고 재미있게 걸어 보세요.
+            혼자서는 못 찾던 전시와 작업실을, 동네 코스와 지도로 찾아드립니다.
+            오늘 갈 수 있는 길을 골라 걸어 보세요.
           </p>
 
           <div className="home-focus-actions">
@@ -102,7 +104,7 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
           </div>
 
           <p className="home-focus-note">
-            방문 기록은 MY에 쌓이며, 다시 찾을 때 도움이 됩니다.
+            찾은 전시는 MY에 남아, 다음 찾기에 도움이 됩니다.
           </p>
         </div>
 
@@ -110,7 +112,7 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
           <aside className="home-focus-feature" aria-label="추천 큐레이션">
             <div className="home-focus-feature-head">
               <p className="home-focus-feature-label">
-                {featuredCuration.featured ? "추천 코스" : "오늘의 코스"}
+                {featuredCuration.featured ? "추천 찾기 코스" : "오늘 찾아볼 코스"}
                 {slides.length > 1 ? ` · ${index + 1}/${slides.length}` : ""}
               </p>
               <Link

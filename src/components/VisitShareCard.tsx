@@ -227,7 +227,7 @@ async function drawTicket(
 
   ctx.fillStyle = "#221c15";
   ctx.font = "700 44px 'Pretendard', 'Apple SD Gothic Neo', sans-serif";
-  ctx.fillText("Exhibit", contentX, CARD_HEIGHT - 66);
+  ctx.fillText("OOOF.", contentX, CARD_HEIGHT - 66);
   ctx.fillStyle = "#8a7a63";
   ctx.font = "400 34px 'Pretendard', 'Apple SD Gothic Neo', sans-serif";
   ctx.textAlign = "right";
@@ -287,7 +287,7 @@ export function VisitShareCard({ entry, userName, onClose }: VisitShareCardProps
           await navigator.share({
             files: [file],
             title: entry.title,
-            text: `${entry.title} 방문 기록 — Exhibit`
+            text: `${entry.title} 방문 기록 — OOOF.`
           });
           return;
         } catch {

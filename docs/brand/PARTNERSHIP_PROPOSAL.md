@@ -5,7 +5,8 @@
 > 기반: [BRAND_IDENTITY.md](./BRAND_IDENTITY.md) · [SUPPLY_WEDGE.md](./SUPPLY_WEDGE.md) · Claims: [BRAND_BRIEF_v0.2.md](./BRAND_BRIEF_v0.2.md)
 
 형식: 1–2페이지 PDF / Notion / 메일 첨부. **투자자용 IR이 아님.**  
-Working name: **{brand}** = `Sokkup (가칭)`
+Official brand: **{brand}** = `OOOF.`  
+Full name: `Olly Olly Oxen Free`
 
 ---
 
@@ -13,7 +14,7 @@ Working name: **{brand}** = `Sokkup (가칭)`
 
 ### 제목
 
-관객에게 다가가는 창구 — {brand} 파트너십
+문을 열면, 찾아옵니다 — {brand} 작가 파트너십
 
 ### 공유 비전 (Shared Vision)
 
@@ -32,7 +33,7 @@ Working name: **{brand}** = `Sokkup (가칭)`
 우리는 관객을 **더 적극적으로 만나고**,  
 공간·전시를 직접 열어 이야기하며 그 니즈를 풀어 가고자 하는 작가를 찾고 있습니다.
 
-의지가 있는 곳에 길이 있습니다.  
+문을 열면, 찾아옵니다. 의지가 있는 곳에 길이 있습니다.  
 직접 열고, 알리고, 이야기하면 현장에서 연결·판매로 이어질 수 있습니다.  
 {brand}은 그 길을 동네 코스와 방문·예약으로 열어 두는 창구입니다.
 
@@ -128,7 +129,7 @@ Working name: **{brand}** = `Sokkup (가칭)`
 
 예시:
 
-- `{brand}` = `Sokkup (가칭)`  
+- `{brand}` = `OOOF.`  
 - `{senderName}` = `이민혁`  
 - `{signupUrl}` = `https://{APP}/auth/signup?redirect=/register/artist`  
 - `{homeUrl}` = `https://{APP}/`  

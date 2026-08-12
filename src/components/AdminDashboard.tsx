@@ -15,6 +15,7 @@ import {
   storyBlocksToPlainText,
   type StoryBlock
 } from "@/lib/story";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -82,8 +83,28 @@ type PlaceRow = {
   tags: string[];
   sourceUrl: string | null;
   notes: string | null;
+  editorialNote: string | null;
+  imageUrl: string | null;
+  homeFeatured: boolean;
+  homeSortOrder: number;
   isActive: boolean;
   usedCount: number;
+};
+
+type PlaceTipRow = {
+  id: string;
+  name: string;
+  sourceUrl: string | null;
+  situation: string;
+  district: string;
+  imageUrl: string | null;
+  status: string;
+  adminNote: string | null;
+  createdAt: string;
+  userName: string;
+  userEmail: string;
+  placeId: string | null;
+  placeName: string | null;
 };
 
 type EventSummary = {
@@ -188,6 +209,7 @@ type AdminDashboardProps = {
   exhibitionOptions: ExhibitionOption[];
   spaceOptions: SpaceOption[];
   places: PlaceRow[];
+  placeTips: PlaceTipRow[];
   eventSummaries: EventSummary[];
   recentEvents: RecentEvent[];
   curationMetrics: CurationMetric[];
@@ -220,6 +242,7 @@ export function AdminDashboard({
   exhibitionOptions,
   spaceOptions,
   places,
+  placeTips,
   eventSummaries,
   recentEvents,
   curationMetrics,
@@ -234,6 +257,7 @@ export function AdminDashboard({
   const [tab, setTab] = useState<
     | "curations"
     | "places"
+    | "tips"
     | "applications"
     | "review"
     | "ownership"
@@ -275,9 +299,30 @@ export function AdminDashboard({
     lng: "127.0540",
     tags: "데이트,조용",
     sourceUrl: "",
-    notes: ""
+    notes: "",
+    editorialNote: "",
+    imageUrl: "",
+    homeFeatured: false,
+    homeSortOrder: "0"
   });
   const [creatingPlace, setCreatingPlace] = useState(false);
+  const [tipBusyId, setTipBusyId] = useState<string | null>(null);
+  const pendingTipCount = placeTips.filter((tip) => tip.status === "PENDING").length;
+
+  async function uploadPlaceImage(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "places");
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: formData
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error ?? "이미지 업로드에 실패했습니다.");
+    }
+    return data.url as string;
+  }
 
   const visibleMembers = useMemo(() => {
     if (memberFilter === "unverified") {
@@ -666,7 +711,11 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
           .map((tag) => tag.trim())
           .filter(Boolean),
         sourceUrl: placeForm.sourceUrl,
-        notes: placeForm.notes
+        notes: placeForm.notes,
+        editorialNote: placeForm.editorialNote,
+        imageUrl: placeForm.imageUrl,
+        homeFeatured: placeForm.homeFeatured,
+        homeSortOrder: Number(placeForm.homeSortOrder) || 0
       })
     });
     setCreatingPlace(false);
@@ -678,7 +727,10 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
         name: "",
         address: "",
         sourceUrl: "",
-        notes: ""
+        notes: "",
+        editorialNote: "",
+        imageUrl: "",
+        homeFeatured: false
       }));
       router.refresh();
     } else {
@@ -693,6 +745,79 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, isActive: !isActive })
     });
+    router.refresh();
+  }
+
+  async function togglePlaceHome(id: string, homeFeatured: boolean) {
+    await fetch("/api/admin/places", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, homeFeatured: !homeFeatured })
+    });
+    router.refresh();
+  }
+
+  async function patchPlaceImage(id: string, file: File) {
+    try {
+      const imageUrl = await uploadPlaceImage(file);
+      await fetch("/api/admin/places", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, imageUrl })
+      });
+      setMessage("Place 이미지가 저장되었습니다.");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "이미지 저장 실패");
+    }
+  }
+
+  async function reviewTip(
+    tip: PlaceTipRow,
+    action: "adopt" | "reject"
+  ) {
+    setTipBusyId(tip.id);
+    setMessage("");
+
+    const body =
+      action === "reject"
+        ? { id: tip.id, action }
+        : {
+            id: tip.id,
+            action,
+            createPlace: {
+              name: tip.name,
+              type: "ETC" as const,
+              region: "서울",
+              district: tip.district,
+              address: tip.district,
+              lat: 37.5665,
+              lng: 126.978,
+              sourceUrl: tip.sourceUrl || "",
+              editorialNote: "",
+              imageUrl: tip.imageUrl || "",
+              homeFeatured: false
+            }
+          };
+
+    const response = await fetch("/api/admin/place-tips", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    setTipBusyId(null);
+
+    if (!response.ok) {
+      setMessage(data.error ?? "제보 처리에 실패했습니다.");
+      return;
+    }
+
+    setMessage(
+      action === "adopt"
+        ? "제보를 채택해 Place로 등록했습니다. 주소·좌표를 Place Pool에서 보완하세요."
+        : "제보를 반려했습니다."
+    );
     router.refresh();
   }
 
@@ -796,6 +921,13 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
             onClick={() => setTab("places")}
           >
             Place Pool ({places.length})
+          </button>
+          <button
+            type="button"
+            className={tab === "tips" ? "my-tab active" : "my-tab"}
+            onClick={() => setTab("tips")}
+          >
+            장소 제보 ({pendingTipCount})
           </button>
           <button
             type="button"
@@ -1191,13 +1323,74 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                 />
               </label>
               <label className="admin-place-notes">
-                선정 메모
+                선정 메모 (내부)
                 <input
                   value={placeForm.notes}
                   onChange={(event) =>
                     setPlaceForm((prev) => ({ ...prev, notes: event.target.value }))
                   }
                 />
+              </label>
+              <label className="admin-place-notes">
+                홈 카드 한 줄
+                <input
+                  value={placeForm.editorialNote}
+                  onChange={(event) =>
+                    setPlaceForm((prev) => ({
+                      ...prev,
+                      editorialNote: event.target.value
+                    }))
+                  }
+                  placeholder="전시 보고 나서 정갈하게 앉기 좋은 곳"
+                />
+              </label>
+              <label>
+                홈 노출 순서
+                <input
+                  value={placeForm.homeSortOrder}
+                  onChange={(event) =>
+                    setPlaceForm((prev) => ({
+                      ...prev,
+                      homeSortOrder: event.target.value
+                    }))
+                  }
+                />
+              </label>
+              <label className="admin-place-notes">
+                사진
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const imageUrl = await uploadPlaceImage(file);
+                      setPlaceForm((prev) => ({ ...prev, imageUrl }));
+                      setMessage("이미지가 업로드되었습니다.");
+                    } catch (error) {
+                      setMessage(
+                        error instanceof Error ? error.message : "업로드 실패"
+                      );
+                    }
+                  }}
+                />
+                {placeForm.imageUrl ? (
+                  <span className="field-hint">업로드됨</span>
+                ) : null}
+              </label>
+              <label className="admin-check">
+                <input
+                  type="checkbox"
+                  checked={placeForm.homeFeatured}
+                  onChange={(event) =>
+                    setPlaceForm((prev) => ({
+                      ...prev,
+                      homeFeatured: event.target.checked
+                    }))
+                  }
+                />
+                홈 «나만 알고 싶었던 곳인데»에 노출
               </label>
             </div>
             <div className="review-form-actions">
@@ -1228,13 +1421,42 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                       <p>{place.address}</p>
                       <p className="field-hint">
                         태그 {place.tags.join(", ") || "-"} · 사용 {place.usedCount}회
-                        {place.notes ? ` · ${place.notes}` : ""}
+                        {place.editorialNote
+                          ? ` · ${place.editorialNote}`
+                          : place.notes
+                            ? ` · ${place.notes}`
+                            : ""}
                       </p>
                       <span className={place.isActive ? "status-pill ok" : "status-pill"}>
                         {place.isActive ? "ACTIVE" : "RESTING"}
                       </span>
+                      {place.homeFeatured ? (
+                        <span className="status-pill ok">HOME</span>
+                      ) : null}
+                      {place.imageUrl ? (
+                        <span className="status-pill ok">PHOTO</span>
+                      ) : null}
                     </div>
                     <div className="hub-actions">
+                      <label className="secondary-button">
+                        사진
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          hidden
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) void patchPlaceImage(place.id, file);
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => togglePlaceHome(place.id, place.homeFeatured)}
+                      >
+                        {place.homeFeatured ? "홈에서 내리기" : "홈에 올리기"}
+                      </button>
                       <button
                         type="button"
                         className="secondary-button"
@@ -1242,6 +1464,9 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                       >
                         {place.isActive ? "쉬게 하기" : "다시 쓰기"}
                       </button>
+                      <Link className="secondary-button" href={`/places/${place.id}`}>
+                        상세
+                      </Link>
                     </div>
                   </article>
                 ))}
@@ -1251,6 +1476,82 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
             )}
           </section>
         </>
+      )}
+
+      {tab === "tips" && (
+        <section className="register-card wide my-section">
+          <h2>장소 제보 검수</h2>
+          <p className="auth-description">
+            채택 시 Place가 생성됩니다. 주소·좌표는 Place Pool에서 보완한 뒤 홈에
+            올려 주세요. 채택되면 제보자에게 이메일이 갑니다.
+          </p>
+          {placeTips.length > 0 ? (
+            <div className="my-list">
+              {placeTips.map((tip) => (
+                <article key={tip.id} className="my-list-card">
+                  <div>
+                    <h3>
+                      {tip.name}{" "}
+                      <small>
+                        {tip.district} · {tip.situation}
+                      </small>
+                    </h3>
+                    <p className="field-hint">
+                      {tip.userName} ({tip.userEmail}) ·{" "}
+                      {new Date(tip.createdAt).toLocaleString("ko-KR")}
+                    </p>
+                    {tip.sourceUrl ? (
+                      <p>
+                        <a href={tip.sourceUrl} target="_blank" rel="noreferrer">
+                          링크
+                        </a>
+                      </p>
+                    ) : null}
+                    {tip.imageUrl ? (
+                      <p className="field-hint">사진 첨부됨</p>
+                    ) : null}
+                    <span
+                      className={
+                        tip.status === "ADOPTED"
+                          ? "status-pill ok"
+                          : tip.status === "REJECTED"
+                            ? "status-pill"
+                            : "status-pill warn"
+                      }
+                    >
+                      {tip.status}
+                    </span>
+                    {tip.placeName ? (
+                      <p className="field-hint">연결된 Place: {tip.placeName}</p>
+                    ) : null}
+                  </div>
+                  {tip.status === "PENDING" ? (
+                    <div className="hub-actions">
+                      <button
+                        type="button"
+                        className="primary-button"
+                        disabled={tipBusyId === tip.id}
+                        onClick={() => reviewTip(tip, "adopt")}
+                      >
+                        채택
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={tipBusyId === tip.id}
+                        onClick={() => reviewTip(tip, "reject")}
+                      >
+                        반려
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">제보가 없습니다.</div>
+          )}
+        </section>
       )}
 
       {tab === "review" && (

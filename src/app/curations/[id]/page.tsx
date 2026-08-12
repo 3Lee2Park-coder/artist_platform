@@ -14,12 +14,13 @@ export async function generateMetadata({
   const curation = await getCurationById(id);
 
   if (!curation) {
-    return { title: "큐레이션을 찾을 수 없습니다 | Exhibit" };
+    return { title: "큐레이션을 찾을 수 없습니다", robots: { index: false } };
   }
 
   return {
-    title: `${curation.title} | Exhibit`,
-    description: curation.description ?? curation.subtitle ?? undefined
+    title: curation.title,
+    description: curation.description ?? curation.subtitle ?? undefined,
+    alternates: { canonical: `/curations/${curation.id}` }
   };
 }
 

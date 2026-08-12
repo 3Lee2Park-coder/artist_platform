@@ -81,6 +81,8 @@ type Stat = {
 
 type MyPageDashboardProps = {
   userName: string;
+  nickname: string | null;
+  legalName: string;
   email: string;
   role: string;
   artistStatus: string;
@@ -118,6 +120,8 @@ const roleLabel: Record<string, string> = {
 
 export function MyPageDashboard({
   userName,
+  nickname,
+  legalName,
   email,
   role,
   artistStatus,
@@ -141,6 +145,26 @@ export function MyPageDashboard({
   const router = useRouter();
   const [tab, setTab] = useState<"member" | "artist">(isArtist ? "member" : "member");
   const [message, setMessage] = useState("");
+  const [nicknameDraft, setNicknameDraft] = useState(nickname ?? "");
+  const [nicknameBusy, setNicknameBusy] = useState(false);
+
+  async function saveNickname() {
+    setNicknameBusy(true);
+    setMessage("");
+    const response = await fetch("/api/my/nickname", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nickname: nicknameDraft })
+    });
+    const data = await response.json();
+    setNicknameBusy(false);
+    if (!response.ok) {
+      setMessage(data.error ?? "닉네임 변경에 실패했습니다.");
+      return;
+    }
+    setMessage("닉네임이 저장되었습니다.");
+    router.refresh();
+  }
 
   async function updateReservationStatus(id: string, status: string) {
     const response = await fetch(`/api/reservations/${id}`, {
@@ -166,11 +190,11 @@ export function MyPageDashboard({
 
   async function shareArchive() {
     const shareUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const shareText = `${userName}님의 전시 아카이브 — 올해 ${stats.thisYear}개 관람`;
+    const shareText = `${userName}님의 찾기 기록 — 올해 ${stats.thisYear}곳을 찾아냈어요`;
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: "내 전시 아카이브", text: shareText, url: shareUrl });
+        await navigator.share({ title: "나의 찾기 기록", text: shareText, url: shareUrl });
         return;
       } catch {
         // 사용자가 취소한 경우 무시
@@ -212,6 +236,10 @@ export function MyPageDashboard({
             <dd>{email}</dd>
           </div>
           <div>
+            <dt>이름</dt>
+            <dd>{legalName}</dd>
+          </div>
+          <div>
             <dt>역할</dt>
             <dd>{roleLabel[role] ?? role}</dd>
           </div>
@@ -220,6 +248,27 @@ export function MyPageDashboard({
             <dd>{artistStatus}</dd>
           </div>
         </dl>
+
+        <div className="my-nickname-form">
+          <label>
+            닉네임
+            <input
+              value={nicknameDraft}
+              onChange={(event) => setNicknameDraft(event.target.value)}
+              placeholder="플랫폼에 표시될 이름"
+              maxLength={20}
+            />
+          </label>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={saveNickname}
+            disabled={nicknameBusy || nicknameDraft.trim().length < 2}
+          >
+            {nicknameBusy ? "저장 중…" : "닉네임 저장"}
+          </button>
+          <p className="field-hint">한글·영문·숫자·_ 2~20자. 중복될 수 없습니다.</p>
+        </div>
 
         <div className="taste-summary">
           <div>
@@ -265,7 +314,7 @@ export function MyPageDashboard({
             className={tab === "member" ? "my-tab active" : "my-tab"}
             onClick={() => setTab("member")}
           >
-            내 전시 라이프
+            나의 찾기 기록
           </button>
           {isArtist ? (
             <button
@@ -290,12 +339,14 @@ export function MyPageDashboard({
         <>
           <section className="register-card wide my-section my-archive-summary">
             <div className="my-archive-summary-copy">
-              <p className="eyebrow">My archive</p>
-              <h2>{userName}님의 전시 취향</h2>
+              <p className="eyebrow">Seeker log</p>
+              <h2>{userName}님의 찾기 기록</h2>
               <p className="auth-description">
-                올해 {stats.thisYear}개를 관람했고, {recommendCount}개 전시를 추천했어요.
+                올해 술래로서 {stats.thisYear}곳을 찾아냈고, {recommendCount}곳을
+                추천했어요.
                 {stats.topGenre ? ` 주로 ${stats.topGenre.label}` : ""}
-                {stats.topRegion ? ` · ${stats.topRegion.label} 전시` : ""}를 찾고 있어요.
+                {stats.topRegion ? ` · ${stats.topRegion.label}` : ""}
+                {(stats.topGenre || stats.topRegion) ? " 쪽을 잘 찾아내고 있어요." : ""}
               </p>
               {interestTags.length > 0 ? (
                 <div className="taste-chip-row">
@@ -313,7 +364,7 @@ export function MyPageDashboard({
             </div>
             <div className="my-archive-summary-stats">
               <div className="summary-stat">
-                <span>올해 관람</span>
+                <span>찾아낸 곳</span>
                 <strong>{stats.thisYear}</strong>
               </div>
               <div className="summary-stat">
@@ -321,11 +372,11 @@ export function MyPageDashboard({
                 <strong>{recommendCount}</strong>
               </div>
               <div className="summary-stat">
-                <span>저장</span>
+                <span>단서</span>
                 <strong>{savedExhibitions.length}</strong>
               </div>
               <div className="summary-stat">
-                <span>예약</span>
+                <span>만남 예약</span>
                 <strong>{libraryReservations.length}</strong>
               </div>
             </div>
@@ -361,15 +412,15 @@ export function MyPageDashboard({
       {isArtist && tab === "artist" && (
         <div className="my-artist-workspace">
           <div className="register-b2b-banner my-artist-growth">
-            <p className="register-b2b-kicker">Grow together</p>
+            <p className="register-b2b-kicker">Come out free · OOOF.</p>
             <p className="register-b2b-headline">
-              Grow Your Space.
+              Open your door.
               <br />
-              Show Your Work. Reach Further.
+              Be found.
             </p>
             <p className="register-b2b-lead">
-              우리와 함께 성장해 보세요. 공간·전시·프로그램을 직접 열고, 동네를 걷는
-              관객과의 연결을 넓혀 갑니다.
+              문을 열면, 찾아옵니다. 공간·전시·프로그램을 직접 열고, 동네를 걷는
+              관객이 당신의 작업을 발견하게 하세요.
             </p>
             <div className="hub-actions my-artist-growth-actions">
               <Link className="primary-button" href="/register">

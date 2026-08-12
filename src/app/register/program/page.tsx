@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "프로그램 등록 | Sokkup"
+  title: "프로그램 등록"
 };
 
 export default async function RegisterProgramPage() {

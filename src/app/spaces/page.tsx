@@ -1,20 +1,20 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { SpacesDirectoryClient } from "@/components/SpacesDirectoryClient";
-import { getSession } from "@/lib/auth";
-import { annotateSpaceViewerState, getPublicSpaces } from "@/lib/spaces";
+import { getPublicSpaces } from "@/lib/spaces";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata = {
-  title: "작가의 공간 | Exhibit"
+  title: "작가의 공간",
+  description:
+    "공방·쇼룸을 동네별로 모아 두었습니다. 방문 가능 여부를 확인하고 천천히 둘러보세요.",
+  alternates: { canonical: "/spaces" }
 };
 
 export default async function SpacesPage() {
-  const session = await getSession();
-  const spacesRaw = await getPublicSpaces();
-  const spaces = await annotateSpaceViewerState(spacesRaw, session?.id);
+  const spaces = await getPublicSpaces();
 
   return (
     <>
@@ -22,7 +22,7 @@ export default async function SpacesPage() {
 
       <main className="page-shell space-directory-page">
         <header className="space-directory-header">
-          <p className="eyebrow">Artist spaces</p>
+          <p className="eyebrow">공간</p>
           <h1>작가의 공간</h1>
           <p className="auth-description">
             공방·쇼룸을 동네별로 모아 두었습니다. 방문 가능 여부를 확인하고

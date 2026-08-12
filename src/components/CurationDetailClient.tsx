@@ -254,7 +254,7 @@ export function CurationDetailClient({
           <ShareActionButton
             label="코스 공유"
             title={curation.title}
-            text={`${curation.title} — Exhibit 지역 코스`}
+            text={`${curation.title} — OOOF. 동네 코스`}
             path={`/curations/${curation.id}`}
             eventType="CURATION_SHARE"
             source="curation_detail"

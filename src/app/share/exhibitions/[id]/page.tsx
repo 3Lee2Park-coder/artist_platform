@@ -15,11 +15,11 @@ export async function generateMetadata({ params }: ExhibitionSharePageProps) {
   const exhibition = await getExhibitionById(id);
 
   if (!exhibition) {
-    return { title: "전시 공유 | Exhibit" };
+    return { title: "전시 공유" };
   }
 
   return {
-    title: `${exhibition.title} 공유 | Exhibit`,
+    title: `${exhibition.title} 공유`,
     description: `${exhibition.venue}에서 열리는 ${exhibition.title} 전시를 확인해보세요.`,
     openGraph: {
       title: exhibition.title,
@@ -66,7 +66,7 @@ export default async function ExhibitionSharePage({
           </div>
           <div className="share-card-copy">
             <p className="eyebrow">
-              {isArtistShare ? "Artist invitation" : "Exhibition share"}
+              {isArtistShare ? "작가 초대" : "전시 공유"}
             </p>
             <h1>{exhibition.title}</h1>
             <p className="share-lead">{exhibition.summary}</p>

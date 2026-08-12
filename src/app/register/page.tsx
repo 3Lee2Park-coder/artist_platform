@@ -1,12 +1,12 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { getSession, isApprovedArtist } from "@/lib/auth";
+import { displayName, getSession, isApprovedArtist } from "@/lib/auth";
 import { getTodayKST } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 export const metadata = {
-  title: "등록 허브 | Sokkup"
+  title: "등록 허브"
 };
 
 export default async function RegisterHubPage() {
@@ -63,16 +63,18 @@ export default async function RegisterHubPage() {
       <main className="register-page">
         <section className="register-card wide">
           <div className="register-b2b-banner">
-            <p className="register-b2b-kicker">For artists &amp; spaces</p>
+            <p className="register-b2b-kicker">For artists &amp; spaces · OOOF.</p>
             <p className="register-b2b-headline">
-              Grow Your Space.
+              Come out free.
               <br />
-              Show Your Work. Reach Further.
+              Open your door.
+              <br />
+              Be found.
             </p>
             <p className="register-b2b-lead">
-              단순한 등록이 아닙니다. 작품을 직접 보여주고, 동네를 걷는 관객과의
-              연결을 넓히세요. 작업이 있는 곳을 열어 비즈니스의 다음 단계를
-              만들어가세요.
+              문을 열면, 찾아옵니다. 공간·전시·프로그램을 올리면 동네를 걷는
+              관객이 당신의 작업을 발견합니다. 단순한 등록이 아니라, 관객이
+              당신을 찾을 수 있는 자리를 만드는 일입니다.
             </p>
           </div>
 
@@ -117,7 +119,9 @@ export default async function RegisterHubPage() {
               <h2>로그인 / 회원가입</h2>
               <p>예약·등록·MY 기록을 위한 통합 계정입니다.</p>
               {session ? (
-                <span className="status-pill ok">{session.name}님 로그인됨</span>
+                <span className="status-pill ok">
+                  {displayName(session)}님 로그인됨
+                </span>
               ) : (
                 <div className="hub-actions">
                   <Link

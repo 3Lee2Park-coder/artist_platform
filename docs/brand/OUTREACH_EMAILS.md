@@ -1,7 +1,7 @@
 # 작가 아웃리치 · 긍정 회신 메일
 
 슬롯: `{name}` `{spaceOrExhibition}` `{neighborhood}` `{curationUrl}` `{spaceUrl}` `{homeUrl}` `{signupUrl}` `{brand}` `{onePagerUrl}` `{senderName}`  
-기본 `{brand}` = `Sokkup (가칭)`  
+기본 `{brand}` = `OOOF.`  
 기본 `{senderName}` = `이민혁`  
 `{signupUrl}` 예: `https://{APP}/auth/signup?redirect=/register/artist`  
 `{homeUrl}` 예: `https://{APP}/` (현재 Production URL)
@@ -175,7 +175,7 @@ Brand Owner 초안을 다듬은 **발송용 정본**.
 ```
 안녕하세요, {name} 작가님. {senderName}입니다.
 
-{brand}(가칭)은 작가가 관객에게 더 적극적으로 다가갈 수 있는
+{brand}은 작가가 관객에게 더 적극적으로 다가갈 수 있는
 동네 전시 창구를 준비하고 있습니다.
 공방·쇼룸·전시를 코스·지도·방문 안내·예약으로 잇고,
 가입·공간·전시 등록은 무료입니다.

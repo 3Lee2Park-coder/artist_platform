@@ -34,12 +34,13 @@ export async function generateMetadata({ params }: SpaceDetailPageProps) {
   const space = await getSpaceBySlug(slug);
 
   if (!space) {
-    return { title: "공간을 찾을 수 없습니다 | Exhibit" };
+    return { title: "공간을 찾을 수 없습니다", robots: { index: false } };
   }
 
   return {
-    title: `${space.name} | Exhibit`,
-    description: space.shortDescription ?? `${space.district}의 작가 공간`
+    title: space.name,
+    description: space.shortDescription ?? `${space.district}의 작가 공간`,
+    alternates: { canonical: `/spaces/${space.slug}` }
   };
 }
 

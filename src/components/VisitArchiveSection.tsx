@@ -52,12 +52,12 @@ export function VisitArchiveSection({ entries, userName }: VisitArchiveSectionPr
     return (
       <section className="visit-archive">
         <div className="visit-archive-heading">
-          <h2>방문 아카이브</h2>
-          <p>다녀온 전시·공간·프로그램이 여기에 쌓입니다.</p>
+          <h2>찾기 아카이브</h2>
+          <p>찾아낸 전시·공간·프로그램이 여기에 쌓입니다.</p>
         </div>
         <div className="empty-state">
-          아직 방문 기록이 없습니다. 마음에 든 곳에서 &lsquo;다녀왔어요&rsquo;를
-          눌러보세요.
+          아직 찾은 기록이 없습니다. 마음에 든 곳에서 &lsquo;다녀왔어요&rsquo;를
+          눌러 단서를 남겨보세요.
         </div>
       </section>
     );
@@ -66,9 +66,9 @@ export function VisitArchiveSection({ entries, userName }: VisitArchiveSectionPr
   return (
     <section className="visit-archive">
       <div className="visit-archive-heading">
-        <h2>방문 아카이브</h2>
+        <h2>찾기 아카이브</h2>
         <p>
-          지금까지 {entries.length}번의 방문 — 카드를 만들어 인스타그램에
+          지금까지 {entries.length}곳을 찾아냈어요 — 카드를 만들어 인스타그램에
           자랑해보세요.
         </p>
       </div>

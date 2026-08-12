@@ -13,6 +13,9 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
+  // 플랫폼 공개 표시명 — 중복 불가 (대소문자 무시: nicknameNormalized)
+  nickname           String?
+  nicknameNormalized String?  @unique
   phone        String?
   birthDate    String?
   emailVerifiedAt    DateTime?
@@ -42,6 +45,7 @@ model User {
   notificationLogs    NotificationLog[]
   ownedSpaces         Space[]            @relation("OwnedSpaces")
   hostedPrograms      Program[]          @relation("HostedPrograms")
+  placeTips           PlaceTip[]
 }
 
 model ArtistApplication {
@@ -259,6 +263,11 @@ model Place {
   tags       String    @default("[]")
   sourceUrl  String?
   notes      String?
+  imageUrl   String?
+  // 홈 «나만 알고 싶었던 곳인데» 카드용 한 줄
+  editorialNote String?
+  homeFeatured  Boolean @default(false)
+  homeSortOrder Int     @default(0)
   isActive   Boolean   @default(true)
   usedCount  Int       @default(0)
   lastUsedAt DateTime?
@@ -267,6 +276,33 @@ model Place {
 
   curations     Curation[]
   curationStops CurationStop[]
+  tips          PlaceTip[]
+
+  @@index([homeFeatured, homeSortOrder])
+}
+
+// 관객 장소 제보 — 검수 후 Place로 채택
+model PlaceTip {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  sourceUrl  String?
+  // BEFORE | AFTER | SOLO | DATE | MEAL | OTHER
+  situation  String
+  district   String
+  imageUrl   String?
+  // PENDING | ADOPTED | REJECTED
+  status     String   @default("PENDING")
+  placeId    String?
+  adminNote  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place Place? @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Curation {

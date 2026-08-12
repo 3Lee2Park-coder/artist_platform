@@ -1,10 +1,10 @@
 # Supply Wedge — 공급자(작가) 유치 전략
 
 > NFX Wedge **프레임**만 사용. Artsy·갤러리 리에이종 등 리서치 사례의 결론을 그대로 복제하지 않는다.  
-> 브랜드 정체성: [BRAND_IDENTITY.md](./BRAND_IDENTITY.md) (Explorer + Caregiver)  
+> 브랜드 정체성: [BRAND_IDENTITY.md](./BRAND_IDENTITY.md) (Everyman + Explorer + Hero)  
 > Soft-launch 원칙: **Supply First, Always** — 수요 마케팅 전에 좁은 동네 밀도의 공급을 먼저 만든다.
 
-Working name: **Exhibit (가칭)**
+Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 ---
 

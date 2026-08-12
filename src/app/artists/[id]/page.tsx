@@ -25,10 +25,13 @@ export async function generateMetadata({ params }: ArtistPageProps) {
   });
 
   if (!user || user.artistStatus !== "APPROVED") {
-    return { title: "작가를 찾을 수 없습니다 | Exhibit" };
+    return { title: "작가를 찾을 수 없습니다", robots: { index: false } };
   }
 
-  return { title: `${user.name} 작가 | Exhibit` };
+  return {
+    title: `${user.name} 작가`,
+    alternates: { canonical: `/artists/${id}` }
+  };
 }
 
 export default async function ArtistPage({ params }: ArtistPageProps) {
@@ -173,7 +176,7 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
           <section className="detail-section">
             <div className="section-header">
               <div>
-                <p className="eyebrow">Exhibitions</p>
+                <p className="eyebrow">전시</p>
                 <h2>작가의 전시</h2>
               </div>
             </div>

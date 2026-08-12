@@ -4,7 +4,7 @@
 > 리서치의 Phase·KPI **프레임**을 쓰되, 시장·세그먼트·가격·채널은 우리 제품 현실로 새로 정의한다.  
 > 선행 문서: [BRAND_IDENTITY.md](./BRAND_IDENTITY.md) · [SUPPLY_WEDGE.md](./SUPPLY_WEDGE.md) · [PARTNERSHIP_PROPOSAL.md](./PARTNERSHIP_PROPOSAL.md)
 
-Working name: **Exhibit (가칭)**  
+Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**  
 현재 라이브: Production URL (Vercel) — 배포 후 스모크는 [../ops/DEPLOY_SMOKE_CHECKLIST.md](../ops/DEPLOY_SMOKE_CHECKLIST.md)
 
 ---

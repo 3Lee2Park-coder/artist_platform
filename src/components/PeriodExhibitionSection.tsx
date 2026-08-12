@@ -14,10 +14,10 @@ export function PeriodExhibitionSection({ groups }: PeriodExhibitionSectionProps
   return (
     <section className="home-section">
       <HomeSectionHeader
-        eyebrow="전시 타이밍"
-        title="이번 주, 놓치기 아쉬운 전시"
-        description="작가 전시부터 곧 끝나는 전시까지, 지금 가보기 좋은 타이밍으로 골랐어요."
-        actionLabel="전체 전시"
+        eyebrow="놓치면 숨어요"
+        title="발견된 전시/다시 숨는 전시"
+        description="이번 주가 지나면 찾기 어려워질 수 있어요. 아직 모습을 드러낸 전시를 먼저 만나 보세요."
+        actionLabel="찾아낸 전시 전체"
         actionHref="/exhibitions"
       />
 

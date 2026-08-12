@@ -641,6 +641,7 @@ export type CurationBasePlace = {
   lng: number;
   sourceUrl: string | null;
   notes: string | null;
+  imageUrl: string | null;
 };
 
 export type CurationExhibitionItem = Exhibition & {
@@ -799,17 +800,17 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
                   title: stop.place.name,
                   subtitle:
                     PLACE_TYPE_LABEL[stop.place.type] ?? stop.place.type,
-                  href: null,
+                  href: `/places/${stop.place.id}`,
                   externalUrl:
                     stop.place.sourceUrl ||
                     `https://map.naver.com/p/search/${encodeURIComponent(stop.place.name)}`,
                   lat: stop.place.lat,
                   lng: stop.place.lng,
                   heroTone: null,
-                  heroImageUrl: null,
+                  heroImageUrl: resolveMediaUrl(stop.place.imageUrl) ?? null,
                   editorialBadge: stop.editorialBadge,
                   distanceText: stop.distanceText,
-                  note: stop.note ?? stop.place.notes
+                  note: stop.note ?? stop.place.notes ?? stop.place.editorialNote
                 };
               }
               return null;
@@ -865,7 +866,8 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
             lat: curation.basePlace.lat,
             lng: curation.basePlace.lng,
             sourceUrl: curation.basePlace.sourceUrl,
-            notes: curation.basePlace.notes
+            notes: curation.basePlace.notes,
+            imageUrl: resolveMediaUrl(curation.basePlace.imageUrl) ?? null
           }
         : null,
       createdAt: curation.createdAt.toISOString(),

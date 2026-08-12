@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: VisitSharePageProps) {
   });
 
   if (!visit || !visit.exhibition) {
-    return { title: "방문 기록 공유 | Exhibit" };
+    return { title: "방문 기록 공유" };
   }
 
   return {
-    title: `${visit.user.name}님의 ${visit.exhibition.title} 방문 기록 | Exhibit`,
+    title: `${visit.user.name}님의 ${visit.exhibition.title} 방문 기록`,
     description: visit.exhibition.summary,
     openGraph: {
       title: `${visit.user.name}님의 전시 기록`,

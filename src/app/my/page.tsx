@@ -1,7 +1,12 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { MyPageDashboard } from "@/components/MyPageDashboard";
-import { getSession, getUserById, isApprovedArtist } from "@/lib/auth";
+import {
+  displayName,
+  getSession,
+  getUserById,
+  isApprovedArtist
+} from "@/lib/auth";
 import { getTodayKST } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { resolveMediaUrl } from "@/lib/storage-url";
@@ -10,7 +15,7 @@ import { getVisitArchive } from "@/lib/visit-archive";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "마이페이지 | Exhibit"
+  title: "마이페이지"
 };
 
 function parseCategories(value: string): string[] {
@@ -363,7 +368,12 @@ export default async function MyPage() {
     <>
       <Header activeTab="MY" />
       <MyPageDashboard
-        userName={session.name}
+        userName={displayName({
+          nickname: user?.nickname ?? session.nickname,
+          name: session.name
+        })}
+        nickname={user?.nickname ?? session.nickname}
+        legalName={session.name}
         email={session.email}
         role={session.role}
         artistStatus={session.artistStatus}

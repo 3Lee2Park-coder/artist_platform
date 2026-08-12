@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "관리자 | Exhibit"
+  title: "관리자"
 };
 
 export default async function AdminPage() {
@@ -110,6 +110,15 @@ export default async function AdminPage() {
 
   const places = await prisma.place.findMany({
     orderBy: [{ district: "asc" }, { name: "asc" }]
+  });
+
+  const placeTips = await prisma.placeTip.findMany({
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    take: 200,
+    include: {
+      user: { select: { name: true, nickname: true, email: true } },
+      place: { select: { id: true, name: true } }
+    }
   });
 
   const spaces = await prisma.space.findMany({
@@ -296,8 +305,27 @@ export default async function AdminPage() {
           tags: safeJsonArray(place.tags),
           sourceUrl: place.sourceUrl,
           notes: place.notes,
+          editorialNote: place.editorialNote,
+          imageUrl: place.imageUrl,
+          homeFeatured: place.homeFeatured,
+          homeSortOrder: place.homeSortOrder,
           isActive: place.isActive,
           usedCount: place.usedCount
+        }))}
+        placeTips={placeTips.map((tip) => ({
+          id: tip.id,
+          name: tip.name,
+          sourceUrl: tip.sourceUrl,
+          situation: tip.situation,
+          district: tip.district,
+          imageUrl: tip.imageUrl,
+          status: tip.status,
+          adminNote: tip.adminNote,
+          createdAt: tip.createdAt.toISOString(),
+          userName: tip.user.nickname || tip.user.name,
+          userEmail: tip.user.email,
+          placeId: tip.placeId,
+          placeName: tip.place?.name ?? null
         }))}
         eventSummaries={eventSummaries
           .map((summary) => ({

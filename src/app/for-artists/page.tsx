@@ -4,9 +4,10 @@ import { getSession, isApprovedArtist } from "@/lib/auth";
 import Link from "next/link";
 
 export const metadata = {
-  title: "작가로 열기 | Sokkup",
+  title: "작가로 열기",
   description:
-    "공방·쇼룸을 직접 열고, 프로그램과 전시를 올려 관객과 만나는 Sokkup 작가 안내"
+    "공방·쇼룸을 직접 열고, 프로그램과 전시를 올려 관객과 만나는 OOOF. 작가 안내. Olly Olly Oxen Free.",
+  alternates: { canonical: "/for-artists" }
 };
 
 const STEPS = [
@@ -54,14 +55,14 @@ export default async function ForArtistsPage() {
         <section className="for-artists-hero">
           <p className="eyebrow">For artists & spaces</p>
           <h1>
-            작업이 있는 곳을
+            문을 열면,
             <br />
-            직접 열어 보세요
+            찾아옵니다
           </h1>
           <p className="for-artists-lead">
-            Sokkup은 작가가 관객에게 더 적극적으로 다가갈 수 있는 창구입니다.
+            OOOF.는 작가가 관객에게 더 적극적으로 다가갈 수 있는 창구입니다.
             공방·쇼룸·전시를 동네 코스로 잇고, 지도와 방문 안내·예약까지 붙입니다.
-            의지가 있는 곳에 길이 있습니다 — 같이 만들어 갑시다.
+            열어 두면, 동네를 걷는 관객이 길을 따라 옵니다.
           </p>
           <div className="for-artists-actions">
             {approved ? (

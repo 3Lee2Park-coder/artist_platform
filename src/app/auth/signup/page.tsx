@@ -7,6 +7,7 @@ import { FormEvent, useState } from "react";
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -32,7 +33,7 @@ export default function SignupPage() {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, birthDate, phone })
+      body: JSON.stringify({ name, nickname, email, password, birthDate, phone })
     });
 
     const data = await response.json();
@@ -70,6 +71,21 @@ export default function SignupPage() {
               placeholder="홍길동"
               required
             />
+          </label>
+          <label>
+            닉네임
+            <input
+              type="text"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              placeholder="플랫폼에서 보이는 이름"
+              minLength={2}
+              maxLength={20}
+              required
+            />
+            <span className="auth-field-hint">
+              한글·영문·숫자·_ 2~20자. 다른 사람과 겹칠 수 없습니다.
+            </span>
           </label>
           <label>
             이메일

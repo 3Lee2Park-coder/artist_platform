@@ -45,6 +45,7 @@ export async function POST(request: Request) {
       id: user.id,
       email: user.email,
       name: user.name,
+      nickname: user.nickname,
       role: user.role as "MEMBER" | "ARTIST" | "ADMIN",
       artistStatus: user.artistStatus as "NONE" | "PENDING" | "APPROVED" | "REJECTED"
     });
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         name: user.name,
+        nickname: user.nickname,
         role: user.role,
         artistStatus: user.artistStatus
       }

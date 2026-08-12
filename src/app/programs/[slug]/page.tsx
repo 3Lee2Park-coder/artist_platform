@@ -19,13 +19,14 @@ export async function generateMetadata({ params }: ProgramDetailPageProps) {
   const program = await getProgramBySlug(slug);
 
   if (!program) {
-    return { title: "프로그램을 찾을 수 없습니다 | Exhibit" };
+    return { title: "프로그램을 찾을 수 없습니다", robots: { index: false } };
   }
 
   return {
-    title: `${program.title} | Exhibit`,
+    title: program.title,
     description:
-      program.summary ?? `${program.venue.name}에서 열리는 ${program.typeLabel}`
+      program.summary ?? `${program.venue.name}에서 열리는 ${program.typeLabel}`,
+    alternates: { canonical: `/programs/${program.slug}` }
   };
 }
 

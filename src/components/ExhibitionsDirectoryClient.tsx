@@ -344,21 +344,21 @@ export function ExhibitionsDirectoryClient({
       </div>
 
       <p className="exhub-count">
-        {filtered.length.toLocaleString("ko-KR")}개 전시
-        {artistCold ? " · 작가 전시는 아직 쌓이는 중" : ""}
+        {filtered.length.toLocaleString("ko-KR")}곳 발견
+        {artistCold ? " · 작가 전시는 아직 찾아내는 중" : ""}
       </p>
 
       {empty ? (
         <div className="exhub-empty">
           <h2>
             {searching
-              ? "이 조건으로는 아직 길이 없어요"
-              : "아직 열린 전시가 없어요"}
+              ? "이 단서로는 아직 못 찾겠어요"
+              : "아직 모습을 드러낸 전시가 없어요"}
           </h2>
           <p>
             {searching
-              ? "날짜·동네·키워드를 조금 넓혀 다시 찾아보거나, 필터를 비워 전체로 열어 보세요."
-              : "다른 동네 코스를 둘러보거나, 작가라면 첫 전시를 직접 열어 이 길을 만들어 주세요."}
+              ? "날짜·동네·키워드를 조금 넓혀 다시 찾아보거나, 단서를 비워 전체로 열어 보세요."
+              : "다른 동네 코스를 둘러보거나, 작가라면 첫 전시를 열어 이 찾기 판을 채워 주세요."}
           </p>
           <div className="exhub-empty-actions">
             <button
@@ -380,11 +380,11 @@ export function ExhibitionsDirectoryClient({
             </button>
             {searching ? (
               <Link className="primary-button" href="/exhibitions">
-                전체 전시 둘러보기
+                발견한 전시 다시 보기
               </Link>
             ) : (
               <Link className="primary-button" href="/register/exhibition">
-                전시 등록하기
+                전시 드러내기
               </Link>
             )}
           </div>
@@ -395,11 +395,11 @@ export function ExhibitionsDirectoryClient({
             <section className="exhub-section">
               <div className="exhub-section-head">
                 <div>
-                  <p className="eyebrow">Now</p>
-                  <h2>지금 눈에 띄는 전시</h2>
+                  <p className="eyebrow">First finds</p>
+                  <h2>먼저 눈에 띈 전시</h2>
                 </div>
                 <Link className="text-link" href="/map?layer=exhibition">
-                  내 주변 지도
+                  지도에서 찾기
                 </Link>
               </div>
               <div className="exhub-rail" aria-label="추천 전시 슬라이드">
@@ -414,12 +414,12 @@ export function ExhibitionsDirectoryClient({
             <section className="exhub-section">
               <div className="exhub-section-head">
                 <div>
-                  <p className="eyebrow">Artist</p>
-                  <h2>작가 등록 전시</h2>
-                  <p>작가가 Exhibit에 직접 올린 전시를 먼저 만납니다.</p>
+                  <p className="eyebrow">Artist finds</p>
+                  <h2>작가가 드러낸 전시</h2>
+                  <p>작가가 OOOF.에 직접 올려, 관객에게 모습을 보인 전시입니다.</p>
                 </div>
                 <Link className="secondary-button" href="/register/exhibition">
-                  내 전시 올리기
+                  내 전시 드러내기
                 </Link>
               </div>
 
@@ -428,12 +428,12 @@ export function ExhibitionsDirectoryClient({
                   <div>
                     <strong>아직 작가 전시가 적어요</strong>
                     <p>
-                      공공·기관 전시는 아래에서 충분히 둘러보고, 작가 전시는 첫
-                      등록이 이 자리를 채워 줍니다.
+                      공공·기관 전시는 아래에서 찾고, 작가 전시는 첫 등록이 이
+                      발견 칸을 채워 줍니다.
                     </p>
                   </div>
                   <Link className="primary-button" href="/register/exhibition">
-                    첫 전시 등록
+                    첫 전시 드러내기
                   </Link>
                 </div>
               ) : (
@@ -455,7 +455,7 @@ export function ExhibitionsDirectoryClient({
                   ) : null}
                   {artistCold ? (
                     <p className="exhub-cold-note">
-                      작가 전시가 늘어날수록 이 영역이 허브의 중심으로 커집니다.
+                      작가 전시가 늘어날수록, 여기서 발견되는 길이 더 분명해집니다.
                     </p>
                   ) : null}
                 </div>
@@ -465,10 +465,10 @@ export function ExhibitionsDirectoryClient({
 
           <section className="exhub-nearby">
             <div>
-              <p className="eyebrow">Nearby</p>
-              <h2>가고 싶은 전시 주변 동선</h2>
+              <p className="eyebrow">Next clue</p>
+              <h2>찾은 전시 주변으로</h2>
               <p>
-                위치 기반으로 전시를 고르고, 가까운 공간·코스까지 이어서 보세요.
+                마음에 든 전시를 단서로, 가까운 공간·코스까지 이어서 찾아보세요.
               </p>
             </div>
             <div className="exhub-nearby-actions">
@@ -485,10 +485,10 @@ export function ExhibitionsDirectoryClient({
             <section className="exhub-section">
               <div className="exhub-section-head">
                 <div>
-                  <p className="eyebrow">Museum &amp; Public</p>
-                  <h2>공공·기관 전시</h2>
+                  <p className="eyebrow">Wider search</p>
+                  <h2>공공·기관에서 찾은 전시</h2>
                   <p>
-                    문화정보원·문체부 기반 전시 {publicList.length.toLocaleString("ko-KR")}건
+                    더 넓은 판에서 찾아낸 전시 {publicList.length.toLocaleString("ko-KR")}건
                   </p>
                 </div>
               </div>

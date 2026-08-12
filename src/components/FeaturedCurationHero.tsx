@@ -133,9 +133,9 @@ export function FeaturedCurationHero({ curations }: FeaturedCurationHeroProps) {
 
       <div className="featured-curation-plane" style={coverStyle}>
         <div className="featured-curation-copy">
-          <p className="featured-curation-brand">Sokkup</p>
+          <p className="featured-curation-brand brand-wordmark">OOOF.</p>
           <p className="featured-curation-eyebrow">
-            {activeNeighborhood} · 오늘의 동네 코스
+            {activeNeighborhood} · 오늘 찾아볼 코스
           </p>
           <h1 id="featured-course-title">{curation.title}</h1>
           {curation.subtitle ? (
