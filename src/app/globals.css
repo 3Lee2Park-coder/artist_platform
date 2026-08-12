@@ -7584,6 +7584,11 @@
     color: var(--muted);
   }
 
+  .about-korean-alias {
+    font-weight: 700;
+    color: var(--secondary);
+  }
+
   .about-lead {
     margin: 0 0 14px;
     font-size: 16px;

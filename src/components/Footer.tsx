@@ -6,7 +6,9 @@ export function Footer() {
     <footer className="footer">
       <div>
         <strong className="brand-wordmark">{BRAND.mark}</strong>
-        <p className="footer-fullname-name">{BRAND.fullName}</p>
+        <p className="footer-full-name">
+          {BRAND.fullName} · {BRAND.koreanAlias}
+        </p>
         <p>
           {BRAND.campaignLine}가 꼭꼭 숨은 동네 전시와 작가 공간을 찾아
           알려드립니다.

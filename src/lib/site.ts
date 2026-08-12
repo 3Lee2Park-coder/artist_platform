@@ -52,7 +52,8 @@ export function getSiteUrl() {
 export const siteConfig = {
   name: BRAND.mark,
   fullName: BRAND.fullName,
-  description: BRAND.descriptor,
+  koreanAlias: BRAND.koreanAlias,
+  description: BRAND.seoDescription,
   host: SITE_HOST,
   locale: "ko_KR"
 } as const;

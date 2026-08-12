@@ -5,7 +5,14 @@ import Link from "next/link";
 
 export const metadata = {
   title: "회사소개",
-  description: `${BRAND.fullName} — ${BRAND.descriptor}. 숨바꼭질의 화해 외침을 동네 예술에 적용합니다.`,
+  description: `${BRAND.mark}(${BRAND.koreanAlias}) · ${BRAND.fullName}. ${BRAND.descriptor}. 숨바꼭질의 화해 외침을 동네 예술에 적용합니다.`,
+  keywords: [
+    BRAND.mark,
+    BRAND.koreanAlias,
+    BRAND.fullName,
+    "회사소개",
+    "동네 전시"
+  ],
   alternates: { canonical: "/about" }
 };
 
@@ -34,10 +41,15 @@ export default function AboutPage() {
           <h1>
             <span className="brand-wordmark">OOOF.</span>
           </h1>
-          <p className="about-fullname-name">{BRAND.fullName}</p>
+          <p className="about-fullname-name">
+            {BRAND.fullName}
+            <span className="about-korean-alias"> · {BRAND.koreanAlias}</span>
+          </p>
           <p className="about-lead">
             {BRAND.fullName}는 숨바꼭질에서 숨어 있던 사람이 불이익 없이 나와도
-            된다는 화해의 외침입니다. OOOF.는 그 외침을 동네 예술에 적용합니다.
+            된다는 화해의 외침입니다. 브랜드 마크는 {BRAND.mark}, 한국어로는{" "}
+            <strong>{BRAND.koreanAlias}</strong>로 읽습니다. {BRAND.mark}는 그
+            외침을 동네 예술에 적용합니다.
           </p>
           <p className="about-lead">
             {BRAND.descriptor}. 캠페인 문장으로는 「{BRAND.campaignLine}」,

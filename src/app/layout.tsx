@@ -17,19 +17,22 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: `${BRAND.mark} | ${BRAND.campaignLine.replace(` ${BRAND.mark}`, "")}`,
+    default: `${BRAND.mark}(${BRAND.koreanAlias}) | 못 찾겠다, 꾀꼬리?`,
     template: `%s | ${BRAND.mark}`
   },
-  description: BRAND.descriptor,
+  description: BRAND.seoDescription,
   applicationName: BRAND.mark,
   keywords: [
     "OOOF",
+    "OOOF.",
+    "우프",
     "Olly Olly Oxen Free",
     "동네 전시",
     "전시 지도",
     "작가 공간",
     "큐레이션",
-    "전시 코스"
+    "전시 코스",
+    "숨은 전시"
   ],
   authors: [{ name: BRAND.mark }],
   creator: BRAND.mark,
@@ -38,14 +41,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: siteConfig.locale,
     url: absoluteUrl("/"),
-    siteName: BRAND.mark,
-    title: `${BRAND.mark} | 못 찾겠다, 꾀꼬리?`,
-    description: BRAND.descriptor
+    siteName: `${BRAND.mark}(${BRAND.koreanAlias})`,
+    title: `${BRAND.mark}(${BRAND.koreanAlias}) | 못 찾겠다, 꾀꼬리?`,
+    description: BRAND.seoDescription
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND.mark} | 못 찾겠다, 꾀꼬리?`,
-    description: BRAND.descriptor
+    title: `${BRAND.mark}(${BRAND.koreanAlias}) | 못 찾겠다, 꾀꼬리?`,
+    description: BRAND.seoDescription
   },
   robots: {
     index: true,
