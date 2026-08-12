@@ -1,18 +1,26 @@
 import { BRAND } from "@/lib/brand";
 
-/** Canonical production host — keep apex/www consistent with Vercel primary domain */
-export const SITE_HOST = "ooof.co.kr";
+/**
+ * Canonical production host.
+ * Apex ooof.co.kr currently 308 → www.ooof.co.kr, so SEO URLs use www.
+ */
+export const SITE_HOST = "www.ooof.co.kr";
 
 export function getSiteUrl() {
   const fromEnv =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (fromEnv) {
-    // Prefer https; strip trailing slash
     const normalized = fromEnv.replace(/\/$/, "");
     if (/^https?:\/\//i.test(normalized)) return normalized;
     return `https://${normalized}`;
   }
+
+  // Production builds must not fall back to *.vercel.app for sitemap/canonical
+  if (process.env.VERCEL_ENV === "production") {
+    return `https://${SITE_HOST}`;
+  }
+
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
   }
