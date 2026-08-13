@@ -5,6 +5,34 @@ import { serializeReservationSchedule } from "@/lib/reservation-slots";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+const FIELD_LABELS: Record<string, string> = {
+  title: "전시 제목",
+  artist: "작가명",
+  region: "지역",
+  district: "동네",
+  venue: "장소명",
+  address: "주소",
+  lat: "위도",
+  lng: "경도",
+  startDate: "시작일",
+  endDate: "종료일",
+  categories: "카테고리",
+  exhibitionType: "전시 유형",
+  summary: "한 줄 소개",
+  description: "전시 소개",
+  heroImageUrl: "대표 이미지",
+  artistVideoUrl: "작가 영상"
+};
+
+function formatExhibitionFieldError(error: z.ZodError) {
+  const issue = error.issues[0];
+  const key = String(issue.path[0] ?? "");
+  const label = FIELD_LABELS[key];
+  return label
+    ? `${label}을(를) 확인해 주세요.`
+    : issue.message || "입력값이 올바르지 않습니다.";
+}
+
 const scheduleSchema = z.array(
   z.object({
     date: z
@@ -58,8 +86,8 @@ const exhibitionSchema = z.object({
   nearby: z.boolean().optional(),
   heroTone: z.string().optional(),
   heroImageUrl: z.string().url().optional(),
-  summary: z.string().min(10),
-  description: z.string().min(20),
+  summary: z.string().optional().default(""),
+  description: z.string().optional().default(""),
   descriptionImages: z.array(z.string().url()).optional(),
   reservationSchedule: scheduleSchema.optional(),
   reservationSlots: z.array(z.string()).optional(),
@@ -103,7 +131,7 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다." },
+        { error: formatExhibitionFieldError(parsed.error) },
         { status: 400 }
       );
     }

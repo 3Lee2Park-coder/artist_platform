@@ -47,8 +47,8 @@ const updateSchema = z.object({
     ])
     .optional(),
   curationAvailable: z.boolean().optional(),
-  summary: z.string().min(10).optional(),
-  description: z.string().min(20).optional(),
+  summary: z.string().optional(),
+  description: z.string().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   reservable: z.boolean().optional(),
@@ -90,8 +90,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   const parsed = updateSchema.safeParse(body);
 
   if (!parsed.success) {
+    const key = String(parsed.error.issues[0]?.path[0] ?? "");
+    const labels: Record<string, string> = {
+      title: "전시 제목",
+      address: "주소",
+      summary: "한 줄 소개",
+      description: "전시 소개",
+      startDate: "시작일",
+      endDate: "종료일"
+    };
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다." },
+      {
+        error: labels[key]
+          ? `${labels[key]}을(를) 확인해 주세요.`
+          : "입력값이 올바르지 않습니다."
+      },
       { status: 400 }
     );
   }

@@ -314,11 +314,20 @@ export function ExhibitionRegisterForm() {
           />
           <label className="full-width">
             한 줄 소개
-            <input value={summary} onChange={(e) => setSummary(e.target.value)} required />
+            <input
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="예: 성수에서 열리는 개인전"
+            />
           </label>
           <label className="full-width">
             전시 소개
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} required />
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              placeholder="전시 이야기를 자유롭게 적어 주세요."
+            />
           </label>
           <label className="full-width">
             소개글 이미지 (선택, 여러 장 가능)
