@@ -3,6 +3,8 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getSession } from "@/lib/auth";
 import { annotateViewerState, getCurationById, getPublishedCurations } from "@/lib/exhibitions";
+import { curationJsonLd, curationSeo, publicMeta } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 import { notFound } from "next/navigation";
 
 export async function generateMetadata({
@@ -17,11 +19,14 @@ export async function generateMetadata({
     return { title: "큐레이션을 찾을 수 없습니다", robots: { index: false } };
   }
 
-  return {
-    title: curation.title,
-    description: curation.description ?? curation.subtitle ?? undefined,
-    alternates: { canonical: `/curations/${curation.id}` }
-  };
+  const seo = curationSeo(curation);
+  const canonical = `/curations/${curation.id}`;
+  return publicMeta({
+    title: seo.title,
+    description: seo.description,
+    canonical,
+    images: [curation.coverImageUrl]
+  });
 }
 
 export default async function CurationDetailPage({
@@ -39,9 +44,19 @@ export default async function CurationDetailPage({
 
   const allCurations = await getPublishedCurations();
   const exhibitions = await annotateViewerState(curation.exhibitions, session?.id);
+  const seo = curationSeo(curation);
 
   return (
     <>
+      <JsonLd
+        data={curationJsonLd({
+          title: curation.title,
+          description: seo.description,
+          canonical: `/curations/${curation.id}`,
+          neighborhood: curation.neighborhood,
+          image: curation.coverImageUrl
+        })}
+      />
       <Header />
       <CurationDetailClient
         curation={curation}

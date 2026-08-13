@@ -6,6 +6,7 @@ import { VisitToggleButton } from "@/components/VisitToggleButton";
 import { getSession } from "@/lib/auth";
 import { logEvent } from "@/lib/events";
 import { getProgramBySlug } from "@/lib/programs";
+import { publicMeta } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -22,12 +23,12 @@ export async function generateMetadata({ params }: ProgramDetailPageProps) {
     return { title: "프로그램을 찾을 수 없습니다", robots: { index: false } };
   }
 
-  return {
+  return publicMeta({
     title: program.title,
     description:
       program.summary ?? `${program.venue.name}에서 열리는 ${program.typeLabel}`,
-    alternates: { canonical: `/programs/${program.slug}` }
-  };
+    canonical: `/programs/${program.slug}`
+  });
 }
 
 function formatDate(date: string) {

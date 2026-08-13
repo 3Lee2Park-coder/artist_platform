@@ -30,6 +30,7 @@ export async function generateMetadata({ params }: ArtistPageProps) {
 
   return {
     title: `${user.name} 작가`,
+    description: `${user.name} 작가의 공간·전시·프로그램. OOOF.(우프)에서 찾아 보세요.`,
     alternates: { canonical: `/artists/${id}` }
   };
 }

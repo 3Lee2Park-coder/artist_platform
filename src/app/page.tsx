@@ -25,11 +25,14 @@ import { getHomeFeaturedPlaces } from "@/lib/places";
 import { getActivePrograms, getProgramRemainingSeats } from "@/lib/programs";
 import { getPublicSpaces } from "@/lib/spaces";
 import { getTalkRemainingByExhibitionIds } from "@/lib/talk-availability";
+import { BRAND, brandTitle } from "@/lib/brand";
 
 /** Public home shell — keep cacheable (no cookies()/getSession in this tree) */
 export const revalidate = 60;
 
 export const metadata = {
+  title: { absolute: brandTitle() },
+  description: BRAND.seoDescription,
   alternates: { canonical: "/" }
 };
 

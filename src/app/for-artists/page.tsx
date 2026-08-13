@@ -4,9 +4,9 @@ import { getSession, isApprovedArtist } from "@/lib/auth";
 import Link from "next/link";
 
 export const metadata = {
-  title: "작가로 열기",
+  title: "작가로 열기 · 전시 무료 등록",
   description:
-    "공방·쇼룸을 직접 열고, 프로그램과 전시를 올려 관객과 만나는 OOOF. 작가 안내. Olly Olly Oxen Free.",
+    "공방·쇼룸·전시를 직접 열고 관객과 만나는 OOOF.(우프) 작가 안내. 공간·전시 등록은 무료입니다.",
   alternates: { canonical: "/for-artists" }
 };
 

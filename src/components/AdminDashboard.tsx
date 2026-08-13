@@ -91,6 +91,23 @@ type PlaceRow = {
   usedCount: number;
 };
 
+const EMPTY_PLACE_FORM = {
+  name: "",
+  type: "CAFE",
+  region: "서울",
+  district: "성수",
+  address: "",
+  lat: "37.5443",
+  lng: "127.0540",
+  tags: "데이트,조용",
+  sourceUrl: "",
+  notes: "",
+  editorialNote: "",
+  imageUrl: "",
+  homeFeatured: false,
+  homeSortOrder: "0"
+};
+
 type PlaceTipRow = {
   id: string;
   name: string;
@@ -289,22 +306,8 @@ export function AdminDashboard({
   const [creating, setCreating] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
 
-  const [placeForm, setPlaceForm] = useState({
-    name: "",
-    type: "CAFE",
-    region: "서울",
-    district: "성수",
-    address: "",
-    lat: "37.5443",
-    lng: "127.0540",
-    tags: "데이트,조용",
-    sourceUrl: "",
-    notes: "",
-    editorialNote: "",
-    imageUrl: "",
-    homeFeatured: false,
-    homeSortOrder: "0"
-  });
+  const [placeForm, setPlaceForm] = useState(EMPTY_PLACE_FORM);
+  const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
   const [creatingPlace, setCreatingPlace] = useState(false);
   const [tipBusyId, setTipBusyId] = useState<string | null>(null);
   const pendingTipCount = placeTips.filter((tip) => tip.status === "PENDING").length;
@@ -693,50 +696,75 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
     }
   }
 
-  async function createPlace() {
+  async function savePlace() {
     setCreatingPlace(true);
+    const payload = {
+      name: placeForm.name,
+      type: placeForm.type,
+      region: placeForm.region,
+      district: placeForm.district,
+      address: placeForm.address,
+      lat: Number(placeForm.lat),
+      lng: Number(placeForm.lng),
+      tags: placeForm.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+      sourceUrl: placeForm.sourceUrl,
+      notes: placeForm.notes,
+      editorialNote: placeForm.editorialNote,
+      imageUrl: placeForm.imageUrl,
+      homeFeatured: placeForm.homeFeatured,
+      homeSortOrder: Number(placeForm.homeSortOrder) || 0
+    };
     const response = await fetch("/api/admin/places", {
-      method: "POST",
+      method: editingPlaceId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: placeForm.name,
-        type: placeForm.type,
-        region: placeForm.region,
-        district: placeForm.district,
-        address: placeForm.address,
-        lat: Number(placeForm.lat),
-        lng: Number(placeForm.lng),
-        tags: placeForm.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
-        sourceUrl: placeForm.sourceUrl,
-        notes: placeForm.notes,
-        editorialNote: placeForm.editorialNote,
-        imageUrl: placeForm.imageUrl,
-        homeFeatured: placeForm.homeFeatured,
-        homeSortOrder: Number(placeForm.homeSortOrder) || 0
-      })
+      body: JSON.stringify(
+        editingPlaceId ? { id: editingPlaceId, ...payload } : payload
+      )
     });
     setCreatingPlace(false);
 
     if (response.ok) {
-      setMessage("Place Pool에 추가되었습니다.");
-      setPlaceForm((prev) => ({
-        ...prev,
-        name: "",
-        address: "",
-        sourceUrl: "",
-        notes: "",
-        editorialNote: "",
-        imageUrl: "",
-        homeFeatured: false
-      }));
+      setMessage(
+        editingPlaceId
+          ? "Place가 수정되었습니다."
+          : "Place Pool에 추가되었습니다."
+      );
+      resetPlaceForm();
       router.refresh();
     } else {
       const data = await response.json();
-      setMessage(data.error ?? "장소 추가에 실패했습니다.");
+      setMessage(data.error ?? "장소 저장에 실패했습니다.");
     }
+  }
+
+  function resetPlaceForm() {
+    setEditingPlaceId(null);
+    setPlaceForm(EMPTY_PLACE_FORM);
+  }
+
+  function loadPlaceForEdit(place: PlaceRow) {
+    setEditingPlaceId(place.id);
+    setPlaceForm({
+      name: place.name,
+      type: place.type,
+      region: place.region,
+      district: place.district,
+      address: place.address,
+      lat: String(place.lat),
+      lng: String(place.lng),
+      tags: place.tags.join(","),
+      sourceUrl: place.sourceUrl ?? "",
+      notes: place.notes ?? "",
+      editorialNote: place.editorialNote ?? "",
+      imageUrl: place.imageUrl ?? "",
+      homeFeatured: place.homeFeatured,
+      homeSortOrder: String(place.homeSortOrder ?? 0)
+    });
+    setMessage(`「${place.name}」 수정 모드입니다. 저장하면 바로 반영됩니다.`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function togglePlaceActive(id: string, isActive: boolean) {
@@ -1240,10 +1268,25 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
       {tab === "places" && (
         <>
           <section className="register-card wide my-section">
-            <h2>Place Pool 추가</h2>
+            <h2>{editingPlaceId ? "Place 수정" : "Place Pool 추가"}</h2>
             <p className="auth-description">
               지역별 카페·식당·산책 포인트를 자산으로 쌓아 두고, 코스 거점으로 조립합니다.
+              {editingPlaceId
+                ? " 아래에서 «수정»을 누르면 이 폼에 불러옵니다."
+                : ""}
             </p>
+            {editingPlaceId ? (
+              <div className="status-banner warn">
+                수정 중인 Place입니다.{" "}
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={resetPlaceForm}
+                >
+                  새 Place로 전환
+                </button>
+              </div>
+            ) : null}
             <div className="admin-place-grid">
               <label>
                 이름
@@ -1397,11 +1440,24 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
               <button
                 type="button"
                 className="primary-button"
-                onClick={createPlace}
+                onClick={savePlace}
                 disabled={creatingPlace}
               >
-                {creatingPlace ? "추가 중..." : "Place 추가"}
+                {creatingPlace
+                  ? "저장 중..."
+                  : editingPlaceId
+                    ? "Place 저장"
+                    : "Place 추가"}
               </button>
+              {editingPlaceId ? (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={resetPlaceForm}
+                >
+                  취소
+                </button>
+              ) : null}
             </div>
           </section>
 
@@ -1410,7 +1466,7 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
             {places.length > 0 ? (
               <div className="my-list">
                 {places.map((place) => (
-                  <article key={place.id} className="my-list-card">
+                  <article key={place.id} className="my-list-card ownership-card">
                     <div>
                       <h3>
                         {place.name}{" "}
@@ -1421,12 +1477,31 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                       <p>{place.address}</p>
                       <p className="field-hint">
                         태그 {place.tags.join(", ") || "-"} · 사용 {place.usedCount}회
-                        {place.editorialNote
-                          ? ` · ${place.editorialNote}`
-                          : place.notes
-                            ? ` · ${place.notes}`
-                            : ""}
                       </p>
+                      <div className="place-card-memos">
+                        {place.notes ? (
+                          <p>
+                            <strong>선정 메모(내부)</strong>
+                            {place.notes}
+                          </p>
+                        ) : (
+                          <p className="muted">
+                            <strong>선정 메모(내부)</strong>
+                            없음
+                          </p>
+                        )}
+                        {place.editorialNote ? (
+                          <p>
+                            <strong>홈 카드 한 줄</strong>
+                            {place.editorialNote}
+                          </p>
+                        ) : (
+                          <p className="muted">
+                            <strong>홈 카드 한 줄</strong>
+                            없음
+                          </p>
+                        )}
+                      </div>
                       <span className={place.isActive ? "status-pill ok" : "status-pill"}>
                         {place.isActive ? "ACTIVE" : "RESTING"}
                       </span>
@@ -1436,8 +1511,18 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                       {place.imageUrl ? (
                         <span className="status-pill ok">PHOTO</span>
                       ) : null}
+                      {editingPlaceId === place.id ? (
+                        <span className="status-pill warn">수정 중</span>
+                      ) : null}
                     </div>
                     <div className="hub-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => loadPlaceForEdit(place)}
+                      >
+                        수정
+                      </button>
                       <label className="secondary-button">
                         사진
                         <input

@@ -12,6 +12,7 @@ import { getAllExhibitions } from "@/lib/exhibitions";
 import { getProgramRemainingSeats, getProgramsBySpaceId } from "@/lib/programs";
 import { prisma } from "@/lib/prisma";
 import { getSpaceBySlug } from "@/lib/spaces";
+import { publicMeta, spaceSeo } from "@/lib/seo";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -37,11 +38,12 @@ export async function generateMetadata({ params }: SpaceDetailPageProps) {
     return { title: "공간을 찾을 수 없습니다", robots: { index: false } };
   }
 
-  return {
-    title: space.name,
-    description: space.shortDescription ?? `${space.district}의 작가 공간`,
-    alternates: { canonical: `/spaces/${space.slug}` }
-  };
+  const seo = spaceSeo(space);
+  return publicMeta({
+    title: seo.title,
+    description: seo.description,
+    canonical: `/spaces/${space.slug}`
+  });
 }
 
 export default async function SpaceDetailPage({ params }: SpaceDetailPageProps) {

@@ -3,6 +3,8 @@ import { Header } from "@/components/Header";
 import { PlaceTipForm } from "@/components/PlaceTipForm";
 import { ThemePreviewCard } from "@/components/ThemePreviewCard";
 import { getPlaceById, PLACE_TYPE_LABEL } from "@/lib/places";
+import { placeJsonLd, placeSeo, publicMeta } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -21,14 +23,14 @@ export async function generateMetadata({ params }: PlaceDetailPageProps) {
   if (!place) {
     return { title: "장소를 찾을 수 없습니다", robots: { index: false } };
   }
-  return {
-    title: place.name,
-    description:
-      place.editorialNote ||
-      place.notes ||
-      `${place.district}의 ${place.typeLabel}`,
-    alternates: { canonical: `/places/${place.id}` }
-  };
+  const seo = placeSeo(place);
+  const canonical = `/places/${place.id}`;
+  return publicMeta({
+    title: seo.title,
+    description: seo.description,
+    canonical,
+    images: [place.imageUrl]
+  });
 }
 
 export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) {
@@ -45,9 +47,20 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
 
   const hasRelated =
     place.nearbyExhibitions.length > 0 || place.curations.length > 0;
+  const seo = placeSeo(place);
 
   return (
     <>
+      <JsonLd
+        data={placeJsonLd({
+          name: place.name,
+          description: seo.description,
+          canonical: `/places/${place.id}`,
+          address: place.address,
+          district: place.district,
+          image: place.imageUrl
+        })}
+      />
       <Header />
       <main className="page-shell place-detail-page">
         <section className="place-detail-hero">

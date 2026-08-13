@@ -7,9 +7,9 @@ import Link from "next/link";
 export const revalidate = 60;
 
 export const metadata = {
-  title: "작가의 공간",
+  title: "서울 작가 공간 · 공방 쇼룸",
   description:
-    "공방·쇼룸을 동네별로 모아 두었습니다. 방문 가능 여부를 확인하고 천천히 둘러보세요.",
+    "서울 동네 공방·쇼룸을 모아 두었습니다. 가볼만한 작가 공간의 방문 가능 여부를 확인하고 둘러보세요.",
   alternates: { canonical: "/spaces" }
 };
 

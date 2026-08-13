@@ -9,6 +9,8 @@ import { Header } from "@/components/Header";
 import { ReservationWidget } from "@/components/ReservationWidget";
 import { getSession } from "@/lib/auth";
 import { logEvent } from "@/lib/events";
+import { exhibitionJsonLd, exhibitionSeo, publicMeta } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 import {
   SOURCE_BADGE,
   getAllExhibitions,
@@ -42,16 +44,14 @@ export async function generateMetadata({ params }: ExhibitionDetailPageProps) {
     };
   }
 
-  return {
-    title: exhibition.title,
-    description: exhibition.summary,
-    alternates: { canonical: `/exhibitions/${exhibition.id}` },
-    openGraph: {
-      title: exhibition.title,
-      description: exhibition.summary,
-      images: exhibition.heroImageUrl ? [exhibition.heroImageUrl] : undefined
-    }
-  };
+  const seo = exhibitionSeo(exhibition);
+  const canonical = `/exhibitions/${exhibition.id}`;
+  return publicMeta({
+    title: seo.title,
+    description: seo.description,
+    canonical,
+    images: [exhibition.heroImageUrl]
+  });
 }
 
 export default async function ExhibitionDetailPage({
@@ -96,9 +96,22 @@ export default async function ExhibitionDetailPage({
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+  const pageSeo = exhibitionSeo(exhibition);
 
   return (
     <>
+      <JsonLd
+        data={exhibitionJsonLd({
+          title: exhibition.title,
+          description: pageSeo.description,
+          canonical: `/exhibitions/${exhibition.id}`,
+          venue: exhibition.venue,
+          address: exhibition.address,
+          startDate: exhibition.startDate,
+          endDate: exhibition.endDate,
+          image: exhibition.heroImageUrl
+        })}
+      />
       <Header activeTab="전시" />
 
       <main className="detail-page">

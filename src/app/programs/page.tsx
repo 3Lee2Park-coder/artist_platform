@@ -11,8 +11,9 @@ import {
 export const revalidate = 60;
 
 export const metadata = {
-  title: "작가 프로그램",
-  description: "오픈 스튜디오·작가와의 대화·워크숍을 한곳에서 찾아보세요.",
+  title: "작가 프로그램 · 오픈스튜디오",
+  description:
+    "서울 작가의 오픈 스튜디오, 작가와의 대화, 워크숍을 한곳에서. 일정 확인하고 예약하세요.",
   alternates: { canonical: "/programs" }
 };
 

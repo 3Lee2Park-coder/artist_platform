@@ -7,9 +7,9 @@ import Link from "next/link";
 export const revalidate = 60;
 
 export const metadata = {
-  title: "찾아낸 전시",
+  title: "서울 전시 · 가볼만한 곳",
   description:
-    "이번에 모습을 드러낸 동네 전시와 작가 공간. 조건으로 찾고, 지도에서 동선까지 이으세요.",
+    "서울 동네 전시와 작가 공간을 한곳에서. 데이트·주말 코스로 찾고, 지도에서 동선까지 이으세요.",
   alternates: { canonical: "/exhibitions" }
 };
 

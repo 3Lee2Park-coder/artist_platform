@@ -1098,6 +1098,31 @@
     opacity: 0.82;
   }
 
+  .place-card-memos {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 12px;
+  }
+
+  .place-card-memos p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--primary);
+  }
+
+  .place-card-memos p.muted {
+    color: var(--secondary);
+  }
+
+  .place-card-memos strong {
+    display: inline-block;
+    min-width: 7.5em;
+    margin-right: 8px;
+    color: var(--secondary);
+    font-weight: 700;
+  }
+
   .my-list-card h3 {
     margin-bottom: 4px;
     font-size: 17px;

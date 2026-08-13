@@ -95,14 +95,21 @@ export async function POST(request: Request) {
 
 const patchSchema = z.object({
   id: z.string().min(1),
-  isActive: z.boolean().optional(),
-  notes: z.string().optional(),
+  name: z.string().min(1).optional(),
+  type: z.enum(["CAFE", "RESTAURANT", "WALK", "ETC"]).optional(),
+  region: z.string().optional(),
+  district: z.string().min(1).optional(),
+  address: z.string().min(1).optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  tags: z.array(z.string()).optional(),
+  sourceUrl: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
   editorialNote: z.string().optional().nullable(),
-  sourceUrl: z.string().optional(),
   imageUrl: z.string().optional().nullable(),
   homeFeatured: z.boolean().optional(),
   homeSortOrder: z.number().int().optional(),
-  tags: z.array(z.string()).optional()
+  isActive: z.boolean().optional()
 });
 
 export async function PATCH(request: Request) {
@@ -113,32 +120,24 @@ export async function PATCH(request: Request) {
 
   const parsed = patchSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "입력값이 올바르지 않습니다." }, { status: 400 });
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다." },
+      { status: 400 }
+    );
   }
 
-  const {
-    id,
-    isActive,
-    notes,
-    editorialNote,
-    sourceUrl,
-    imageUrl,
-    homeFeatured,
-    homeSortOrder,
-    tags
-  } = parsed.data;
+  const { id, tags, sourceUrl, notes, editorialNote, imageUrl, ...rest } =
+    parsed.data;
 
   const place = await prisma.place.update({
     where: { id },
     data: {
-      ...(typeof isActive === "boolean" ? { isActive } : {}),
-      ...(notes !== undefined ? { notes } : {}),
-      ...(editorialNote !== undefined ? { editorialNote } : {}),
+      ...rest,
+      ...(tags ? { tags: JSON.stringify(tags) } : {}),
       ...(sourceUrl !== undefined ? { sourceUrl: sourceUrl || null } : {}),
-      ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
-      ...(typeof homeFeatured === "boolean" ? { homeFeatured } : {}),
-      ...(typeof homeSortOrder === "number" ? { homeSortOrder } : {}),
-      ...(tags ? { tags: JSON.stringify(tags) } : {})
+      ...(notes !== undefined ? { notes: notes || null } : {}),
+      ...(editorialNote !== undefined ? { editorialNote: editorialNote || null } : {}),
+      ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {})
     }
   });
 

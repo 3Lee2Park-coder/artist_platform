@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Suspense } from "react";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { JsonLd } from "@/components/JsonLd";
 import { NavigationProgress } from "@/components/NavigationProgress";
-import { BRAND } from "@/lib/brand";
+import { BRAND, brandTitle } from "@/lib/brand";
 import { absoluteUrl, getSiteUrl, siteConfig } from "@/lib/site";
 import "./globals.css";
 
@@ -18,23 +19,12 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: `${BRAND.mark}(${BRAND.koreanAlias}) | 못 찾겠다, 꾀꼬리?`,
+    default: brandTitle(),
     template: `%s | ${BRAND.mark}`
   },
   description: BRAND.seoDescription,
   applicationName: BRAND.mark,
-  keywords: [
-    "OOOF",
-    "OOOF.",
-    "우프",
-    "Olly Olly Oxen Free",
-    "동네 전시",
-    "전시 지도",
-    "작가 공간",
-    "큐레이션",
-    "전시 코스",
-    "숨은 전시"
-  ],
+  keywords: [...BRAND.seoKeywords],
   authors: [{ name: BRAND.mark }],
   creator: BRAND.mark,
   publisher: BRAND.mark,
@@ -43,12 +33,12 @@ export const metadata: Metadata = {
     locale: siteConfig.locale,
     url: absoluteUrl("/"),
     siteName: `${BRAND.mark}(${BRAND.koreanAlias})`,
-    title: `${BRAND.mark}(${BRAND.koreanAlias}) | 못 찾겠다, 꾀꼬리?`,
+    title: brandTitle(),
     description: BRAND.seoDescription
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND.mark}(${BRAND.koreanAlias}) | 못 찾겠다, 꾀꼬리?`,
+    title: brandTitle(),
     description: BRAND.seoDescription
   },
   robots: {
@@ -82,6 +72,28 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebSite",
+                name: `${BRAND.mark}(${BRAND.koreanAlias})`,
+                alternateName: [BRAND.mark, BRAND.koreanAlias, BRAND.fullName],
+                url: getSiteUrl(),
+                description: BRAND.seoDescription,
+                inLanguage: "ko-KR"
+              },
+              {
+                "@type": "Organization",
+                name: `${BRAND.mark}(${BRAND.koreanAlias})`,
+                legalName: BRAND.fullName,
+                url: getSiteUrl(),
+                description: BRAND.seoDescription
+              }
+            ]
+          }}
+        />
         <Suspense fallback={null}>
           <NavigationProgress />
         </Suspense>
