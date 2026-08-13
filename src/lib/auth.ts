@@ -3,6 +3,7 @@ import { displayName } from "@/lib/nickname";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 export type UserRole = "MEMBER" | "ARTIST" | "GALLERY" | "ADMIN";
 export type ArtistStatus = "NONE" | "PENDING" | "APPROVED" | "REJECTED";
@@ -72,7 +73,7 @@ export async function destroySession() {
   cookieStore.delete(LEGACY_SESSION_COOKIE);
 }
 
-export async function getSession(): Promise<SessionUser | null> {
+export const getSession = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   const token =
     cookieStore.get(SESSION_COOKIE)?.value ??
@@ -85,29 +86,39 @@ export async function getSession(): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, getAuthSecret());
     const id = payload.id as string;
-    const email = payload.email as string;
-    const name = payload.name as string;
-    const nickname =
-      typeof payload.nickname === "string" ? payload.nickname : null;
-    const role = payload.role as UserRole;
-    const artistStatus = payload.artistStatus as ArtistStatus;
 
-    if (!id || !email || !name || !role || !artistStatus) {
+    if (!id) {
+      return null;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        nickname: true,
+        role: true,
+        artistStatus: true
+      }
+    });
+
+    if (!user) {
       return null;
     }
 
     return {
-      id,
-      email,
-      name,
-      nickname,
-      role: role as UserRole,
-      artistStatus: artistStatus as ArtistStatus
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      nickname: user.nickname,
+      role: user.role as UserRole,
+      artistStatus: user.artistStatus as ArtistStatus
     };
   } catch {
     return null;
   }
-}
+});
 
 export async function requireSession() {
   const session = await getSession();

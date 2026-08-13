@@ -12,16 +12,8 @@ export const metadata = {
 export default async function RegisterHubPage() {
   const session = await getSession();
   const approved = Boolean(session && isApprovedArtist(session));
+  const artistStatus = session?.artistStatus ?? "NONE";
   const today = getTodayKST();
-
-  const artistStatus = session
-    ? (
-        await prisma.user.findUnique({
-          where: { id: session.id },
-          select: { artistStatus: true }
-        })
-      )?.artistStatus ?? "NONE"
-    : "NONE";
 
   const ownedSpaceCount =
     session && approved
