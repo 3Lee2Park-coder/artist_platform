@@ -1,15 +1,21 @@
 import { getSession, isApprovedArtist } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { serializeReservationSchedule } from "@/lib/reservation-slots";
+import {
+  requireTalkReservation,
+  serializeReservationSchedule
+} from "@/lib/reservation-slots";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const scheduleSchema = z.array(
   z.object({
     date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .nullable(),
+      .union([
+        z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        z.literal(""),
+        z.null()
+      ])
+      .transform((value) => (value === "" ? null : value)),
     slots: z
       .array(
         z.object({
@@ -97,7 +103,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       summary: "한 줄 소개",
       description: "전시 소개",
       startDate: "시작일",
-      endDate: "종료일"
+      endDate: "종료일",
+      reservationSchedule: "작가와 대화 일정"
     };
     return NextResponse.json(
       {
@@ -110,6 +117,37 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   const data = parsed.data;
+
+  let reservable = data.reservable;
+  let reservationSlotsUpdate:
+    | { reservationSlots: string }
+    | Record<string, never> = {};
+
+  if (data.reservationSchedule !== undefined) {
+    const talk = requireTalkReservation({
+      reservable: data.reservable ?? exhibition.reservable,
+      schedule: data.reservationSchedule
+    });
+    if (!talk.ok) {
+      return NextResponse.json({ error: talk.error }, { status: 400 });
+    }
+    reservable = talk.reservable;
+    reservationSlotsUpdate = {
+      reservationSlots: serializeReservationSchedule(talk.schedule)
+    };
+  } else if (data.reservationSlots !== undefined) {
+    reservationSlotsUpdate = {
+      reservationSlots: serializeReservationSchedule([
+        {
+          date: null,
+          slots: data.reservationSlots.map((time) => ({
+            time,
+            capacity: 10
+          }))
+        }
+      ])
+    };
+  }
 
   if (data.artworks) {
     const existing = await prisma.artwork.findMany({
@@ -178,7 +216,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         : {}),
       ...(data.startDate ? { startDate: data.startDate } : {}),
       ...(data.endDate ? { endDate: data.endDate } : {}),
-      ...(data.reservable !== undefined ? { reservable: data.reservable } : {}),
+      ...(reservable !== undefined ? { reservable } : {}),
       ...(data.todayOpen !== undefined ? { todayOpen: data.todayOpen } : {}),
       ...(data.heroImageUrl ? { heroImageUrl: data.heroImageUrl } : {}),
       ...(data.artistVideoTitle !== undefined
@@ -197,23 +235,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
               data.artistVideoUrl || data.artistVideoTitle ? "ready" : null
           }
         : {}),
-      ...(data.reservationSchedule !== undefined
-        ? {
-            reservationSlots: serializeReservationSchedule(data.reservationSchedule)
-          }
-        : data.reservationSlots !== undefined
-          ? {
-              reservationSlots: serializeReservationSchedule([
-                {
-                  date: null,
-                  slots: data.reservationSlots.map((time) => ({
-                    time,
-                    capacity: 10
-                  }))
-                }
-              ])
-            }
-          : {})
+      ...reservationSlotsUpdate
     },
     include: { artworks: true }
   });

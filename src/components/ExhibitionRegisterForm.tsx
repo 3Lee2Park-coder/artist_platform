@@ -5,7 +5,8 @@ import { TalkScheduleEditor } from "@/components/TalkScheduleEditor";
 import { slugify } from "@/lib/date";
 import { getDefaultDistrict } from "@/lib/locations";
 import {
-  resolveTalkReservation,
+  fillEmptyTalkDates,
+  requireTalkReservation,
   type ReservationDay
 } from "@/lib/reservation-slots";
 import { useRouter } from "next/navigation";
@@ -157,13 +158,16 @@ export function ExhibitionRegisterForm() {
         });
       }
 
-      const talk = resolveTalkReservation({
+      const talk = requireTalkReservation({
         reservable,
-        schedule: talkSchedule
+        schedule: fillEmptyTalkDates(talkSchedule, startDate)
       });
-      if (talk.reservable !== reservable) {
-        setReservable(talk.reservable);
-        setTalkSchedule(talk.schedule);
+      if (!talk.ok) {
+        setError(talk.error);
+        setTalkSchedule((prev) => fillEmptyTalkDates(prev, startDate));
+        setStep(2);
+        setLoading(false);
+        return;
       }
 
       const payload = {
@@ -234,7 +238,10 @@ export function ExhibitionRegisterForm() {
             key={item}
             type="button"
             className={step === item ? "stepper-item active" : "stepper-item"}
-            onClick={() => setStep(item)}
+            onClick={() => {
+              setTalkSchedule((prev) => fillEmptyTalkDates(prev, startDate));
+              setStep(item);
+            }}
           >
             Step {item}
           </button>
@@ -265,7 +272,16 @@ export function ExhibitionRegisterForm() {
           </label>
           <label>
             시작일
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                const next = e.target.value;
+                setStartDate(next);
+                setTalkSchedule((prev) => fillEmptyTalkDates(prev, next));
+              }}
+              required
+            />
           </label>
           <label>
             종료일
@@ -385,12 +401,12 @@ export function ExhibitionRegisterForm() {
                   if (!next) {
                     setTalkSchedule([]);
                   } else if (talkSchedule.length === 0) {
-                    setTalkSchedule([
-                      {
-                        date: startDate || "",
-                        slots: [{ time: "14:00", capacity: 10 }]
-                      }
-                    ]);
+                    setTalkSchedule(
+                      fillEmptyTalkDates(
+                        [{ date: "", slots: [{ time: "14:00", capacity: 10 }] }],
+                        startDate
+                      )
+                    );
                   }
                 }}
               />
@@ -493,6 +509,21 @@ export function ExhibitionRegisterForm() {
               // type="button"→"submit" DOM 재사용으로 클릭이 제출로 이어지는 것 방지
               event.preventDefault();
               event.stopPropagation();
+              if (step === 1) {
+                setTalkSchedule((prev) => fillEmptyTalkDates(prev, startDate));
+              }
+              if (step === 2 && reservable) {
+                const talk = requireTalkReservation({
+                  reservable: true,
+                  schedule: fillEmptyTalkDates(talkSchedule, startDate)
+                });
+                if (!talk.ok) {
+                  setError(talk.error);
+                  setTalkSchedule((prev) => fillEmptyTalkDates(prev, startDate));
+                  return;
+                }
+              }
+              setError("");
               setStep((prev) => prev + 1);
             }}
           >

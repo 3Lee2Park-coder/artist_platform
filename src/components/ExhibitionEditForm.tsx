@@ -4,8 +4,9 @@ import { AddressSearchField } from "@/components/AddressSearchField";
 import { TalkScheduleEditor } from "@/components/TalkScheduleEditor";
 import { getDefaultDistrict } from "@/lib/locations";
 import {
+  fillEmptyTalkDates,
   parseReservationSchedule,
-  resolveTalkReservation,
+  requireTalkReservation,
   type ReservationDay
 } from "@/lib/reservation-slots";
 import Link from "next/link";
@@ -238,10 +239,16 @@ export function ExhibitionEditForm({
         });
       }
 
-      const talk = resolveTalkReservation({
+      const talk = requireTalkReservation({
         reservable,
-        schedule: talkSchedule
+        schedule: fillEmptyTalkDates(talkSchedule, startDate)
       });
+      if (!talk.ok) {
+        setError(talk.error);
+        setTalkSchedule((prev) => fillEmptyTalkDates(prev, startDate));
+        setLoading(false);
+        return;
+      }
 
       const response = await fetch(`/api/exhibitions/${exhibition.id}`, {
         method: "PATCH",

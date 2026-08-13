@@ -1,7 +1,10 @@
 import { getSession, isApprovedArtist } from "@/lib/auth";
 import { slugify } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
-import { serializeReservationSchedule } from "@/lib/reservation-slots";
+import {
+  requireTalkReservation,
+  serializeReservationSchedule
+} from "@/lib/reservation-slots";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -21,7 +24,8 @@ const FIELD_LABELS: Record<string, string> = {
   summary: "한 줄 소개",
   description: "전시 소개",
   heroImageUrl: "대표 이미지",
-  artistVideoUrl: "작가 영상"
+  artistVideoUrl: "작가 영상",
+  reservationSchedule: "작가와 대화 일정"
 };
 
 function formatExhibitionFieldError(error: z.ZodError) {
@@ -36,9 +40,12 @@ function formatExhibitionFieldError(error: z.ZodError) {
 const scheduleSchema = z.array(
   z.object({
     date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .nullable(),
+      .union([
+        z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        z.literal(""),
+        z.null()
+      ])
+      .transform((value) => (value === "" ? null : value)),
     slots: z
       .array(
         z.object({
@@ -147,6 +154,28 @@ export async function POST(request: Request) {
 
     const exhibitionId = await createUniqueExhibitionId(data.title, data.id);
 
+    let reservable = data.reservable;
+    let reservationSlotsJson: string;
+
+    if (data.reservationSchedule !== undefined) {
+      const talk = requireTalkReservation({
+        reservable: data.reservable,
+        schedule: data.reservationSchedule
+      });
+      if (!talk.ok) {
+        return NextResponse.json({ error: talk.error }, { status: 400 });
+      }
+      reservable = talk.reservable;
+      reservationSlotsJson = serializeReservationSchedule(talk.schedule);
+    } else {
+      reservationSlotsJson = JSON.stringify(
+        (data.reservationSlots ?? []).map((time) => ({
+          date: null,
+          slots: [{ time, capacity: 10 }]
+        }))
+      );
+    }
+
     const exhibition = await prisma.exhibition.create({
       data: {
         id: exhibitionId,
@@ -164,7 +193,7 @@ export async function POST(request: Request) {
         categories: JSON.stringify(data.categories),
         exhibitionType: data.exhibitionType,
         curationAvailable: data.curationAvailable,
-        reservable: data.reservable,
+        reservable,
         todayOpen: data.todayOpen ?? true,
         popular: data.popular ?? false,
         nearby: data.nearby ?? false,
@@ -176,15 +205,7 @@ export async function POST(request: Request) {
         description: data.description,
         descriptionImages: JSON.stringify(data.descriptionImages ?? []),
         source: session.role === "ADMIN" ? "ADMIN" : "ARTIST",
-        reservationSlots:
-          data.reservationSchedule !== undefined
-            ? serializeReservationSchedule(data.reservationSchedule)
-            : JSON.stringify(
-                (data.reservationSlots ?? []).map((time) => ({
-                  date: null,
-                  slots: [{ time, capacity: 10 }]
-                }))
-              ),
+        reservationSlots: reservationSlotsJson,
         artistVideoTitle: data.artistVideoTitle,
         artistVideoDuration: data.artistVideoDuration,
         artistVideoPosterTone: data.artistVideoPosterTone,

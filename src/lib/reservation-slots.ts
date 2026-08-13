@@ -114,6 +114,33 @@ export function resolveTalkReservation(input: {
   return { reservable: true, schedule };
 }
 
+export const TALK_SCHEDULE_REQUIRED_ERROR =
+  "작가와 대화 날짜와 시간을 입력해 주세요.";
+
+/**
+ * 체크박스는 켜져 있는데 날짜가 비어 있으면 조용히 끄지 않고 오류로 돌린다.
+ * (등록 Step 3에서는 일정 입력이 DOM에 없어 required가 먹지 않았음)
+ */
+export function requireTalkReservation(input: {
+  reservable: boolean;
+  schedule: ReservationDay[];
+}) {
+  const talk = resolveTalkReservation(input);
+  if (input.reservable && !talk.reservable) {
+    return { ok: false as const, error: TALK_SCHEDULE_REQUIRED_ERROR };
+  }
+  return { ok: true as const, reservable: talk.reservable, schedule: talk.schedule };
+}
+
+/** 대화 날짜가 비어 있으면 전시 시작일로 채운다. 이미 고른 날짜는 유지. */
+export function fillEmptyTalkDates(
+  schedule: ReservationDay[],
+  startDate: string
+): ReservationDay[] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return schedule;
+  return schedule.map((day) => (day.date ? day : { ...day, date: startDate }));
+}
+
 export function getSlotsForDate(
   schedule: ReservationDay[],
   visitDate: string
