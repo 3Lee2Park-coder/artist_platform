@@ -159,6 +159,7 @@ export function ExhibitionEditForm({
   );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!heroImageFile) return;
@@ -290,6 +291,29 @@ export function ExhibitionEditForm({
       );
       setLoading(false);
     }
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      `「${exhibition.title}」 전시를 삭제할까요? 예약·저장·리뷰도 함께 삭제되며 되돌릴 수 없습니다.`
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setError("");
+    const response = await fetch(`/api/exhibitions/${exhibition.id}`, {
+      method: "DELETE"
+    });
+    const data = await response.json().catch(() => ({}));
+    setDeleting(false);
+
+    if (!response.ok) {
+      setError(data.error ?? "전시 삭제에 실패했습니다.");
+      return;
+    }
+
+    router.push("/my");
+    router.refresh();
   }
 
   return (
@@ -587,7 +611,15 @@ export function ExhibitionEditForm({
         <Link className="secondary-button" href="/my">
           취소
         </Link>
-        <button type="submit" className="primary-button" disabled={loading}>
+        <button
+          type="button"
+          className="secondary-button warn-button"
+          disabled={loading || deleting}
+          onClick={handleDelete}
+        >
+          {deleting ? "삭제 중…" : "전시 삭제"}
+        </button>
+        <button type="submit" className="primary-button" disabled={loading || deleting}>
           {loading ? "저장 중..." : "변경 저장"}
         </button>
       </div>

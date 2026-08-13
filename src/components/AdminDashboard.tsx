@@ -286,6 +286,9 @@ export function AdminDashboard({
     {}
   );
   const [transferringKey, setTransferringKey] = useState<string | null>(null);
+  const [deletingExhibitionId, setDeletingExhibitionId] = useState<string | null>(
+    null
+  );
   const [memberBusyId, setMemberBusyId] = useState<string | null>(null);
   const [memberFilter, setMemberFilter] = useState<"all" | "unverified">("all");
 
@@ -694,6 +697,29 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
     } else {
       setMessage(data.error ?? "소유권 이관에 실패했습니다.");
     }
+  }
+
+  async function deleteExhibition(exhibition: OwnershipExhibitionRow) {
+    const confirmed = window.confirm(
+      `「${exhibition.title}」 전시를 삭제할까요? 예약·저장·리뷰도 함께 삭제되며 되돌릴 수 없습니다.`
+    );
+    if (!confirmed) return;
+
+    setDeletingExhibitionId(exhibition.id);
+    setMessage("");
+    const response = await fetch(`/api/exhibitions/${exhibition.id}`, {
+      method: "DELETE"
+    });
+    const data = await response.json().catch(() => ({}));
+    setDeletingExhibitionId(null);
+
+    if (!response.ok) {
+      setMessage(data.error ?? "전시 삭제에 실패했습니다.");
+      return;
+    }
+
+    setMessage(`「${exhibition.title}」 전시를 삭제했습니다.`);
+    router.refresh();
   }
 
   async function savePlace() {
@@ -1830,7 +1856,7 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
 
           <section className="register-card wide my-section">
             <h2>전시 ({ownershipExhibitions.length})</h2>
-            <p className="field-hint">공공 API 전시는 제외합니다.</p>
+            <p className="field-hint">공공 API 전시는 제외합니다. 테스트 등록 전시는 여기서 삭제할 수 있습니다.</p>
             {ownershipExhibitions.length > 0 ? (
               <div className="my-list">
                 {ownershipExhibitions.map((exhibition) => {
@@ -1892,6 +1918,14 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                           }
                         >
                           {transferringKey === key ? "연결 중…" : "등록자 연결"}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button warn-button"
+                          disabled={deletingExhibitionId === exhibition.id}
+                          onClick={() => deleteExhibition(exhibition)}
+                        >
+                          {deletingExhibitionId === exhibition.id ? "삭제 중…" : "삭제"}
                         </button>
                       </div>
                     </article>

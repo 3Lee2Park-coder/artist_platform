@@ -248,3 +248,50 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
   return NextResponse.json({ exhibition });
 }
+
+export async function DELETE(_request: Request, { params }: RouteParams) {
+  const session = await getSession();
+
+  if (!session) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+
+  if (!isApprovedArtist(session) && session.role !== "ADMIN") {
+    return NextResponse.json({ error: "작가 권한이 필요합니다." }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const exhibition = await prisma.exhibition.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      registeredById: true,
+      _count: { select: { reservations: true, programs: true } }
+    }
+  });
+
+  if (!exhibition) {
+    return NextResponse.json({ error: "전시를 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  if (exhibition.registeredById !== session.id && session.role !== "ADMIN") {
+    return NextResponse.json({ error: "본인 전시만 삭제할 수 있습니다." }, { status: 403 });
+  }
+
+  try {
+    await prisma.exhibition.delete({ where: { id } });
+  } catch {
+    return NextResponse.json(
+      { error: "전시 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    title: exhibition.title,
+    removedReservations: exhibition._count.reservations,
+    detachedPrograms: exhibition._count.programs
+  });
+}

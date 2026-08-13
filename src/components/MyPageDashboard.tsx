@@ -147,6 +147,9 @@ export function MyPageDashboard({
   const [message, setMessage] = useState("");
   const [nicknameDraft, setNicknameDraft] = useState(nickname ?? "");
   const [nicknameBusy, setNicknameBusy] = useState(false);
+  const [deletingExhibitionId, setDeletingExhibitionId] = useState<string | null>(
+    null
+  );
 
   async function saveNickname() {
     setNicknameBusy(true);
@@ -186,6 +189,32 @@ export function MyPageDashboard({
 
   async function cancelReservation(id: string) {
     await updateReservationStatus(id, "CANCELLED");
+  }
+
+  async function deleteExhibition(exhibition: ExhibitionItem) {
+    const reservationCount = exhibition._count?.reservations ?? 0;
+    const confirmed = window.confirm(
+      reservationCount > 0
+        ? `「${exhibition.title}」 전시를 삭제할까요? 예약 ${reservationCount}건과 저장·리뷰도 함께 삭제되며 되돌릴 수 없습니다.`
+        : `「${exhibition.title}」 전시를 삭제할까요? 저장·리뷰도 함께 삭제되며 되돌릴 수 없습니다.`
+    );
+    if (!confirmed) return;
+
+    setDeletingExhibitionId(exhibition.id);
+    setMessage("");
+    const response = await fetch(`/api/exhibitions/${exhibition.id}`, {
+      method: "DELETE"
+    });
+    const data = await response.json().catch(() => ({}));
+    setDeletingExhibitionId(null);
+
+    if (!response.ok) {
+      setMessage(data.error ?? "전시 삭제에 실패했습니다.");
+      return;
+    }
+
+    setMessage("전시를 삭제했습니다.");
+    router.refresh();
   }
 
   async function shareArchive() {
@@ -563,7 +592,7 @@ export function MyPageDashboard({
             <div className="my-section-heading">
               <div>
                 <h2>내 전시</h2>
-                <p className="auth-description">등록한 전시를 수정하거나 새 전시를 등록합니다.</p>
+                <p className="auth-description">등록한 전시를 수정·삭제하거나 새 전시를 등록합니다.</p>
               </div>
             </div>
 
@@ -613,6 +642,14 @@ export function MyPageDashboard({
                       >
                         수정
                       </Link>
+                      <button
+                        type="button"
+                        className="secondary-button warn-button"
+                        disabled={deletingExhibitionId === exhibition.id}
+                        onClick={() => deleteExhibition(exhibition)}
+                      >
+                        {deletingExhibitionId === exhibition.id ? "삭제 중…" : "삭제"}
+                      </button>
                     </div>
                   </article>
                   );
@@ -646,6 +683,14 @@ export function MyPageDashboard({
                         exhibitionId={exhibition.id}
                         source="artist_dashboard_past"
                       />
+                      <button
+                        type="button"
+                        className="secondary-button warn-button"
+                        disabled={deletingExhibitionId === exhibition.id}
+                        onClick={() => deleteExhibition(exhibition)}
+                      >
+                        {deletingExhibitionId === exhibition.id ? "삭제 중…" : "삭제"}
+                      </button>
                     </div>
                   </article>
                 ))}
