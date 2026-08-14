@@ -50,6 +50,7 @@ export type Exhibition = {
   categories: ExhibitionCategory[];
   exhibitionType: ExhibitionType;
   source: ExhibitionSource;
+  registeredById?: string | null;
   lifecycle: ExhibitionLifecycle;
   curationAvailable: boolean;
   reservable: boolean;

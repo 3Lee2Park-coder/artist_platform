@@ -68,6 +68,7 @@ function toExhibition(record: DbExhibition): Exhibition {
     categories,
     exhibitionType: record.exhibitionType as Exhibition["exhibitionType"],
     source: record.source as ExhibitionSource,
+    registeredById: record.registeredById,
     lifecycle: computeLifecycle(record),
     curationAvailable: record.curationAvailable,
     reservable: record.reservable,
@@ -323,6 +324,22 @@ export async function getVideoExhibitions(today = getTodayKST()) {
     (exhibition) =>
       exhibition.artistVideo?.status === "ready" && exhibition.artistVideo.videoUrl
   );
+}
+
+export async function getExhibitionsRegisteredByUserId(userId: string) {
+  const records = await prisma.exhibition.findMany({
+    where: {
+      registeredById: userId,
+      status: "PUBLISHED",
+      source: { not: "PUBLIC_API" }
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      space: { select: { id: true, slug: true, name: true } }
+    }
+  });
+
+  return records.map(toExhibition);
 }
 
 export async function getExhibitionById(id: string) {

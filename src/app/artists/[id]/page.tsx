@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { ProgramCard } from "@/components/ProgramCard";
 import { SpaceCard } from "@/components/SpaceCard";
-import { getAllExhibitions } from "@/lib/exhibitions";
+import { getExhibitionsRegisteredByUserId } from "@/lib/exhibitions";
 import {
   getProgramRemainingSeats,
   getPublicPrograms
@@ -64,10 +64,10 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
   const profile = user.artistApplication;
   const profileImage = resolveMediaUrl(profile?.profileImageUrl);
 
-  const [allSpaces, allPrograms, allExhibitions] = await Promise.all([
+  const [allSpaces, allPrograms, ownedExhibitions] = await Promise.all([
     getPublicSpaces(),
     getPublicPrograms(),
-    getAllExhibitions()
+    getExhibitionsRegisteredByUserId(user.id)
   ]);
 
   const spaces = allSpaces.filter((space) => space.owner?.id === user.id);
@@ -77,9 +77,7 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
   const programRemaining = await getProgramRemainingSeats(
     programs.map((program) => program.id)
   );
-  const exhibitions = allExhibitions
-    .filter((exhibition) => exhibition.artist === user.name)
-    .slice(0, 6);
+  const exhibitions = ownedExhibitions.slice(0, 6);
 
   return (
     <>

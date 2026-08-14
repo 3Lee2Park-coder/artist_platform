@@ -92,7 +92,7 @@ export default async function SpaceDetailPage({ params }: SpaceDetailPageProps) 
         .filter(
           (exhibition) =>
             exhibition.space?.id !== space.id &&
-            exhibition.artist === space.owner?.name
+            exhibition.registeredById === space.owner?.id
         )
         .slice(0, 3)
     : [];

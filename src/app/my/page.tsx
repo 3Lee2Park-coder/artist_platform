@@ -65,11 +65,23 @@ export default async function MyPage() {
     where: {
       userId: session.id,
       status: { in: ["CONFIRMED"] },
-      visitDate: { gte: today },
-      exhibitionId: { not: null }
+      visitDate: { gte: today }
     },
     include: {
-      exhibition: { select: exhibitionSelect }
+      exhibition: { select: exhibitionSelect },
+      program: {
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          heroImageUrl: true,
+          heroTone: true,
+          space: { select: { name: true, district: true } },
+          exhibition: {
+            select: { venue: true, district: true, region: true, title: true }
+          }
+        }
+      }
     },
     orderBy: [{ visitDate: "asc" }, { slot: "asc" }]
   });
@@ -213,18 +225,47 @@ export default async function MyPage() {
   });
 
   const libraryReservations = memberReservations
-    .filter(
-      (reservation): reservation is (typeof reservation) & {
-        exhibition: NonNullable<(typeof reservation)["exhibition"]>;
-      } => Boolean(reservation.exhibition)
-    )
-    .map((reservation) => ({
-      id: reservation.id,
-      visitDate: reservation.visitDate,
-      slot: reservation.slot,
-      status: reservation.status,
-      exhibition: toLibraryExhibition(reservation.exhibition)
-    }));
+    .map((reservation) => {
+      if (reservation.exhibitionId && reservation.exhibition) {
+        return {
+          id: reservation.id,
+          visitDate: reservation.visitDate,
+          slot: reservation.slot,
+          status: reservation.status,
+          kind: "exhibition" as const,
+          detailHref: `/exhibitions/${reservation.exhibition.id}`,
+          exhibition: toLibraryExhibition(reservation.exhibition)
+        };
+      }
+      if (reservation.programId && reservation.program) {
+        const program = reservation.program;
+        return {
+          id: reservation.id,
+          visitDate: reservation.visitDate,
+          slot: reservation.slot,
+          status: reservation.status,
+          kind: "program" as const,
+          detailHref: `/programs/${program.slug}`,
+          exhibition: {
+            id: program.id,
+            title: program.title,
+            venue:
+              program.space?.name ??
+              program.exhibition?.venue ??
+              program.exhibition?.title ??
+              "장소 미정",
+            district:
+              program.space?.district ?? program.exhibition?.district ?? "",
+            region: program.exhibition?.region ?? "",
+            heroImageUrl: resolveMediaUrl(program.heroImageUrl),
+            heroTone: program.heroTone,
+            curationAvailable: false
+          }
+        };
+      }
+      return null;
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   const recommendCount = reviews.filter((review) => review.recommend).length;
 

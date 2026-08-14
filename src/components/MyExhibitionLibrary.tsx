@@ -21,6 +21,8 @@ export type ReservationLibraryItem = {
   slot: string;
   status: string;
   exhibition: LibraryExhibition;
+  detailHref?: string;
+  kind?: "exhibition" | "program";
 };
 
 export type SavedLibraryItem = LibraryExhibition & {
@@ -140,9 +142,12 @@ export function MyExhibitionLibrary({
                   <div className="archive-card-actions">
                     <Link
                       className="secondary-button"
-                      href={`/exhibitions/${reservation.exhibition.id}`}
+                      href={
+                        reservation.detailHref ??
+                        `/exhibitions/${reservation.exhibition.id}`
+                      }
                     >
-                      전시 보기
+                      {reservation.kind === "program" ? "프로그램 보기" : "전시 보기"}
                     </Link>
                     {reservation.status === "CONFIRMED" && reservation.visitDate >= today ? (
                       <button
