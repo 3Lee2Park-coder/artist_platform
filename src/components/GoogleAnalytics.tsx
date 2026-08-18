@@ -1,10 +1,16 @@
 import Script from "next/script";
 
 const GA_MEASUREMENT_ID =
-  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-856LRPYS7Y";
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-C7TPEQPJVQ";
+const GOOGLE_ADS_TAG_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_TAG_ID ?? "G-856LRPYS7Y";
 
 export function GoogleAnalytics() {
-  if (!GA_MEASUREMENT_ID) {
+  const tagIds = Array.from(
+    new Set([GA_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID].filter(Boolean))
+  );
+
+  if (tagIds.length === 0) {
     return null;
   }
 
@@ -12,7 +18,7 @@ export function GoogleAnalytics() {
     <>
       <Script
         async
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${tagIds[0]}`}
         strategy="afterInteractive"
       />
       <Script id="google-analytics" strategy="afterInteractive">
@@ -20,7 +26,7 @@ export function GoogleAnalytics() {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', '${GA_MEASUREMENT_ID}');
+          ${tagIds.map((id) => `gtag('config', '${id}');`).join("\n          ")}
         `}
       </Script>
     </>
