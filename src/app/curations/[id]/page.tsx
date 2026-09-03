@@ -2,6 +2,9 @@ import { CurationDetailClient } from "@/components/CurationDetailClient";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getSession } from "@/lib/auth";
+import { annotateCards } from "@/lib/cards";
+import { getTodayKST } from "@/lib/date";
+import { buildCuratedDecks } from "@/lib/decks";
 import { annotateViewerState, getCurationById, getPublishedCurations } from "@/lib/exhibitions";
 import { curationJsonLd, curationSeo, publicMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
@@ -45,6 +48,12 @@ export default async function CurationDetailPage({
   const allCurations = await getPublishedCurations();
   const exhibitions = await annotateViewerState(curation.exhibitions, session?.id);
   const seo = curationSeo(curation);
+  const found =
+    buildCuratedDecks(allCurations, getTodayKST()).find((item) => item.id === curation.id) ??
+    null;
+  const deck = found
+    ? { ...found, cards: await annotateCards(found.cards, session?.id) }
+    : null;
 
   return (
     <>
@@ -57,9 +66,10 @@ export default async function CurationDetailPage({
           image: curation.coverImageUrl
         })}
       />
-      <Header />
+      <Header activeTab="덱" />
       <CurationDetailClient
         curation={curation}
+        deck={deck}
         relatedCurations={allCurations}
         exhibitions={exhibitions}
         isLoggedIn={Boolean(session)}

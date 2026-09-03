@@ -3,6 +3,7 @@ import {
   inferDistrictFromAddress,
   inferRegionFromText
 } from "@/lib/locations";
+import { mapRegionCenter } from "@/lib/map-regions";
 
 export type PublicLocationInput = {
   institution: string;
@@ -215,23 +216,5 @@ export async function enrichPublicLocation(
 }
 
 export function defaultCoordsForRegion(region: string) {
-  const map: Record<string, { lat: number; lng: number }> = {
-    서울: { lat: 37.5665, lng: 126.978 },
-    경기: { lat: 37.4138, lng: 127.5183 },
-    강원: { lat: 37.8854, lng: 127.7298 },
-    부산: { lat: 35.1796, lng: 129.0756 },
-    인천: { lat: 37.4563, lng: 126.7052 },
-    대구: { lat: 35.8714, lng: 128.6014 },
-    광주: { lat: 35.1595, lng: 126.8526 },
-    대전: { lat: 36.3504, lng: 127.3845 },
-    제주: { lat: 33.4996, lng: 126.5312 },
-    충북: { lat: 36.6357, lng: 127.4917 },
-    충남: { lat: 36.5184, lng: 126.8 },
-    전북: { lat: 35.8242, lng: 127.148 },
-    전남: { lat: 34.8161, lng: 126.4629 },
-    경북: { lat: 36.576, lng: 128.5056 },
-    경남: { lat: 35.2284, lng: 128.6811 }
-  };
-
-  return map[region] ?? map.서울;
+  return mapRegionCenter(region);
 }

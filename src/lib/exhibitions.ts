@@ -75,6 +75,11 @@ function toExhibition(record: DbExhibition): Exhibition {
     todayOpen: record.todayOpen || undefined,
     popular: record.popular || undefined,
     nearby: record.nearby || undefined,
+    homeHero: "homeHero" in record ? Boolean(record.homeHero) : false,
+    createdAt:
+      "createdAt" in record && record.createdAt instanceof Date
+        ? record.createdAt.toISOString()
+        : undefined,
     heroTone: record.heroTone,
     heroImageUrl: resolveMediaUrl(record.heroImageUrl),
     summary: record.summary,
@@ -153,7 +158,7 @@ async function fetchExhibitionsFromDb() {
 /** Vercel/서버리스에서 매 요청 전체 테이블 스캔을 피하기 위한 짧은 TTL 캐시 */
 const getCachedExhibitionRecords = unstable_cache(
   async () => fetchExhibitionsFromDb(),
-  ["exhibitions-published-v1"],
+  ["exhibitions-published-v2"],
   { revalidate: 60, tags: ["exhibitions"] }
 );
 
@@ -236,6 +241,31 @@ export async function getListedExhibitions(today = getTodayKST()) {
   });
 
   return sortForDiscovery(listed);
+}
+
+/**
+ * 홈 히어로 전시.
+ * 운영자가 homeHero를 켠 전시를 앞에 두고, 나머지는 최신 등록순으로 채운다.
+ * 공공 API 전시는 넣지 않는다.
+ */
+export async function getHomeHeroExhibitions(
+  today = getTodayKST(),
+  limit = 6
+): Promise<Exhibition[]> {
+  const listed = (await getListedExhibitions(today)).filter(
+    (exhibition) =>
+      exhibition.source !== "PUBLIC_API" &&
+      exhibition.lifecycle !== "ended" &&
+      exhibition.lifecycle !== "cancelled"
+  );
+
+  const byCreated = (a: Exhibition, b: Exhibition) =>
+    (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+
+  const pinned = listed.filter((exhibition) => exhibition.homeHero).sort(byCreated);
+  const rest = listed.filter((exhibition) => !exhibition.homeHero).sort(byCreated);
+
+  return [...pinned, ...rest].slice(0, Math.max(0, limit));
 }
 
 export async function getUpcomingExhibitions(today = getTodayKST()) {
@@ -692,6 +722,15 @@ export type CurationStopItem = {
   editorialBadge: string | null;
   distanceText: string | null;
   note: string | null;
+  address?: string | null;
+  district?: string | null;
+  openingHours?: string | null;
+  categoryLabel?: string | null;
+  ownerUserId?: string | null;
+  // 전시 정차에만 존재 — 기간이 끝난 코스를 노출에서 빼기 위해 필요
+  startDate?: string | null;
+  endDate?: string | null;
+  artist?: string | null;
 };
 
 export type CurationSummary = {
@@ -784,7 +823,12 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
                   heroImageUrl: resolveMediaUrl(stop.space.heroImageUrl) ?? null,
                   editorialBadge: stop.editorialBadge,
                   distanceText: stop.distanceText,
-                  note: stop.note
+                  note: stop.note ?? stop.space.visitNotice ?? stop.space.shortDescription,
+                  address: stop.space.address,
+                  district: stop.space.district,
+                  openingHours: stop.space.openingHours,
+                  categoryLabel: "공간",
+                  ownerUserId: stop.space.ownerUserId
                 };
               }
               if (stop.stopType === "EXHIBITION" && stop.exhibition) {
@@ -805,7 +849,13 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
                     resolveMediaUrl(stop.exhibition.heroImageUrl) ?? null,
                   editorialBadge: stop.editorialBadge,
                   distanceText: stop.distanceText,
-                  note: stop.note
+                  note: stop.note,
+                  startDate: stop.exhibition.startDate,
+                  endDate: stop.exhibition.endDate,
+                  artist: stop.exhibition.artist,
+                  address: stop.exhibition.address,
+                  district: stop.exhibition.district,
+                  categoryLabel: "전시"
                 };
               }
               if (stop.stopType === "PLACE" && stop.place) {
@@ -827,7 +877,11 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
                   heroImageUrl: resolveMediaUrl(stop.place.imageUrl) ?? null,
                   editorialBadge: stop.editorialBadge,
                   distanceText: stop.distanceText,
-                  note: stop.note ?? stop.place.notes ?? stop.place.editorialNote
+                  note: stop.note ?? stop.place.notes ?? stop.place.editorialNote,
+                  address: stop.place.address,
+                  district: stop.place.district,
+                  categoryLabel:
+                    PLACE_TYPE_LABEL[stop.place.type] ?? stop.place.type
                 };
               }
               return null;
@@ -848,7 +902,10 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
             heroImageUrl: exhibition.heroImageUrl ?? null,
             editorialBadge: exhibition.editorialBadge,
             distanceText: exhibition.distanceText,
-            note: null
+            note: null,
+            startDate: exhibition.startDate,
+            endDate: exhibition.endDate,
+            artist: exhibition.artist
           }));
 
     return {

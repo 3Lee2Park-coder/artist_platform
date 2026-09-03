@@ -2,7 +2,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { PlaceTipForm } from "@/components/PlaceTipForm";
 import { ThemePreviewCard } from "@/components/ThemePreviewCard";
-import { getPlaceById, PLACE_TYPE_LABEL } from "@/lib/places";
+import { buildPlaceIntro, getPlaceById, PLACE_TYPE_LABEL } from "@/lib/places";
 import { placeJsonLd, placeSeo, publicMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import Link from "next/link";
@@ -48,6 +48,7 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
   const hasRelated =
     place.nearbyExhibitions.length > 0 || place.curations.length > 0;
   const seo = placeSeo(place);
+  const intro = buildPlaceIntro(place);
 
   return (
     <>
@@ -82,15 +83,24 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
               {PLACE_TYPE_LABEL[place.type] ?? place.type} · {place.district}
             </p>
             <h1>{place.name}</h1>
-            {place.editorialNote || place.notes ? (
-              <p className="place-detail-lead">
-                {place.editorialNote || place.notes}
-              </p>
-            ) : (
-              <p className="place-detail-lead">
-                전시 곁에서 같이 가면 좋은 동네 장소입니다.
-              </p>
-            )}
+            <p className="place-detail-lead">{intro.lead}</p>
+            {intro.supplement ? (
+              <p className="place-detail-supplement">{intro.supplement}</p>
+            ) : null}
+            {place.curations.length > 0 ? (
+              <div className="place-detail-courses">
+                <p className="place-detail-courses-label">같이 가면 좋은 코스</p>
+                <ul>
+                  {place.curations.map((curation) => (
+                    <li key={curation.id}>
+                      <Link href={`/curations/${curation.id}`}>
+                        {curation.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <p className="place-detail-address">{place.address}</p>
             <div className="place-detail-actions">
               <a
@@ -115,9 +125,13 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
                   <p className="place-related-desc">
                     도보로 이어지는 진행 중 전시입니다. 장소를 보고 전시를 이어서
                     찾아보세요.
+                    <span className="place-related-rail-hint">
+                      {" "}
+                      카드를 옆으로 밀어 보세요.
+                    </span>
                   </p>
                 </div>
-                <div className="place-related-grid">
+                <div className="place-related-grid place-related-rail">
                   {place.nearbyExhibitions.map((exhibition) => (
                     <article key={exhibition.id} className="exhibition-card compact">
                       <div className="exhibition-card-media">

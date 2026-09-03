@@ -38,7 +38,7 @@ export function MeetArtistSection({
         eyebrow="작가와 만나기"
         title="예약하고, 직접 이야기해 보세요"
         titleId="meet-artist-title"
-        description="오픈 스튜디오·워크숍, 전시 안 작가와의 대화를 한곳에 모았습니다. 화면 밖 만남으로 이어집니다."
+        description="워크숍·만들기, 오픈 스튜디오, 전시 안 작가와의 대화를 한곳에 모았습니다. 화면 밖 만남으로 이어집니다."
         actionLabel="더 찾아보기"
         actionHref={actionHref}
       />

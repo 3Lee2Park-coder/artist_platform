@@ -1,6 +1,7 @@
 "use client";
 
-import { ExhibitionCard } from "@/components/ExhibitionCard";
+import { InteractiveOoofCard } from "@/components/InteractiveOoofCard";
+import { cardFromExhibition } from "@/lib/card-mappers";
 import type { Exhibition } from "@/types/exhibition";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -120,6 +121,14 @@ export function ExhibitionsDirectoryClient({
   const [curation, setCuration] = useState<CurationFilter>(initialCuration);
   const [district, setDistrict] = useState<string>(initialDistricts[0] ?? "all");
   const [publicVisible, setPublicVisible] = useState(24);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((response) => response.json())
+      .then((data) => setLoggedIn(Boolean(data.user)))
+      .catch(() => setLoggedIn(false));
+  }, []);
 
   useEffect(() => {
     setSource(initialSource);
@@ -440,7 +449,10 @@ export function ExhibitionsDirectoryClient({
                 <div className={`exhub-artist-layout${artistCold ? " cold" : ""}`}>
                   {artistFeatured ? (
                     <div className="exhub-artist-feature">
-                      <ExhibitionCard exhibition={artistFeatured} />
+                      <InteractiveOoofCard
+                        card={cardFromExhibition(artistFeatured, 0)}
+                        isLoggedIn={loggedIn}
+                      />
                     </div>
                   ) : null}
                   {artistRest.length > 0 ? (
@@ -493,21 +505,22 @@ export function ExhibitionsDirectoryClient({
                 </div>
               </div>
 
-              <div className="exhub-public-rail" aria-label="공공 전시 하이라이트">
-                {publicList.slice(0, 8).map((exhibition) => (
-                  <ExhibitionRailCard
+              <div className="ooof-catalog-rail" aria-label="공공 전시 하이라이트">
+                {publicList.slice(0, 8).map((exhibition, index) => (
+                  <InteractiveOoofCard
                     key={`pub-rail-${exhibition.id}`}
-                    exhibition={exhibition}
+                    card={cardFromExhibition(exhibition, index)}
+                    isLoggedIn={loggedIn}
                   />
                 ))}
               </div>
 
-              <div className="exhub-public-grid">
-                {publicShown.map((exhibition) => (
-                  <ExhibitionCard
+              <div className="ooof-catalog-grid">
+                {publicShown.map((exhibition, index) => (
+                  <InteractiveOoofCard
                     key={`pub-${exhibition.id}`}
-                    exhibition={exhibition}
-                    compact
+                    card={cardFromExhibition(exhibition, index + 8)}
+                    isLoggedIn={loggedIn}
                   />
                 ))}
               </div>

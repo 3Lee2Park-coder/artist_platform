@@ -13,6 +13,7 @@ export function ArtistApplyForm({ artistStatus }: ArtistApplyPageProps) {
   const [bio, setBio] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [activityArea, setActivityArea] = useState("");
+  const [showOnHome, setShowOnHome] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +44,7 @@ export function ArtistApplyForm({ artistStatus }: ArtistApplyPageProps) {
     const response = await fetch("/api/artist-application", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bio, portfolioUrl, activityArea })
+      body: JSON.stringify({ bio, portfolioUrl, activityArea, showOnHome })
     });
 
     const data = await response.json();
@@ -95,6 +96,14 @@ export function ArtistApplyForm({ artistStatus }: ArtistApplyPageProps) {
             onChange={(event) => setActivityArea(event.target.value)}
             placeholder="예: 성수, 한남, 신당"
           />
+        </label>
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={showOnHome}
+            onChange={(event) => setShowOnHome(event.target.checked)}
+          />
+          승인되면 홈에 술래(아바타)로 등장해도 괜찮습니다. 나중에 MY에서 끌 수 있습니다.
         </label>
 
         {error ? <p className="form-error">{error}</p> : null}

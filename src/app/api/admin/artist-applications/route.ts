@@ -44,6 +44,44 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true });
 }
 
+export async function PATCH(request: Request) {
+  const session = await getSession();
+
+  if (!session || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
+  }
+
+  const { userId, showOnHome } = await request.json();
+  if (!userId || typeof showOnHome !== "boolean") {
+    return NextResponse.json({ error: "userId와 showOnHome이 필요합니다." }, { status: 400 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { artistStatus: true }
+  });
+
+  if (!user || user.artistStatus !== "APPROVED") {
+    return NextResponse.json({ error: "승인된 작가에게만 적용됩니다." }, { status: 400 });
+  }
+
+  try {
+    await prisma.artistApplication.updateMany({
+      where: { userId },
+      data: { showOnHome }
+    });
+  } catch (error) {
+    await prisma.$executeRaw`
+      UPDATE "ArtistApplication"
+      SET "showOnHome" = ${showOnHome}
+      WHERE "userId" = ${userId}
+    `;
+    console.error("admin showOnHome fallback", error);
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function GET() {
   const session = await getSession();
 

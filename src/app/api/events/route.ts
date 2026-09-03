@@ -11,7 +11,14 @@ const eventSchema = z.object({
     "RESERVATION_INTENT",
     "CURATION_VIEW",
     "CURATION_SHARE",
-    "PLACE_CLICK"
+    "DOSIRAK_IMPRESSION",
+    "DOSIRAK_OPEN",
+    "DECK_VIEW",
+    "DECK_OPEN",
+    "PLACE_CLICK",
+    "ARTIST_QUESTION_CREATE",
+    "ARTIST_QUESTION_ANSWER",
+    "ARTIST_QUESTION_MODERATE"
   ]),
   exhibitionId: z.string().min(1).optional(),
   reservationId: z.string().min(1).optional(),

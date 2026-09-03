@@ -57,6 +57,8 @@ export type Exhibition = {
   todayOpen?: boolean;
   popular?: boolean;
   nearby?: boolean;
+  homeHero?: boolean;
+  createdAt?: string;
   heroTone: string;
   heroImageUrl?: string;
   summary: string;

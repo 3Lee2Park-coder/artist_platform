@@ -1,7 +1,8 @@
 "use client";
 
-import { ExhibitionCard } from "@/components/ExhibitionCard";
 import { HomeSectionHeader } from "@/components/HomeSectionHeader";
+import { InteractiveOoofCardList } from "@/components/InteractiveOoofCard";
+import { cardFromExhibition } from "@/lib/card-mappers";
 import type { Exhibition } from "@/types/exhibition";
 import { useEffect, useMemo, useState } from "react";
 
@@ -74,11 +75,10 @@ export function AllExhibitionsSectionClient({
         actionHref="/exhibitions"
       />
 
-      <div className="exhibition-grid">
-        {visible.map((exhibition) => (
-          <ExhibitionCard key={exhibition.id} exhibition={exhibition} compact />
-        ))}
-      </div>
+      <InteractiveOoofCardList
+        className="ooof-catalog-grid"
+        cards={visible.map((exhibition, index) => cardFromExhibition(exhibition, index))}
+      />
     </section>
   );
 }

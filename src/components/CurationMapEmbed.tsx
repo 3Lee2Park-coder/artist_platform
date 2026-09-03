@@ -11,7 +11,7 @@ import type { Exhibition } from "@/types/exhibition";
 
 type CurationMapEmbedProps = {
   exhibitions?: Exhibition[];
-  /** stop 기반 큐레이션 — 있으면 번호 핀 + 동선으로 표시 */
+  /** stop 기반 큐레이션 — 있으면 번호 핀으로 표시 */
   stops?: CurationStopItem[];
   basePlace?: MapBasePlace | null;
   compact?: boolean;
@@ -53,20 +53,16 @@ export function CurationMapEmbed({
         lat: stop.lat,
         lng: stop.lng,
         title: stop.title,
-        order: stop.sortOrder + 1
+        order: stop.sortOrder + 1,
+        district: stop.district ?? undefined
       }))
     : undefined;
-
-  const route = hasStops
-    ? stops!.map((stop) => ({ lat: stop.lat, lng: stop.lng }))
-    : null;
 
   return (
     <div className={`curation-map-embed${compact ? " compact" : ""}`}>
       <NaverMap
         exhibitions={hasStops ? undefined : exhibitions}
         markers={stopMarkers}
-        route={route}
         basePlace={basePlace}
         clustering={false}
         fitBounds={hasStops}

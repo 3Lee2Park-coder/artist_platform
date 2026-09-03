@@ -1,5 +1,6 @@
 "use client";
 
+import { KOREA_MAP_CENTER, KOREA_MAP_ZOOM } from "@/lib/map-regions";
 import type { Exhibition } from "@/types/exhibition";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -10,7 +11,6 @@ export type MapBasePlace = {
   lng: number;
 };
 
-// 지도에 그릴 수 있는 대상 — 전시 외에 공간/프로그램/장소/큐레이션 정차 지점 지원
 export type MapMarkerKind = "space" | "exhibition" | "program" | "place" | "stop";
 
 export type MapMarker = {
@@ -20,37 +20,41 @@ export type MapMarker = {
   lng: number;
   title: string;
   subtitle?: string;
-  /** 상태·시간 등 강조 배지 (예: "오늘 방문 가능", "8/9 14:00") */
   badge?: string;
   badgeTone?: "ok" | "caution" | "closed" | "unknown" | "accent";
-  /** 큐레이션 동선 순번 */
   order?: number;
   district?: string;
+  region?: string;
 };
 
 export type MapPinVariant = "default" | "compact";
 
+export type MapViewFocus = {
+  id: string;
+  center: { lat: number; lng: number };
+  zoom: number;
+  fitMarkers?: boolean;
+};
+
 type NaverMapProps = {
   exhibitions?: Exhibition[];
   markers?: MapMarker[];
-  /** 순서대로 잇는 동선 (큐레이션) */
   route?: Array<{ lat: number; lng: number }> | null;
   basePlace?: MapBasePlace | null;
   selectedId?: string;
   onSelect?: (id: string) => void;
-  /** false면 항상 개별 핀 표시 (큐레이션 상세 등) */
   clustering?: boolean;
-  /** true면 모든 마커가 보이도록 화면 맞춤 */
   fitBounds?: boolean;
-  /** compact — 이름만 표시하는 작은 핀 */
   pinVariant?: MapPinVariant;
+  viewFocus?: MapViewFocus | null;
 };
 
-type DistrictCluster = {
-  district: string;
+type MapCluster = {
+  label: string;
   lat: number;
   lng: number;
   count: number;
+  mode: "region" | "district";
 };
 
 type NaverMarker = {
@@ -68,10 +72,13 @@ type NaverMapInstance = {
   fitBounds: (bounds: unknown, margin?: number | Record<string, number>) => void;
 };
 
-const CLUSTER_MAX_ZOOM = 14;
-const DETAIL_MIN_ZOOM = 15;
-const OVERVIEW_INITIAL_ZOOM = 12;
-const DETAIL_INITIAL_ZOOM = 15;
+type NaverMapsApi = NonNullable<Window["naver"]>["maps"];
+
+const REGION_CLUSTER_MAX_ZOOM = 10;
+const DISTRICT_CLUSTER_MAX_ZOOM = 13;
+const DETAIL_MIN_ZOOM = 14;
+const REGION_CLUSTER_ZOOM = 11;
+const DISTRICT_CLUSTER_ZOOM = 14;
 
 declare global {
   interface Window {
@@ -83,11 +90,12 @@ declare global {
         ) => NaverMapInstance;
         LatLng: new (lat: number, lng: number) => unknown;
         LatLngBounds: new () => { extend: (latlng: unknown) => void };
+        Point: new (x: number, y: number) => unknown;
         Marker: new (options: {
           position: unknown;
           map: unknown;
           title?: string;
-          icon?: { content: string };
+          icon?: { content: string; anchor?: unknown };
           zIndex?: number;
         }) => NaverMarker;
         Polyline: new (options: {
@@ -119,6 +127,14 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
+function shortLabel(value: string, max = 8) {
+  const trimmed = value.trim();
+  if (trimmed.length <= max) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, max)}…`;
+}
+
 function exhibitionToMarker(exhibition: Exhibition, index: number): MapMarker {
   return {
     id: exhibition.id,
@@ -128,51 +144,115 @@ function exhibitionToMarker(exhibition: Exhibition, index: number): MapMarker {
     title: exhibition.venue,
     subtitle: exhibition.title,
     order: index + 1,
-    district: exhibition.district
+    district: exhibition.district,
+    region: exhibition.region
   };
 }
 
-function buildDistrictClusters(markers: MapMarker[]): DistrictCluster[] {
+function locationKey(marker: MapMarker) {
+  return `${marker.lat.toFixed(5)},${marker.lng.toFixed(5)}`;
+}
+
+function buildClusters(
+  markers: MapMarker[],
+  mode: "region" | "district"
+): MapCluster[] {
   const groups = new Map<string, MapMarker[]>();
 
   for (const marker of markers) {
-    const key = marker.district ?? "기타";
+    const key =
+      mode === "region"
+        ? marker.region?.trim() || "기타"
+        : marker.district?.trim() || marker.region?.trim() || "기타";
     const list = groups.get(key) ?? [];
     list.push(marker);
     groups.set(key, list);
   }
 
-  return Array.from(groups.entries()).map(([district, items]) => ({
-    district,
+  return Array.from(groups.entries()).map(([label, items]) => ({
+    label,
     lat: items.reduce((sum, item) => sum + item.lat, 0) / items.length,
     lng: items.reduce((sum, item) => sum + item.lng, 0) / items.length,
-    count: items.length
+    count: items.length,
+    mode
   }));
 }
 
-function shouldUseClusters(zoom: number, clustering: boolean, markerCount: number) {
-  if (!clustering || markerCount <= 4) {
-    return false;
+function resolveClusterMode(
+  zoom: number,
+  clustering: boolean,
+  markers: MapMarker[]
+): "none" | "region" | "district" {
+  if (!clustering || markers.length <= 4) {
+    return "none";
   }
 
-  return zoom <= CLUSTER_MAX_ZOOM;
+  const regions = new Set(
+    markers.map((marker) => marker.region?.trim() || "기타")
+  );
+
+  if (regions.size > 1 && zoom <= REGION_CLUSTER_MAX_ZOOM) {
+    return "region";
+  }
+
+  if (zoom <= DISTRICT_CLUSTER_MAX_ZOOM) {
+    return "district";
+  }
+
+  return "none";
 }
 
-function markerContent(marker: MapMarker, options: {
-  variant: MapPinVariant;
-  selected: boolean;
-}): string {
-  const title = escapeHtml(marker.title);
-  const selectedClass = options.selected ? " is-selected" : "";
-
-  if (options.variant === "compact") {
-    const order =
-      marker.order != null
-        ? `<span class="naver-marker-order">${marker.order}</span>`
-        : "";
-    return `<div class="naver-marker naver-marker--compact naver-marker--${marker.kind}${selectedClass}">${order}<strong>${title}</strong></div>`;
+function pinAnchor(naverMaps: NaverMapsApi, marker: MapMarker) {
+  if (!naverMaps.Point) {
+    return undefined;
   }
 
+  if (marker.order != null) {
+    return new naverMaps.Point(21, 21);
+  }
+
+  return new naverMaps.Point(17, 17);
+}
+
+function clusterAnchor(naverMaps: NaverMapsApi) {
+  if (!naverMaps.Point) {
+    return undefined;
+  }
+
+  return new naverMaps.Point(18, 18);
+}
+
+function compactPinContent(
+  marker: MapMarker,
+  options: { selected: boolean; count?: number }
+): string {
+  const selectedClass = options.selected ? " is-selected" : "";
+  const count = options.count && options.count > 1 ? options.count : 0;
+  const order =
+    marker.order != null
+      ? `<span class="naver-pin-dot naver-pin-dot--num">${marker.order}</span>`
+      : `<span class="naver-pin-dot">${count ? `<i>${count}</i>` : ""}</span>`;
+  const label = options.selected
+    ? `<strong class="naver-pin-label">${escapeHtml(marker.title)}</strong>`
+    : "";
+
+  return `<div class="naver-pin naver-pin--${marker.kind}${selectedClass}">${order}${label}</div>`;
+}
+
+function markerContent(
+  marker: MapMarker,
+  options: {
+    variant: MapPinVariant;
+    selected: boolean;
+    count?: number;
+  }
+): string {
+  if (options.variant === "compact") {
+    return compactPinContent(marker, options);
+  }
+
+  const title = escapeHtml(marker.title);
+  const selectedClass = options.selected ? " is-selected" : "";
   const subtitle = marker.subtitle ? escapeHtml(marker.subtitle) : "";
   const badge = marker.badge ? escapeHtml(marker.badge) : "";
   const badgeTone = marker.badgeTone ?? "accent";
@@ -193,6 +273,10 @@ function markerContent(marker: MapMarker, options: {
   return `<div class="naver-marker naver-marker--exhibition naver-marker--detail${selectedClass}"><span>${marker.order ?? ""}</span><strong>${title}</strong>${subtitle ? `<em>${subtitle}</em>` : ""}</div>`;
 }
 
+function clusterContent(cluster: MapCluster): string {
+  return `<div class="naver-marker naver-marker--cluster naver-marker--cluster-${cluster.mode}"><span>${cluster.count}</span><strong>${escapeHtml(shortLabel(cluster.label))}</strong></div>`;
+}
+
 export function NaverMap({
   exhibitions = [],
   markers,
@@ -202,16 +286,24 @@ export function NaverMap({
   onSelect,
   clustering = true,
   fitBounds = false,
-  pinVariant = "default"
+  pinVariant = "default",
+  viewFocus = null
 }: NaverMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<NaverMapInstance | null>(null);
-  const markersRef = useRef<NaverMarker[]>([]);
+  const overlaysRef = useRef<NaverMarker[]>([]);
   const polylineRef = useRef<NaverPolyline | null>(null);
   const onSelectRef = useRef(onSelect);
   const selectedIdRef = useRef(selectedId);
   const pinVariantRef = useRef(pinVariant);
-  const renderMarkersRef = useRef<((map: NaverMapInstance) => void) | null>(null);
+  const clusteringRef = useRef(clustering);
+  const fitBoundsRef = useRef(fitBounds);
+  const viewFocusRef = useRef(viewFocus);
+  const routeRef = useRef(route);
+  const basePlaceRef = useRef(basePlace);
+  const markersDataRef = useRef<MapMarker[]>([]);
+  const drawRef = useRef<(map: NaverMapInstance) => void>(() => undefined);
+  const cameraRef = useRef<(map: NaverMapInstance) => void>(() => undefined);
   const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -219,69 +311,62 @@ export function NaverMap({
   const resolvedMarkers: MapMarker[] =
     markers ?? exhibitions.map((exhibition, index) => exhibitionToMarker(exhibition, index));
 
+  markersDataRef.current = resolvedMarkers;
+  onSelectRef.current = onSelect;
+  selectedIdRef.current = selectedId;
+  pinVariantRef.current = pinVariant;
+  clusteringRef.current = clustering;
+  fitBoundsRef.current = fitBounds;
+  viewFocusRef.current = viewFocus;
+  routeRef.current = route;
+  basePlaceRef.current = basePlace;
+
   const markersKey = JSON.stringify(
     resolvedMarkers.map((marker) => [
       marker.id,
       marker.lat,
       marker.lng,
-      marker.order
+      marker.order,
+      marker.region,
+      marker.district
     ])
   );
   const routeKey = JSON.stringify(route ?? []);
+  const viewFocusId = viewFocus?.id ?? "";
 
   useEffect(() => {
-    onSelectRef.current = onSelect;
-  }, [onSelect]);
-
-  useEffect(() => {
-    selectedIdRef.current = selectedId;
-  }, [selectedId]);
-
-  useEffect(() => {
-    pinVariantRef.current = pinVariant;
-  }, [pinVariant]);
-
-  // markersKey/routeKey는 resolvedMarkers/route의 내용 기반 서명이다
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const currentMarkers = resolvedMarkers;
-
-    if (!mapRef.current || !clientId || (currentMarkers.length === 0 && !basePlace)) {
-      return;
-    }
-
-    const scriptId = "naver-map-sdk";
-    const center = basePlace
-      ? { lat: basePlace.lat, lng: basePlace.lng }
-      : { lat: currentMarkers[0].lat, lng: currentMarkers[0].lng };
-    const initialZoom = clustering ? OVERVIEW_INITIAL_ZOOM : DETAIL_INITIAL_ZOOM;
-
     function clearOverlays() {
-      markersRef.current.forEach((marker) => marker.setMap(null));
-      markersRef.current = [];
+      overlaysRef.current.forEach((marker) => marker.setMap(null));
+      overlaysRef.current = [];
       polylineRef.current?.setMap(null);
       polylineRef.current = null;
     }
 
     function renderMarkers(map: NaverMapInstance) {
       const naverMaps = window.naver?.maps;
-
       if (!naverMaps) {
         return;
       }
 
-      clearOverlays();
+      const currentMarkers = markersDataRef.current;
+      const currentRoute = routeRef.current;
+      const currentBase = basePlaceRef.current;
       const zoom = map.getZoom();
       const activeSelectedId = selectedIdRef.current;
-      const useClusters =
-        clustering &&
-        !activeSelectedId &&
-        shouldUseClusters(zoom, clustering, currentMarkers.length);
+      const clusterMode = resolveClusterMode(
+        zoom,
+        clusteringRef.current,
+        currentMarkers
+      );
 
-      if (route && route.length > 1) {
+      clearOverlays();
+
+      if (currentRoute && currentRoute.length > 1) {
         polylineRef.current = new naverMaps.Polyline({
           map,
-          path: route.map((point) => new naverMaps.LatLng(point.lat, point.lng)),
+          path: currentRoute.map(
+            (point) => new naverMaps.LatLng(point.lat, point.lng)
+          ),
           strokeColor: "#1f6b52",
           strokeWeight: 3,
           strokeOpacity: 0.75,
@@ -289,81 +374,207 @@ export function NaverMap({
         });
       }
 
-      if (basePlace) {
+      if (currentBase) {
         const baseMarker = new naverMaps.Marker({
-          position: new naverMaps.LatLng(basePlace.lat, basePlace.lng),
+          position: new naverMaps.LatLng(currentBase.lat, currentBase.lng),
           map,
-          title: basePlace.name,
+          title: currentBase.name,
           icon: {
-            content: `<div class="naver-marker naver-marker--base naver-marker--compact"><strong>${escapeHtml(basePlace.name)}</strong></div>`
-          }
+            content: `<div class="naver-pin naver-pin--base is-selected"><span class="naver-pin-dot"></span><strong class="naver-pin-label">${escapeHtml(currentBase.name)}</strong></div>`,
+            anchor: naverMaps.Point ? new naverMaps.Point(17, 17) : undefined
+          },
+          zIndex: 5
         });
-        markersRef.current.push(baseMarker);
+        overlaysRef.current.push(baseMarker);
       }
 
-      if (useClusters) {
-        for (const cluster of buildDistrictClusters(currentMarkers)) {
+      if (clusterMode !== "none") {
+        for (const cluster of buildClusters(currentMarkers, clusterMode)) {
           const marker = new naverMaps.Marker({
             position: new naverMaps.LatLng(cluster.lat, cluster.lng),
             map,
-            title: `${cluster.district} ${cluster.count}개`,
+            title: `${cluster.label} ${cluster.count}개`,
             icon: {
-              content: `<div class="naver-marker naver-marker--cluster"><span>${cluster.count}</span><strong>${escapeHtml(cluster.district)}</strong></div>`
-            }
+              content: clusterContent(cluster),
+              anchor: clusterAnchor(naverMaps)
+            },
+            zIndex: 30
           });
 
           naverMaps.Event.addListener(marker, "click", () => {
             map.setCenter(new naverMaps.LatLng(cluster.lat, cluster.lng));
-            map.setZoom(DETAIL_MIN_ZOOM);
+            map.setZoom(
+              cluster.mode === "region"
+                ? REGION_CLUSTER_ZOOM
+                : DISTRICT_CLUSTER_ZOOM
+            );
           });
 
-          markersRef.current.push(marker);
+          overlaysRef.current.push(marker);
+        }
+
+        const selectedMarker = activeSelectedId
+          ? currentMarkers.find((item) => item.id === activeSelectedId)
+          : undefined;
+        if (selectedMarker) {
+          const selected = new naverMaps.Marker({
+            position: new naverMaps.LatLng(selectedMarker.lat, selectedMarker.lng),
+            map,
+            title: selectedMarker.title,
+            icon: {
+              content: markerContent(selectedMarker, {
+                variant: pinVariantRef.current,
+                selected: true
+              }),
+              anchor:
+                pinVariantRef.current === "compact"
+                  ? pinAnchor(naverMaps, selectedMarker)
+                  : undefined
+            },
+            zIndex: 120
+          });
+          naverMaps.Event.addListener(selected, "click", () => {
+            onSelectRef.current?.(selectedMarker.id);
+          });
+          overlaysRef.current.push(selected);
         }
         return;
       }
 
-      currentMarkers.forEach((item) => {
-        const isSelected = item.id === activeSelectedId;
+      const grouped = new Map<string, MapMarker[]>();
+      for (const item of currentMarkers) {
+        const key = locationKey(item);
+        const list = grouped.get(key) ?? [];
+        list.push(item);
+        grouped.set(key, list);
+      }
+
+      grouped.forEach((group) => {
+        const selectedInGroup = group.find((item) => item.id === activeSelectedId);
+        const display = selectedInGroup ?? group[0];
+        const isSelected = Boolean(selectedInGroup);
         const marker = new naverMaps.Marker({
-          position: new naverMaps.LatLng(item.lat, item.lng),
+          position: new naverMaps.LatLng(display.lat, display.lng),
           map,
-          title: item.title,
+          title: display.title,
           icon: {
-            content: markerContent(item, {
+            content: markerContent(display, {
               variant: pinVariantRef.current,
-              selected: isSelected
-            })
+              selected: isSelected,
+              count: group.length
+            }),
+            anchor:
+              pinVariantRef.current === "compact"
+                ? pinAnchor(naverMaps, display)
+                : undefined
           },
-          zIndex: isSelected ? 100 : item.kind === "space" ? 20 : 10
+          zIndex: isSelected ? 120 : display.kind === "space" ? 20 : 10
         });
 
         naverMaps.Event.addListener(marker, "click", () => {
-          onSelectRef.current?.(item.id);
+          const currentId = selectedIdRef.current;
+          const currentIndex = group.findIndex((item) => item.id === currentId);
+          if (currentIndex >= 0 && group.length > 1) {
+            onSelectRef.current?.(group[(currentIndex + 1) % group.length].id);
+            return;
+          }
+          onSelectRef.current?.(display.id);
         });
 
-        markersRef.current.push(marker);
+        overlaysRef.current.push(marker);
       });
     }
 
-    renderMarkersRef.current = renderMarkers;
-
-    function applyBounds(map: NaverMapInstance) {
+    function applyCamera(map: NaverMapInstance) {
       const naverMaps = window.naver?.maps;
-      if (!naverMaps || !fitBounds || currentMarkers.length < 2) return;
-
-      const bounds = new naverMaps.LatLngBounds();
-      currentMarkers.forEach((item) => {
-        bounds.extend(new naverMaps.LatLng(item.lat, item.lng));
-      });
-      if (basePlace) {
-        bounds.extend(new naverMaps.LatLng(basePlace.lat, basePlace.lng));
+      if (!naverMaps) {
+        return;
       }
-      map.fitBounds(bounds, 48);
+
+      const currentMarkers = markersDataRef.current;
+      const activeSelectedId = selectedIdRef.current;
+      const focus = viewFocusRef.current;
+
+      if (activeSelectedId) {
+        const marker = currentMarkers.find((item) => item.id === activeSelectedId);
+        if (marker) {
+          map.setCenter(new naverMaps.LatLng(marker.lat, marker.lng));
+          if (map.getZoom() < DETAIL_MIN_ZOOM) {
+            map.setZoom(DETAIL_MIN_ZOOM);
+          }
+          return;
+        }
+      }
+
+      if (focus?.fitMarkers && currentMarkers.length > 0) {
+        if (currentMarkers.length === 1) {
+          map.setCenter(
+            new naverMaps.LatLng(currentMarkers[0].lat, currentMarkers[0].lng)
+          );
+          map.setZoom(focus.zoom || 14);
+          return;
+        }
+
+        const bounds = new naverMaps.LatLngBounds();
+        currentMarkers.forEach((item) => {
+          bounds.extend(new naverMaps.LatLng(item.lat, item.lng));
+        });
+        const currentBase = basePlaceRef.current;
+        if (currentBase) {
+          bounds.extend(new naverMaps.LatLng(currentBase.lat, currentBase.lng));
+        }
+        map.fitBounds(bounds, { top: 88, right: 36, bottom: 48, left: 36 });
+        return;
+      }
+
+      if (focus) {
+        map.setCenter(new naverMaps.LatLng(focus.center.lat, focus.center.lng));
+        map.setZoom(focus.zoom);
+        return;
+      }
+
+      if (fitBoundsRef.current && currentMarkers.length >= 2) {
+        const bounds = new naverMaps.LatLngBounds();
+        currentMarkers.forEach((item) => {
+          bounds.extend(new naverMaps.LatLng(item.lat, item.lng));
+        });
+        map.fitBounds(bounds, 48);
+      }
     }
+
+    drawRef.current = renderMarkers;
+    cameraRef.current = applyCamera;
+
+    if (!mapRef.current || !clientId) {
+      return;
+    }
+
+    const scriptId = "naver-map-sdk";
+    const initialFocus = viewFocusRef.current;
+    const initialSelected = selectedIdRef.current
+      ? markersDataRef.current.find((item) => item.id === selectedIdRef.current)
+      : undefined;
+    const firstMarker = markersDataRef.current[0];
+    const center = initialSelected
+      ? { lat: initialSelected.lat, lng: initialSelected.lng }
+      : initialFocus?.center ??
+        (basePlaceRef.current
+          ? { lat: basePlaceRef.current.lat, lng: basePlaceRef.current.lng }
+          : firstMarker
+            ? { lat: firstMarker.lat, lng: firstMarker.lng }
+            : KOREA_MAP_CENTER);
+    const initialZoom = initialSelected
+      ? DETAIL_MIN_ZOOM
+      : (initialFocus?.zoom ?? (clusteringRef.current ? KOREA_MAP_ZOOM : 15));
 
     function initMap() {
       if (!mapRef.current || !window.naver?.maps) {
         setMapError("네이버 지도 SDK를 불러오지 못했습니다.");
+        return;
+      }
+
+      if (mapInstanceRef.current) {
+        renderMarkers(mapInstanceRef.current);
         return;
       }
 
@@ -377,7 +588,7 @@ export function NaverMap({
 
         mapInstanceRef.current = map;
         renderMarkers(map);
-        applyBounds(map);
+        applyCamera(map);
 
         window.naver.maps.Event.addListener(map, "zoom_changed", () => {
           renderMarkers(map);
@@ -390,7 +601,9 @@ export function NaverMap({
       }
     }
 
-    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+    const existingScript = document.getElementById(
+      scriptId
+    ) as HTMLScriptElement | null;
 
     if (existingScript) {
       if (window.naver?.maps) {
@@ -402,6 +615,7 @@ export function NaverMap({
       return () => {
         clearOverlays();
         mapInstanceRef.current = null;
+        setMapReady(false);
       };
     }
 
@@ -420,49 +634,32 @@ export function NaverMap({
     return () => {
       clearOverlays();
       mapInstanceRef.current = null;
+      setMapReady(false);
     };
-  }, [clientId, markersKey, routeKey, basePlace, clustering, fitBounds, pinVariant]);
+  }, [clientId]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) {
       return;
     }
 
-    renderMarkersRef.current?.(mapInstanceRef.current);
-  }, [selectedId, markersKey, mapReady, pinVariant]);
+    drawRef.current(mapInstanceRef.current);
+  }, [markersKey, routeKey, selectedId, clustering, pinVariant, mapReady, basePlace]);
 
   useEffect(() => {
-    if (!selectedId || !window.naver?.maps || !mapInstanceRef.current) {
+    if (!mapReady || !mapInstanceRef.current) {
       return;
     }
 
-    const marker = resolvedMarkers.find((item) => item.id === selectedId);
-
-    if (!marker) {
-      return;
-    }
-
-    const map = mapInstanceRef.current;
-    map.setCenter(new window.naver.maps.LatLng(marker.lat, marker.lng));
-
-    const targetZoom = Math.max(DETAIL_MIN_ZOOM, map.getZoom());
-    if (map.getZoom() < DETAIL_MIN_ZOOM) {
-      map.setZoom(DETAIL_MIN_ZOOM);
-    } else if (targetZoom < 16 && pinVariant === "compact") {
-      map.setZoom(16);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, markersKey, mapReady]);
+    cameraRef.current(mapInstanceRef.current);
+  }, [selectedId, viewFocusId, mapReady, markersKey]);
 
   if (!clientId) {
     return (
       <div className="naver-map-fallback" aria-label="Naver Map 미리보기">
         <div className="map-brand-badge">Naver Map preview</div>
         {basePlace ? (
-          <div
-            className="map-pin map-pin--base"
-            style={{ left: "42%", top: "38%" }}
-          >
+          <div className="map-pin map-pin--base" style={{ left: "42%", top: "38%" }}>
             <span>거점</span>
             <strong>{basePlace.name}</strong>
           </div>

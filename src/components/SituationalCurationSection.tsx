@@ -5,7 +5,12 @@ import { HomeSectionHeader } from "@/components/HomeSectionHeader";
 import { ThemePreviewCard } from "@/components/ThemePreviewCard";
 import type { CurationSummary } from "@/lib/exhibitions";
 import type { Exhibition } from "@/types/exhibition";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+function isCoarsePointer() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(hover: none)").matches;
+}
 
 type SituationalCurationSectionProps = {
   curations: CurationSummary[];
@@ -32,7 +37,24 @@ export function SituationalCurationSection({
   );
 
   const [activeId, setActiveId] = useState(ordered[0]?.id ?? "");
+  const [coarsePointer, setCoarsePointer] = useState(false);
+  const mapPanelRef = useRef<HTMLDivElement>(null);
   const active = ordered.find((item) => item.id === activeId) ?? ordered[0];
+
+  useEffect(() => {
+    const media = window.matchMedia("(hover: none)");
+    const sync = () => setCoarsePointer(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  function selectCuration(id: string) {
+    setActiveId(id);
+    if (isCoarsePointer()) {
+      mapPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
 
   if (ordered.length === 0) {
     return null;
@@ -45,11 +67,15 @@ export function SituationalCurationSection({
       <HomeSectionHeader
         eyebrow="찾기 코스"
         title="못 찾겠다 꾀꼬리!"
-        description="카드에 마우스를 올리면 지도에 동선이 나타납니다. 숨어 있던 전시로 이어지는 길을 골라 보세요."
+        description={
+          coarsePointer
+            ? "카드를 누르면 지도 동선이 바뀝니다. 같은 카드를 한 번 더 누르거나 코스 보기로 들어가 보세요."
+            : "카드에 마우스를 올리면 지도에 동선이 나타납니다. 숨어 있던 전시로 이어지는 길을 골라 보세요."
+        }
       />
 
       <div className="cur-wrap">
-        <div className="cur-map-panel">
+        <div className="cur-map-panel" ref={mapPanelRef}>
           {mapStops.length > 0 ? (
             <CurationMapEmbed
               key={active?.id}
@@ -75,8 +101,12 @@ export function SituationalCurationSection({
                   ? "cur-stack-item is-active"
                   : "cur-stack-item"
               }
-              onMouseEnter={() => setActiveId(curation.id)}
-              onFocus={() => setActiveId(curation.id)}
+              aria-current={curation.id === active?.id ? "true" : undefined}
+              onMouseEnter={() => {
+                if (isCoarsePointer()) return;
+                selectCuration(curation.id);
+              }}
+              onFocus={() => selectCuration(curation.id)}
             >
               <ThemePreviewCard
                 label={curation.title}
@@ -93,6 +123,8 @@ export function SituationalCurationSection({
                 coverImageUrl={curation.coverImageUrl}
                 coverTone={curation.coverTone}
                 footerLabel="코스 보기"
+                selectInsteadOfNavigate={coarsePointer && curation.id !== active?.id}
+                onPreview={() => selectCuration(curation.id)}
               />
             </div>
           ))}

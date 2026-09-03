@@ -1,17 +1,26 @@
 "use client";
 
 import {
+  MyNoticesSection,
+  MyQuestionsSection,
+  type AskedQuestion,
+  type InboxNotice
+} from "@/components/MyInboxSection";
+import {
   MyExhibitionLibrary,
   type ReservationLibraryItem,
   type SavedLibraryItem,
   type VisitedLibraryItem
 } from "@/components/MyExhibitionLibrary";
+import { MyDecksPanel } from "@/components/MyDecksPanel";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { VisitArchiveSection } from "@/components/VisitArchiveSection";
 import type { VisitArchiveEntry } from "@/lib/visit-archive";
+import type { OoofDeck } from "@/lib/decks";
+import { QUESTION_TOPICS } from "@/lib/question-topics";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ReservationItem = {
   id: string;
@@ -79,6 +88,16 @@ type Stat = {
   topRegion: { label: string; count: number } | null;
 };
 
+type ArtistQuestionItem = {
+  id: string;
+  topic: string;
+  fromName: string;
+  body: string;
+  answer: string | null;
+  status: string;
+  createdAt: string;
+};
+
 type MyPageDashboardProps = {
   userName: string;
   nickname: string | null;
@@ -102,6 +121,12 @@ type MyPageDashboardProps = {
   artistSlotSummary: SlotSummary[];
   artistReservations: ReservationItem[];
   visitArchive: VisitArchiveEntry[];
+  myDecks?: OoofDeck[];
+  artistProfile: { showOnHome: boolean; profileImageUrl: string | null } | null;
+  artistQuestions: ArtistQuestionItem[];
+  notices?: InboxNotice[];
+  askedQuestions?: AskedQuestion[];
+  initialTab?: "member" | "artist";
 };
 
 const statusLabel: Record<string, string> = {
@@ -140,16 +165,32 @@ export function MyPageDashboard({
   artistPrograms,
   artistSlotSummary,
   artistReservations,
-  visitArchive
+  visitArchive,
+  myDecks = [],
+  artistProfile,
+  artistQuestions,
+  notices = [],
+  askedQuestions = [],
+  initialTab = "member"
 }: MyPageDashboardProps) {
   const router = useRouter();
-  const [tab, setTab] = useState<"member" | "artist">(isArtist ? "member" : "member");
+  const [tab, setTab] = useState<"member" | "artist">(
+    initialTab === "artist" && isArtist ? "artist" : "member"
+  );
+  const [profileOpen, setProfileOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [nicknameDraft, setNicknameDraft] = useState(nickname ?? "");
   const [nicknameBusy, setNicknameBusy] = useState(false);
   const [deletingExhibitionId, setDeletingExhibitionId] = useState<string | null>(
     null
   );
+  const [showOnHome, setShowOnHome] = useState(artistProfile?.showOnHome ?? false);
+  const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [questionBusyId, setQuestionBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialTab === "artist" && isArtist) setTab("artist");
+  }, [initialTab, isArtist]);
 
   async function saveNickname() {
     setNicknameBusy(true);
@@ -166,6 +207,64 @@ export function MyPageDashboard({
       return;
     }
     setMessage("닉네임이 저장되었습니다.");
+    router.refresh();
+  }
+
+  async function toggleShowOnHome(next: boolean) {
+    setShowOnHome(next);
+    const response = await fetch("/api/my/artist-profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showOnHome: next })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setShowOnHome(!next);
+      setMessage(data.error ?? "홈 등장을 바꾸지 못했습니다.");
+      return;
+    }
+    setMessage(next ? "홈에 술래로 등장합니다." : "홈 등장을 껐습니다.");
+  }
+
+  async function uploadProfileImage(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "artists");
+    const uploaded = await fetch("/api/upload", { method: "POST", body: formData });
+    const uploadedData = await uploaded.json();
+    if (!uploaded.ok) {
+      setMessage(uploadedData.error ?? "사진 업로드에 실패했습니다.");
+      return;
+    }
+    const response = await fetch("/api/my/artist-profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileImageUrl: uploadedData.url })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error ?? "프로필 사진 저장에 실패했습니다.");
+      return;
+    }
+    setMessage("프로필 사진을 저장했습니다.");
+    router.refresh();
+  }
+
+  async function answerQuestion(id: string) {
+    const answer = answerDrafts[id]?.trim() ?? "";
+    setQuestionBusyId(id);
+    const response = await fetch(`/api/questions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer })
+    });
+    const data = await response.json();
+    setQuestionBusyId(null);
+    if (!response.ok) {
+      setMessage(data.error ?? "답변을 저장하지 못했습니다.");
+      return;
+    }
+    setMessage("답변을 보냈습니다.");
     router.refresh();
   }
 
@@ -256,9 +355,23 @@ export function MyPageDashboard({
 
   return (
     <main className="my-page">
-      <section className="register-card wide my-page-header">
-        <p className="eyebrow">My page</p>
-        <h1>{userName}님</h1>
+      <div className="my-page-top-grid">
+        <section className={`register-card wide my-page-header${profileOpen ? " is-open" : " is-collapsed"}`}>
+        <button
+          type="button"
+          className="my-page-header-toggle"
+          aria-expanded={profileOpen}
+          onClick={() => setProfileOpen((open) => !open)}
+        >
+          <span>
+            <p className="eyebrow">My page</p>
+            <strong>{userName}님</strong>
+          </span>
+          <span className="my-page-header-toggle-hint">{profileOpen ? "접기" : "계정 정보"}</span>
+        </button>
+
+        {profileOpen ? (
+          <>
         <dl className="my-info-grid">
           <div>
             <dt>이메일</dt>
@@ -336,6 +449,8 @@ export function MyPageDashboard({
             취향 수정
           </Link>
         </div>
+          </>
+        ) : null}
 
         <div className="my-tabs">
           <button
@@ -362,7 +477,9 @@ export function MyPageDashboard({
         </div>
 
         {message ? <p className="form-success">{message}</p> : null}
-      </section>
+        </section>
+        <MyNoticesSection notices={notices} />
+      </div>
 
       {tab === "member" && (
         <>
@@ -371,8 +488,8 @@ export function MyPageDashboard({
               <p className="eyebrow">Seeker log</p>
               <h2>{userName}님의 찾기 기록</h2>
               <p className="auth-description">
-                올해 술래로서 {stats.thisYear}곳을 찾아냈고, {recommendCount}곳을
-                추천했어요.
+                올해 {stats.thisYear}곳을 방문했고, {recommendCount}곳을
+                다른 사람에게 추천했어요.
                 {stats.topGenre ? ` 주로 ${stats.topGenre.label}` : ""}
                 {stats.topRegion ? ` · ${stats.topRegion.label}` : ""}
                 {(stats.topGenre || stats.topRegion) ? " 쪽을 잘 찾아내고 있어요." : ""}
@@ -412,8 +529,14 @@ export function MyPageDashboard({
           </section>
 
           <section className="register-card wide my-section">
+            <MyDecksPanel decks={myDecks} isLoggedIn />
+          </section>
+
+          <section className="register-card wide my-section">
             <VisitArchiveSection entries={visitArchive} userName={userName} />
           </section>
+
+          <MyQuestionsSection questions={askedQuestions} />
 
           <MyExhibitionLibrary
             today={today}
@@ -440,6 +563,104 @@ export function MyPageDashboard({
 
       {isArtist && tab === "artist" && (
         <div className="my-artist-workspace">
+          <section className="register-card wide my-section">
+            <h2>홈 작가 소개 참여</h2>
+            <p className="auth-description">
+              동의하면 홈에 작가 프로필이 아바타로 소개됩니다. 사진을 올리지
+              않으면 꾀꼬리와 이름 첫 글자가 표시됩니다. 관람객의 질문은 비방·욕설
+              등 관련 없는 내용을 확인한 뒤 전달됩니다.
+            </p>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={showOnHome}
+                onChange={(event) => toggleShowOnHome(event.target.checked)}
+              />
+              홈 작가 소개에 참여하기
+            </label>
+            <label className="field">
+              <span>프로필 사진</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadProfileImage(file);
+                }}
+              />
+            </label>
+          </section>
+
+          <section
+            id="received-questions"
+            className="register-card wide my-section"
+          >
+            <h2>받은 질문 ({artistQuestions.length})</h2>
+            <p className="auth-description">
+              운영 확인을 마친 질문입니다. 답변을 작성하면 질문한 관람객의 MY와
+              이메일로 바로 전달됩니다.
+            </p>
+            {artistQuestions.length > 0 ? (
+              <div className="my-list">
+                {artistQuestions.map((question) => (
+                  <article key={question.id} className="my-list-card">
+                    <div>
+                      <h3>{question.fromName}</h3>
+                      <p className="field-hint">
+                        {QUESTION_TOPICS[
+                          question.topic as keyof typeof QUESTION_TOPICS
+                        ] ?? question.topic}
+                        {" · "}
+                        {question.status === "ANSWERED" ? "답변 완료" : "답변 대기"}
+                      </p>
+                      <p>{question.body}</p>
+                      {question.answer ? (
+                        <p className="field-hint">내 답변: {question.answer}</p>
+                      ) : (
+                        <form
+                          className="artist-question-reply"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void answerQuestion(question.id);
+                          }}
+                        >
+                          <label className="field">
+                            <span>관람객에게 보낼 답변</span>
+                            <textarea
+                              rows={4}
+                              placeholder="관람객에게 전할 답변을 작성해 주세요."
+                              value={answerDrafts[question.id] ?? ""}
+                              onChange={(event) =>
+                                setAnswerDrafts((prev) => ({
+                                  ...prev,
+                                  [question.id]: event.target.value
+                                }))
+                              }
+                            />
+                          </label>
+                          <button
+                            type="submit"
+                            className="primary-button"
+                            disabled={
+                              questionBusyId === question.id ||
+                              !answerDrafts[question.id]?.trim()
+                            }
+                          >
+                            {questionBusyId === question.id
+                              ? "보내는 중…"
+                              : "관람객에게 답변 보내기"}
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="auth-description">아직 전달된 질문이 없습니다.</p>
+            )}
+          </section>
+
           <div className="register-b2b-banner my-artist-growth">
             <p className="register-b2b-kicker">Come out free · OOOF.</p>
             <p className="register-b2b-headline">

@@ -12,6 +12,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     "",
     "/exhibitions",
+    "/curations",
+    "/decks",
     "/spaces",
     "/programs",
     "/map",
@@ -26,9 +28,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? 1
         : path === "/exhibitions" || path === "/map"
           ? 0.9
-          : path === "/about"
-            ? 0.6
-            : 0.7
+          : path === "/curations" || path === "/decks"
+            ? 0.85
+            : path === "/about"
+              ? 0.6
+              : 0.7
   }));
 
   const [exhibitions, spaces, programs, curations, artists, places] =
@@ -98,11 +102,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily" as const,
       priority: 0.6
     })),
+    // 덱은 3~4일 간격으로 다시 묶으므로 daily로 알린다
+    ...curations.map((item) => ({
+      url: `${siteUrl}/decks/${item.id}`,
+      lastModified: item.updatedAt,
+      changeFrequency: "daily" as const,
+      priority: 0.85
+    })),
     ...curations.map((item) => ({
       url: `${siteUrl}/curations/${item.id}`,
       lastModified: item.updatedAt,
       changeFrequency: "weekly" as const,
-      priority: 0.85
+      priority: 0.6
     })),
     ...artists.map((item) => ({
       url: `${siteUrl}/artists/${item.id}`,

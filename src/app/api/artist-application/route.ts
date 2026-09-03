@@ -6,7 +6,8 @@ import { z } from "zod";
 const applicationSchema = z.object({
   bio: z.string().min(20, "작가 소개는 20자 이상 작성해주세요."),
   portfolioUrl: z.string().url("올바른 URL을 입력해주세요.").optional().or(z.literal("")),
-  activityArea: z.string().min(2, "활동 지역을 입력해주세요.").optional()
+  activityArea: z.string().min(2, "활동 지역을 입력해주세요.").optional(),
+  showOnHome: z.boolean().optional()
 });
 
 export async function POST(request: Request) {
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { bio, portfolioUrl, activityArea } = parsed.data;
+    const { bio, portfolioUrl, activityArea, showOnHome } = parsed.data;
 
     await prisma.$transaction([
       prisma.artistApplication.upsert({
@@ -65,6 +66,21 @@ export async function POST(request: Request) {
         data: { artistStatus: "PENDING" }
       })
     ]);
+
+    if (showOnHome === true) {
+      try {
+        await prisma.artistApplication.update({
+          where: { userId: session.id },
+          data: { showOnHome: true }
+        });
+      } catch {
+        await prisma.$executeRaw`
+          UPDATE "ArtistApplication"
+          SET "showOnHome" = true
+          WHERE "userId" = ${session.id}
+        `;
+      }
+    }
 
     return NextResponse.json({ ok: true, status: "PENDING" });
   } catch {

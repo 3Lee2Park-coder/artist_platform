@@ -38,7 +38,8 @@ export async function GET() {
 const updateSchema = z.object({
   id: z.string().min(1),
   registeredByEmail: z.string().email().nullable().optional(),
-  status: z.enum(["PUBLISHED", "DRAFT", "HIDDEN"]).optional()
+  status: z.enum(["PUBLISHED", "DRAFT", "HIDDEN"]).optional(),
+  homeHero: z.boolean().optional()
 });
 
 export async function PATCH(request: Request) {

@@ -38,6 +38,9 @@
     ".next/dev/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "ooof_dosirak.tsx",
+    "ooof_dosirak_prototype.tsx",
+    "ooof_dosirak_archive_detail.tsx"
   ]
 }

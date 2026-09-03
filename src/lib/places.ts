@@ -43,6 +43,38 @@ export type PlaceCurationCard = {
   durationText: string | null;
 };
 
+const THIN_COPY_LIMIT = 36;
+
+export function isThinPlaceCopy(text: string | null | undefined) {
+  return !text || text.trim().length < THIN_COPY_LIMIT;
+}
+
+export function buildPlaceIntro(place: {
+  type: string;
+  district: string;
+  editorialNote: string | null;
+  notes: string | null;
+  curations: PlaceCurationCard[];
+  nearbyExhibitions: NearbyExhibitionCard[];
+}) {
+  const note = (place.editorialNote || place.notes || "").trim();
+  const typeLabel = PLACE_TYPE_LABEL[place.type] ?? "장소";
+  const primaryCourse = place.curations[0];
+  const nearby = place.nearbyExhibitions[0];
+
+  const fallback = primaryCourse
+    ? `${primaryCourse.title} 코스와 이어지는 ${place.district} ${typeLabel}입니다.`
+    : nearby
+      ? `${nearby.title} 곁에서 들르기 좋은 ${typeLabel}입니다. ${nearby.distanceText}.`
+      : `${place.district}에서 전시 곁에 두기 좋은 ${typeLabel}입니다.`;
+
+  return {
+    lead: note || fallback,
+    thin: isThinPlaceCopy(note),
+    supplement: note && isThinPlaceCopy(note) ? fallback : null
+  };
+}
+
 export type PlaceCard = {
   id: string;
   name: string;
@@ -106,14 +138,24 @@ function toPlaceCard(
   };
 }
 
-async function findNearbyExhibitions(
-  lat: number,
-  lng: number,
-  limit = 3,
-  radiusMeters = 1200
-): Promise<NearbyExhibitionCard[]> {
+type OpenExhibition = {
+  id: string;
+  title: string;
+  artist: string;
+  venue: string;
+  region: string;
+  district: string;
+  startDate: string;
+  endDate: string;
+  heroTone: string;
+  heroImageUrl: string | null;
+  lat: number;
+  lng: number;
+};
+
+async function loadOpenExhibitions(): Promise<OpenExhibition[]> {
   const today = getTodayKST();
-  const exhibitions = await prisma.exhibition.findMany({
+  return prisma.exhibition.findMany({
     where: {
       status: "PUBLISHED",
       endDate: { gte: today }
@@ -134,7 +176,15 @@ async function findNearbyExhibitions(
     },
     take: 400
   });
+}
 
+function nearbyFrom(
+  exhibitions: OpenExhibition[],
+  lat: number,
+  lng: number,
+  limit = 3,
+  radiusMeters = 1200
+): NearbyExhibitionCard[] {
   return exhibitions
     .map((exhibition) => {
       const meters = distanceMeters(
@@ -161,6 +211,16 @@ async function findNearbyExhibitions(
     }));
 }
 
+async function findNearbyExhibitions(
+  lat: number,
+  lng: number,
+  limit = 3,
+  radiusMeters = 1200
+): Promise<NearbyExhibitionCard[]> {
+  const exhibitions = await loadOpenExhibitions();
+  return nearbyFrom(exhibitions, lat, lng, limit, radiusMeters);
+}
+
 export async function getHomeFeaturedPlaces(limit = 5): Promise<PlaceCard[]> {
   const places = await prisma.place.findMany({
     where: { isActive: true, homeFeatured: true },
@@ -168,25 +228,24 @@ export async function getHomeFeaturedPlaces(limit = 5): Promise<PlaceCard[]> {
     take: limit
   });
 
-  const cards = await Promise.all(
-    places.map(async (place) => {
-      const nearby = await findNearbyExhibitions(place.lat, place.lng, 1);
-      const first = nearby[0];
-      return toPlaceCard(
-        place,
-        first
-          ? {
-              id: first.id,
-              title: first.title,
-              venue: first.venue,
-              distanceText: first.distanceText
-            }
-          : null
-      );
-    })
-  );
+  if (places.length === 0) return [];
 
-  return cards;
+  const exhibitions = await loadOpenExhibitions();
+
+  return places.map((place) => {
+    const first = nearbyFrom(exhibitions, place.lat, place.lng, 1)[0];
+    return toPlaceCard(
+      place,
+      first
+        ? {
+            id: first.id,
+            title: first.title,
+            venue: first.venue,
+            distanceText: first.distanceText
+          }
+        : null
+    );
+  });
 }
 
 export async function getPlaceById(id: string) {

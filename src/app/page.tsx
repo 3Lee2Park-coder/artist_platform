@@ -1,30 +1,24 @@
 import {
   AllExhibitionsSection,
-  ArtworkDiscoverySection,
   SupplierCtaSection
 } from "@/components/HomeWireSections";
-import { FeaturedCurationHero } from "@/components/FeaturedCurationHero";
 import { HiddenPlacesSection } from "@/components/HiddenPlacesSection";
-import { HomeClusterHero } from "@/components/HomeClusterHero";
-import { MeetArtistSection } from "@/components/MeetArtistSection";
+import { HomeHeroSlider } from "@/components/HomeHeroSlider";
 import { PeriodExhibitionSection } from "@/components/PeriodExhibitionSection";
-import { SituationalCurationSection } from "@/components/SituationalCurationSection";
-import { SpaceDiscoverySection } from "@/components/SpaceDiscoverySection";
+import { TodayDeckSection } from "@/components/TodayDeckSection";
+import { WeekendPlanTeaser } from "@/components/WeekendPlanTeaser";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getTodayKST } from "@/lib/date";
 import {
-  filterActiveExhibitions,
-  getFeaturedArtworks,
+  getHomeHeroExhibitions,
   getListedExhibitions,
   getPeriodExhibitionGroups,
-  getPublishedCurations,
-  type CurationSummary
+  getPublishedCurations
 } from "@/lib/exhibitions";
 import { getHomeFeaturedPlaces } from "@/lib/places";
-import { getActivePrograms, getProgramRemainingSeats } from "@/lib/programs";
-import { getPublicSpaces } from "@/lib/spaces";
-import { getTalkRemainingByExhibitionIds } from "@/lib/talk-availability";
+import { getHomeWalkers } from "@/lib/walkers";
+import { ArtistWalkers } from "@/components/ArtistWalkers";
 import { BRAND, brandTitle } from "@/lib/brand";
 
 /** Public home shell — keep cacheable (no cookies()/getSession in this tree) */
@@ -39,73 +33,37 @@ export const metadata = {
 export default async function HomePage() {
   const today = getTodayKST();
 
-  const [listedRaw, spaces, programs, artworks, curations, featuredPlaces] =
-    await Promise.all([
-      getListedExhibitions(today),
-      getPublicSpaces(),
-      getActivePrograms(),
-      getFeaturedArtworks(12),
-      getPublishedCurations(),
-      getHomeFeaturedPlaces(5)
-    ]);
-
-  const activeExhibitions = filterActiveExhibitions(listedRaw, today);
-  const listedExhibitions = listedRaw.slice(0, 36);
-  const mapExhibitions = activeExhibitions.filter(
-    (exhibition) => exhibition.source !== "PUBLIC_API"
-  );
-
-  const talkExhibitions = activeExhibitions
-    .filter(
-      (exhibition) =>
-        exhibition.reservable &&
-        exhibition.reservationSchedule.some((day) => day.slots.length > 0)
-    )
-    .slice(0, 8);
-
-  const periodGroups = await getPeriodExhibitionGroups(today, listedRaw);
-
-  const [talkRemainingById, programRemainingById] = await Promise.all([
-    getTalkRemainingByExhibitionIds(talkExhibitions.map((exhibition) => exhibition.id)),
-    getProgramRemainingSeats(programs.map((program) => program.id))
+  const [listedRaw, curations, featuredPlaces, walkers] = await Promise.all([
+    getListedExhibitions(today),
+    getPublishedCurations(),
+    getHomeFeaturedPlaces(8),
+    getHomeWalkers(6)
   ]);
 
-  const situationalCurations: CurationSummary[] = [...curations].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  const listedExhibitions = listedRaw.slice(0, 36);
+  const heroExhibitions = await getHomeHeroExhibitions(today, 6);
 
-  const hasClusterContent = spaces.length > 0;
+  const periodGroups = await getPeriodExhibitionGroups(today, listedRaw);
 
   return (
     <>
       <Header />
 
       <main className="page-shell home-wire">
-        {hasClusterContent ? (
-          <HomeClusterHero spaces={spaces} curations={curations} />
-        ) : curations.length > 0 ? (
-          <FeaturedCurationHero curations={curations} />
-        ) : null}
+        <HomeHeroSlider exhibitions={heroExhibitions} />
+        <ArtistWalkers walkers={walkers} />
 
-        <SpaceDiscoverySection spaces={spaces} />
-
-        <SituationalCurationSection
-          curations={situationalCurations}
-          mapExhibitions={mapExhibitions}
-        />
-
-        <HiddenPlacesSection places={featuredPlaces} />
-
-        <MeetArtistSection
-          programs={programs}
-          programRemainingById={programRemainingById}
-          talkExhibitions={talkExhibitions}
-          talkRemainingById={talkRemainingById}
-        />
+        {/*
+          방문 퍼널: 덱(상품) → 마감 임박 전시 → 곁장소 → 전시 목록.
+          코스 선택은 덱 상세의 지도가 맡으므로 SituationalCurationSection은 홈에서 뺀다.
+          작품/공방 디렉터리, 작가 만남(MeetArtist)은 재고가 얇아 숨긴 상태.
+        */}
+        <TodayDeckSection curations={curations} />
+        <WeekendPlanTeaser />
 
         <PeriodExhibitionSection groups={periodGroups} />
 
-        <ArtworkDiscoverySection artworks={artworks} />
+        <HiddenPlacesSection places={featuredPlaces} />
 
         <AllExhibitionsSection exhibitions={listedExhibitions} />
 

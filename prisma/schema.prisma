@@ -46,6 +46,13 @@ model User {
   ownedSpaces         Space[]            @relation("OwnedSpaces")
   hostedPrograms      Program[]          @relation("HostedPrograms")
   placeTips           PlaceTip[]
+  questionsAsked      ArtistQuestion[]   @relation("QuestionsAsked")
+  questionsReceived   ArtistQuestion[]   @relation("QuestionsReceived")
+  decks               UserDeck[]
+  savedCards          SavedCard[]
+  notices             Notice[]
+  calendarEntries     CalendarEntry[]
+  calendarShares      CalendarShare[]
 }
 
 model ArtistApplication {
@@ -59,6 +66,8 @@ model ArtistApplication {
   discipline      String?
   instagramUrl    String?
   profileImageUrl String?
+  // 홈에 술래(아바타)로 떠다니는 것에 대한 명시적 동의. 기본 꺼짐.
+  showOnHome      Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -177,6 +186,8 @@ model Exhibition {
   todayOpen         Boolean  @default(false)
   popular           Boolean  @default(false)
   nearby            Boolean  @default(false)
+  // 홈 히어로 슬라이드에 고정. 꺼져 있으면 최신 등록순으로 채워진다.
+  homeHero          Boolean  @default(false)
   heroTone          String
   heroImageUrl      String?
   summary           String
@@ -215,6 +226,9 @@ model Exhibition {
   reviews       Review[]
   eventLogs     EventLog[]
   programs      Program[]
+  artistQuestions ArtistQuestion[]
+
+  @@index([homeHero, createdAt])
 }
 
 model Artwork {
@@ -277,6 +291,7 @@ model Place {
   curations     Curation[]
   curationStops CurationStop[]
   tips          PlaceTip[]
+  visits        Visit[]
 
   @@index([homeFeatured, homeSortOrder])
 }
@@ -303,6 +318,37 @@ model PlaceTip {
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
+}
+
+// 관객 → 작가 질문. 등록 작가는 검수 후 전달, 미등록 작가는 운영이 대신 묻고 답한다.
+model ArtistQuestion {
+  id                 String   @id @default(cuid())
+  // REGISTERED | UNLISTED
+  kind               String   @default("REGISTERED")
+  // EXHIBITION | ARTWORK | VISIT
+  topic              String
+  artistUserId       String?
+  unlistedArtistName String?
+  exhibitionId       String?
+  fromUserId         String?
+  fromName           String
+  fromEmail          String
+  body               String
+  // PENDING | APPROVED | REJECTED | ANSWERED | FORWARDED
+  status             String   @default("PENDING")
+  adminNote          String?
+  answer             String?
+  answeredAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  artist     User?       @relation("QuestionsReceived", fields: [artistUserId], references: [id], onDelete: SetNull)
+  from       User?       @relation("QuestionsAsked", fields: [fromUserId], references: [id], onDelete: SetNull)
+  exhibition Exhibition? @relation(fields: [exhibitionId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([artistUserId, status])
+  @@index([fromEmail, createdAt])
 }
 
 model Curation {
@@ -390,16 +436,21 @@ model Visit {
   exhibitionId String?
   spaceId      String?
   programId    String?
+  placeId      String?
   visitedAt    DateTime @default(now())
+  // 손님이 남긴 방문 사진. 원본 카드 이미지는 건드리지 않는다.
+  photoUrl     String?
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   exhibition Exhibition? @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
   space      Space?      @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   program    Program?    @relation(fields: [programId], references: [id], onDelete: Cascade)
+  place      Place?      @relation(fields: [placeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, exhibitionId])
   @@unique([userId, spaceId])
   @@unique([userId, programId])
+  @@unique([userId, placeId])
 }
 
 model Review {
@@ -474,4 +525,101 @@ model NotificationLog {
 
   @@unique([userId, type, dedupeKey, channel])
   @@index([type, sentAt])
+}
+
+// 웹 안 알림. 질문 답변·전시 종료 임박 등. 이메일은 보조 채널.
+model Notice {
+  id        String    @id @default(cuid())
+  userId    String
+  // QUESTION_ANSWER | QUESTION_RECEIVED | QUESTION_REJECTED | EXHIBITION_ENDING
+  type      String
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
+  dedupeKey String
+  createdAt DateTime  @default(now())
+  metadata  String    @default("{}")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, dedupeKey])
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+// 손님이 모은 카드. 원본 전시/장소는 복제하지 않고 cardKey로 가리킨다.
+model SavedCard {
+  id        String   @id @default(cuid())
+  userId    String
+  cardKey   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardKey])
+  @@index([userId, createdAt])
+}
+
+// MY DECK — 손님이 고른 카드 묶음. 운영 큐레이션(Curation)과 구분한다.
+model UserDeck {
+  id            String   @id @default(cuid())
+  userId        String
+  title         String
+  subtitle      String?
+  accentColor   String   @default("#C46D54")
+  shareToken    String?  @unique
+  isPublic      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards UserDeckCard[]
+  calendarEntries CalendarEntry[]
+
+  @@index([userId, updatedAt])
+}
+
+model UserDeckCard {
+  id        String   @id @default(cuid())
+  deckId    String
+  cardKey   String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  deck UserDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@unique([deckId, cardKey])
+  @@index([deckId, sortOrder])
+}
+
+// 날짜에 카드·덱을 붙이는 아카이브. 다녀온 날과 다음 주말 코스를 같은 달력에 담는다.
+model CalendarEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  // CARD | DECK
+  kind      String
+  cardKey   String?
+  deckId    String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck UserDeck? @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([deckId])
+}
+
+model CalendarShare {
+  id         String   @id @default(cuid())
+  userId     String
+  date       String
+  shareToken String   @unique
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { shouldSkipAnalytics } from "@/lib/request-analytics";
 
 export type EventLogType =
   | "EXHIBITION_VIEW"
@@ -7,6 +8,11 @@ export type EventLogType =
   | "VISIT_SHARE"
   | "CURATION_VIEW"
   | "CURATION_SHARE"
+  // 도시락 KPI — 식판이 눈에 들어온 횟수 대비 열어 본 횟수
+  | "DOSIRAK_IMPRESSION"
+  | "DOSIRAK_OPEN"
+  | "DECK_VIEW"
+  | "DECK_OPEN"
   | "PLACE_CLICK"
   | "SAVE_CREATE"
   | "SAVE_REMOVE"
@@ -19,7 +25,10 @@ export type EventLogType =
   | "SPACE_VIEW"
   | "SPACE_SHARE"
   | "PROGRAM_VIEW"
-  | "PROGRAM_RESERVATION_CREATE";
+  | "PROGRAM_RESERVATION_CREATE"
+  | "ARTIST_QUESTION_CREATE"
+  | "ARTIST_QUESTION_ANSWER"
+  | "ARTIST_QUESTION_MODERATE";
 
 type EventMetadata = Record<string, string | number | boolean | null | undefined>;
 
@@ -41,6 +50,10 @@ export async function logEvent({
   metadata
 }: LogEventInput) {
   try {
+    if (await shouldSkipAnalytics()) {
+      return;
+    }
+
     await prisma.eventLog.create({
       data: {
         type,

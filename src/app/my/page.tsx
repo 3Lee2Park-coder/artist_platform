@@ -4,14 +4,17 @@ import { MyPageDashboard } from "@/components/MyPageDashboard";
 import {
   displayName,
   getSession,
-  getUserById,
-  isApprovedArtist
+  getUserById
 } from "@/lib/auth";
 import { getTodayKST } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { resolveMediaUrl } from "@/lib/storage-url";
+import { readShowOnHome } from "@/lib/walkers";
 import { parseTasteArray } from "@/lib/taste";
+import { getUserDecks } from "@/lib/user-decks";
 import { getVisitArchive } from "@/lib/visit-archive";
+import { listNotices } from "@/lib/notices";
+import { OPERATOR_UNLISTED_NAME } from "@/lib/question-topics";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -37,7 +40,11 @@ function topEntry(counts: Map<string, number>): { label: string; count: number }
   return best;
 }
 
-export default async function MyPage() {
+export default async function MyPage({
+  searchParams
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const session = await getSession();
 
   if (!session) {
@@ -45,8 +52,15 @@ export default async function MyPage() {
   }
 
   const today = getTodayKST();
-  const isArtist = isApprovedArtist(session);
   const user = await getUserById(session.id);
+  const isArtist = Boolean(
+    user &&
+      (user.role === "ARTIST" ||
+        user.role === "GALLERY" ||
+        user.role === "ADMIN" ||
+        user.artistStatus === "APPROVED")
+  );
+  const { view } = await searchParams;
 
   const exhibitionSelect = {
     id: true,
@@ -302,6 +316,48 @@ export default async function MyPage() {
       })
     : [];
 
+  let artistProfile: { showOnHome: boolean; profileImageUrl: string | null } | null =
+    null;
+  if (isArtist) {
+    try {
+      const application = await prisma.artistApplication.findUnique({
+        where: { userId: session.id }
+      });
+      if (application) {
+        artistProfile = {
+          showOnHome: readShowOnHome(application),
+          profileImageUrl: application.profileImageUrl
+        };
+      }
+    } catch (error) {
+      console.error("artistProfile load failed", error);
+    }
+  }
+
+  let artistQuestions: Array<{
+    id: string;
+    topic: string;
+    fromName: string;
+    body: string;
+    answer: string | null;
+    status: string;
+    createdAt: Date;
+  }> = [];
+  if (isArtist) {
+    try {
+      artistQuestions = await prisma.artistQuestion.findMany({
+        where: {
+          artistUserId: session.id,
+          status: { in: ["APPROVED", "ANSWERED"] }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 40
+      });
+    } catch (error) {
+      console.error("artistQuestions load failed", error);
+    }
+  }
+
   const artistReservationsRaw = isArtist
     ? await prisma.reservation.findMany({
         where: {
@@ -374,6 +430,49 @@ export default async function MyPage() {
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
+  let myDecks: Awaited<ReturnType<typeof getUserDecks>> = [];
+  try {
+    myDecks = await getUserDecks(session.id);
+  } catch (error) {
+    console.error("myDecks load failed", error);
+  }
+
+  const notices = await listNotices(session.id);
+  let askedQuestions: Array<{
+    id: string;
+    kind: string;
+    topic: string;
+    status: string;
+    body: string;
+    answer: string | null;
+    artistName: string;
+    createdAt: Date;
+    answeredAt: Date | null;
+  }> = [];
+  try {
+    const rows = await prisma.artistQuestion.findMany({
+      where: { fromUserId: session.id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { artist: { select: { name: true, nickname: true } } }
+    });
+    askedQuestions = rows.map((question) => ({
+      id: question.id,
+      kind: question.kind,
+      topic: question.topic,
+      status: question.status,
+      body: question.body,
+      answer: question.answer,
+      artistName: question.artist
+        ? displayName(question.artist)
+        : question.unlistedArtistName || OPERATOR_UNLISTED_NAME,
+      createdAt: question.createdAt,
+      answeredAt: question.answeredAt
+    }));
+  } catch (error) {
+    console.error("askedQuestions load failed", error);
+  }
+
   const slotSummaryMap = new Map<
     string,
     {
@@ -416,10 +515,11 @@ export default async function MyPage() {
         nickname={user?.nickname ?? session.nickname}
         legalName={session.name}
         email={session.email}
-        role={session.role}
-        artistStatus={session.artistStatus}
+        role={user?.role ?? session.role}
+        artistStatus={user?.artistStatus ?? session.artistStatus}
         isArtist={isArtist}
-        isAdmin={session.role === "ADMIN"}
+        initialTab={view === "artist" && isArtist ? "artist" : "member"}
+        isAdmin={(user?.role ?? session.role) === "ADMIN"}
         today={today}
         interestTags={parseTasteArray(user?.interestTags)}
         visitPurposes={parseTasteArray(user?.visitPurposes)}
@@ -434,6 +534,45 @@ export default async function MyPage() {
         artistSlotSummary={Array.from(slotSummaryMap.values())}
         artistReservations={artistReservations}
         visitArchive={visitArchive}
+        myDecks={myDecks}
+        artistProfile={
+          artistProfile
+            ? {
+                showOnHome: artistProfile.showOnHome,
+                profileImageUrl:
+                  resolveMediaUrl(artistProfile.profileImageUrl) ?? null
+              }
+            : null
+        }
+        artistQuestions={artistQuestions.map((question) => ({
+          id: question.id,
+          topic: question.topic,
+          fromName: question.fromName,
+          body: question.body,
+          answer: question.answer,
+          status: question.status,
+          createdAt: question.createdAt.toISOString()
+        }))}
+        notices={notices.map((notice) => ({
+          id: notice.id,
+          type: notice.type,
+          title: notice.title,
+          body: notice.body,
+          href: notice.href,
+          readAt: notice.readAt?.toISOString() ?? null,
+          createdAt: notice.createdAt.toISOString()
+        }))}
+        askedQuestions={askedQuestions.map((question) => ({
+          id: question.id,
+          kind: question.kind,
+          topic: question.topic,
+          status: question.status,
+          body: question.body,
+          answer: question.answer,
+          artistName: question.artistName,
+          createdAt: question.createdAt.toISOString(),
+          answeredAt: question.answeredAt?.toISOString() ?? null
+        }))}
       />
       <Footer />
     </>

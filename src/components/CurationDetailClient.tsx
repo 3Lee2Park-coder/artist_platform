@@ -1,6 +1,7 @@
 "use client";
 
 import { CurationMapEmbed } from "@/components/CurationMapEmbed";
+import { DeckExperience } from "@/components/DeckExperience";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { StoryRenderer } from "@/components/StoryRenderer";
 import {
@@ -8,6 +9,7 @@ import {
   getEditorialBadges,
   parseCourseDescription
 } from "@/lib/curation-course";
+import { DECK_BRAND, type OoofDeck } from "@/lib/decks";
 import {
   CURATION_STOP_TYPE_LABEL,
   type CurationExhibitionItem,
@@ -19,6 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type CurationDetailClientProps = {
   curation: CurationSummary;
+  deck?: OoofDeck | null;
   relatedCurations: CurationSummary[];
   exhibitions: CurationExhibitionItem[];
   isLoggedIn: boolean;
@@ -48,6 +51,7 @@ function splitBadges(raw: string | null | undefined): string[] {
 
 export function CurationDetailClient({
   curation,
+  deck = null,
   relatedCurations,
   exhibitions,
   isLoggedIn
@@ -72,6 +76,9 @@ export function CurationDetailClient({
       curation.stops.some((stop) => !stop.id.startsWith("legacy-")),
     [curation.stops]
   );
+
+  // 식판으로 낼 수 있는 코스 — 칸이 하나라도 있어야 한다
+  const hasDeck = Boolean(deck && deck.cardCount > 0);
 
   const basePlace = useMemo(() => {
     if (curation.basePlace) {
@@ -153,15 +160,21 @@ export function CurationDetailClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "CURATION_VIEW",
-        source: "curation_detail",
-        metadata: { curationId: curation.id, title: curation.title }
+        source: deck ? "deck_detail" : "curation_detail",
+        metadata: {
+          curationId: curation.id,
+          title: curation.title,
+          deckNumber: deck?.number ?? null,
+          cardCount: deck?.cardCount ?? null,
+          updatedDaysAgo: deck?.updatedDaysAgo ?? null
+        }
       })
     }).catch(() => undefined);
-  }, [curation.id, curation.title]);
+  }, [curation.id, curation.title, deck]);
 
   async function toggleSave(exhibitionId: string) {
     if (!isLoggedIn) {
-      router.push(`/auth/login?redirect=/curations/${curation.id}`);
+      router.push(`/auth/login?redirect=/decks/${curation.id}`);
       return;
     }
 
@@ -217,18 +230,28 @@ export function CurationDetailClient({
         <nav className="curation-crumb" aria-label="Breadcrumb">
           <Link href="/">홈</Link>
           <span>/</span>
-          <span>지역 코스</span>
+          <Link href="/decks">{DECK_BRAND.unit}</Link>
           <span>/</span>
           <strong>{curation.title}</strong>
         </nav>
 
-        <div className="curation-detail-cover" style={coverStyle} aria-hidden="true" />
+        {hasDeck ? null : (
+          <div className="curation-detail-cover" style={coverStyle} aria-hidden="true" />
+        )}
 
         <p className="curation-detail-eyebrow">
           <span className="src-tag manual">
-            {isStopCourse ? "작가 공간 코스" : "자유 동선 코스"}
+            {hasDeck
+              ? `${DECK_BRAND.unit} ${deck?.number}`
+              : isStopCourse
+                ? "작가 공간 코스"
+                : "자유 동선 코스"}
           </span>
-          {isStopCourse ? "순서대로 걷는 동선" : "베이스캠프 · 반경 내 전시"}
+          {hasDeck
+            ? "발견한 것을 카드로 묶어 두었습니다"
+            : isStopCourse
+              ? "순서대로 걷는 동선"
+              : "베이스캠프 · 반경 내 전시"}
           {curation.situationTags.length > 0
             ? ` · ${curation.situationTags.join(" · ")}`
             : null}
@@ -241,112 +264,49 @@ export function CurationDetailClient({
           {formatUpdatedAt(curation.updatedAt)}
         </p>
 
-        {course.intro ? <p className="curation-detail-desc">{course.intro}</p> : null}
-
-        <StoryRenderer
-          title="코스 이야기"
-          className="story-renderer curation-story"
-          storyJson={curation.storyJson}
-          imageUrls={curation.descriptionImages}
-        />
-
-        <div className="curation-detail-actions">
-          <ShareActionButton
-            label="코스 공유"
-            title={curation.title}
-            text={`${curation.title} — OOOF. 동네 코스`}
-            path={`/curations/${curation.id}`}
-            eventType="CURATION_SHARE"
-            source="curation_detail"
-            metadata={{ curationId: curation.id }}
-          />
-        </div>
-
-        {basePlace ? (
-          <article className="course-base-card">
-            <p className="course-base-label">거점</p>
-            <h2 className="course-base-name">{basePlace.name}</h2>
-            {basePlace.address ? (
-              <p className="course-base-address">{basePlace.address}</p>
+        {hasDeck && deck ? (
+          <div className="curation-dosirak-wrap">
+            <DeckExperience deck={deck} isLoggedIn={isLoggedIn} />
+            {!deck.servable ? (
+              <p className="curation-dosirak-warn">
+                전시 기간이 지난 곳이 있습니다. 동네 장소 카드는 그대로 들를 수 있어요.
+              </p>
             ) : null}
-            {basePlace.reason ? (
-              <p className="course-base-reason">{basePlace.reason}</p>
-            ) : null}
-            {basePlace.placeUrl ? (
-              <a
-                className="course-base-link"
-                href={basePlace.placeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  void handlePlaceClick();
-                }}
-              >
-                플레이스 보기
-              </a>
-            ) : null}
-          </article>
-        ) : null}
-
-        {course.flow.length > 0 ? (
-          <section className="course-flow" aria-labelledby="course-flow-title">
-            <h2 id="course-flow-title">추천 흐름</h2>
-            <ol>
-              {course.flow.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </section>
-        ) : (
-          <section className="course-flow" aria-labelledby="course-flow-title">
-            <h2 id="course-flow-title">추천 흐름</h2>
-            <ol>
-              <li>{basePlace ? `${basePlace.name}에서 쉬기` : "거점에서 쉬기"}</li>
-              <li>가까운 전시 1~2곳 골라 보기</li>
-              <li>여유 있으면 산책하거나 한 곳 더</li>
-            </ol>
-          </section>
-        )}
-
-        {course.tip ? (
-          <p className="course-tip">
-            <strong>팁</strong> {course.tip}
-          </p>
-        ) : null}
-
-        {relatedCurations.length > 0 ? (
-          <div className="curation-related">
-            {relatedCurations.map((item) => (
-              <Link
-                key={item.id}
-                href={`/curations/${item.id}`}
-                className={item.id === curation.id ? "related-chip active" : "related-chip"}
-              >
-                {item.title}
-              </Link>
-            ))}
           </div>
         ) : null}
       </section>
 
-      {isStopCourse ? (
-        <section className="curation-detail-body">
-          <aside className="curation-detail-map-panel">
+      <section className="curation-detail-body" aria-label="지도와 칸별 안내">
+        <div className="curation-detail-map-panel">
+          {isStopCourse ? (
             <CurationMapEmbed
               stops={curation.stops}
               basePlace={mapBasePlace}
               pinVariant="compact"
             />
-            <p className="curation-map-note">
-              번호 순서대로 걸으면 하나의 동선이 완성됩니다. 원하는 곳만 골라도
-              좋아요.
-            </p>
-          </aside>
+          ) : (
+            <CurationMapEmbed
+              exhibitions={filtered}
+              basePlace={mapBasePlace}
+              pinVariant="compact"
+            />
+          )}
+          <p className="curation-map-note">
+            {isStopCourse
+              ? "번호는 참고용입니다. 원하는 곳만 골라 가도 좋아요."
+              : "거점과 반경 안 전시 위치입니다. 원하는 전시를 골라 동선을 만드세요."}
+          </p>
+        </div>
 
+        {isStopCourse ? (
           <div className="curation-detail-list-panel">
             <div className="curation-list-heading">
-              <h2>코스 순서</h2>
-              <p>작가 공간과 쉬어갈 곳을 하나의 동선으로 엮었습니다.</p>
+              <h2>{hasDeck ? "카드 안내" : "코스 순서"}</h2>
+              <p>
+                {hasDeck
+                  ? "순서를 지키지 않아도 됩니다. 원하는 카드만 골라도 좋아요."
+                  : "작가 공간과 쉬어갈 곳을 하나의 동선으로 엮었습니다."}
+              </p>
             </div>
 
             <ol className="curation-stop-list">
@@ -437,21 +397,8 @@ export function CurationDetailClient({
               })}
             </ol>
           </div>
-        </section>
-      ) : (
-      <section className="curation-detail-body">
-        <aside className="curation-detail-map-panel">
-          <CurationMapEmbed
-            exhibitions={filtered}
-            basePlace={mapBasePlace}
-            pinVariant="compact"
-          />
-          <p className="curation-map-note">
-            거점과 반경 안 전시 위치입니다. 원하는 전시를 골라 동선을 만드세요.
-          </p>
-        </aside>
-
-        <div className="curation-detail-list-panel">
+        ) : (
+          <div className="curation-detail-list-panel">
           <div className="curation-list-heading">
             <h2>이 반경 안 전시</h2>
             <p>메인/사이드 없이, 원하는 곳만 골라 가세요.</p>
@@ -573,8 +520,88 @@ export function CurationDetailClient({
             )}
           </div>
         </div>
+        )}
       </section>
-      )}
+
+      <section className="curation-detail-story">
+        {course.intro ? <p className="curation-detail-desc">{course.intro}</p> : null}
+
+        <StoryRenderer
+          title="코스 이야기"
+          className="story-renderer curation-story"
+          storyJson={curation.storyJson}
+          imageUrls={curation.descriptionImages}
+        />
+
+        <div className="curation-detail-actions">
+          <ShareActionButton
+            label="덱 공유"
+            title={curation.title}
+            text={`${curation.title} — OOOF. DECK`}
+            path={`/decks/${curation.id}`}
+            eventType="CURATION_SHARE"
+            source="curation_detail"
+            metadata={{ curationId: curation.id }}
+          />
+        </div>
+
+        {basePlace ? (
+          <article className="course-base-card">
+            <p className="course-base-label">거점</p>
+            <h2 className="course-base-name">{basePlace.name}</h2>
+            {basePlace.address ? (
+              <p className="course-base-address">{basePlace.address}</p>
+            ) : null}
+            {basePlace.reason ? (
+              <p className="course-base-reason">{basePlace.reason}</p>
+            ) : null}
+            {basePlace.placeUrl ? (
+              <a
+                className="course-base-link"
+                href={basePlace.placeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  void handlePlaceClick();
+                }}
+              >
+                플레이스 보기
+              </a>
+            ) : null}
+          </article>
+        ) : null}
+
+        {course.flow.length > 0 ? (
+          <section className="course-flow" aria-labelledby="course-flow-title">
+            <h2 id="course-flow-title">추천 흐름</h2>
+            <ol>
+              {course.flow.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </section>
+        ) : null}
+
+        {course.tip ? (
+          <p className="course-tip">
+            <strong>팁</strong> {course.tip}
+          </p>
+        ) : null}
+
+        {relatedCurations.length > 0 ? (
+          <div className="curation-related">
+            {relatedCurations.map((item) => (
+              <Link
+                key={item.id}
+                href={`/decks/${item.id}`}
+                className={item.id === curation.id ? "related-chip active" : "related-chip"}
+              >
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        ) : null}
+      </section>
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import { AskArtistTrigger } from "@/components/AskArtistDialog";
 import { ExhibitionCard } from "@/components/ExhibitionCard";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -111,6 +112,14 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
             ) : null}
             {profile?.bio ? <p className="artist-profile-bio">{profile.bio}</p> : null}
             <div className="hub-actions">
+              <AskArtistTrigger
+                className="primary-button"
+                target={{
+                  artistId: user.id,
+                  artistName: user.name,
+                  imageUrl: profileImage
+                }}
+              />
               {profile?.instagramUrl ? (
                 <a
                   className="secondary-button"

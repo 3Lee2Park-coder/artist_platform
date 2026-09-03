@@ -6,9 +6,9 @@ import { getActivePrograms } from "@/lib/programs";
 import { getPublicSpaces } from "@/lib/spaces";
 
 export const metadata = {
-  title: "서울 전시 지도 · 가볼만한 곳",
+  title: "전시 지도 · 가볼만한 곳",
   description:
-    "서울 가볼만한 곳, 전시, 작가 공간, 데이트 코스를 지도에서 한 번에 확인합니다.",
+    "지역별로 전시, 작가 공간, 큐레이션을 지도에서 확인합니다.",
   alternates: { canonical: "/map" }
 };
 

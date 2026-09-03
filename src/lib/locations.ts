@@ -47,6 +47,8 @@ const REGION_KEYWORDS: Array<{ region: RegionName | string; keywords: string[] }
   { region: "광주", keywords: ["광주", "광주광역시"] },
   { region: "대전", keywords: ["대전", "대전광역시", "유성"] },
   { region: "제주", keywords: ["제주", "제주특별자치도", "서귀포"] },
+  { region: "울산", keywords: ["울산", "울산광역시"] },
+  { region: "세종", keywords: ["세종", "세종특별자치시", "세종시"] },
   { region: "충북", keywords: ["충북", "충청북도", "청주"] },
   { region: "충남", keywords: ["충남", "충청남도", "천안", "아산"] },
   { region: "전북", keywords: ["전북", "전라북도", "전주"] },

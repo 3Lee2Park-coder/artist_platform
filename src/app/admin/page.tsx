@@ -5,6 +5,8 @@ import { Header } from "@/components/Header";
 import { getSession } from "@/lib/auth";
 import { getCurationMetrics } from "@/lib/curation-metrics";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+import { readShowOnHome } from "@/lib/walkers";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -160,17 +162,76 @@ export default async function AdminPage() {
     include: { owner: { select: { name: true, email: true } } }
   });
 
-  const ownershipExhibitions = await prisma.exhibition.findMany({
-    where: { source: { not: "PUBLIC_API" } },
-    orderBy: { updatedAt: "desc" },
-    take: 200,
+  let ownershipExhibitions: Array<{
+    id: string;
+    title: string;
+    district: string;
+    status: string;
+    source: string;
+    homeHero: boolean;
+    registeredBy: { name: string; email: string } | null;
+  }> = [];
+  try {
+    ownershipExhibitions = await prisma.exhibition.findMany({
+      where: { source: { not: "PUBLIC_API" } },
+      orderBy: { updatedAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        title: true,
+        district: true,
+        status: true,
+        source: true,
+        homeHero: true,
+        registeredBy: { select: { name: true, email: true } }
+      }
+    });
+  } catch (error) {
+    console.error("admin exhibitions homeHero select failed", error);
+    const fallback = await prisma.exhibition.findMany({
+      where: { source: { not: "PUBLIC_API" } },
+      orderBy: { updatedAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        title: true,
+        district: true,
+        status: true,
+        source: true,
+        registeredBy: { select: { name: true, email: true } }
+      }
+    });
+    ownershipExhibitions = fallback.map((item) => ({ ...item, homeHero: false }));
+  }
+
+  let questions: Prisma.ArtistQuestionGetPayload<{
+    include: {
+      artist: { select: { name: true; nickname: true } };
+      exhibition: { select: { title: true } };
+    };
+  }>[] = [];
+  try {
+    questions = await prisma.artistQuestion.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 120,
+      include: {
+        artist: { select: { name: true, nickname: true } },
+        exhibition: { select: { title: true } }
+      }
+    });
+  } catch (error) {
+    console.error("admin questions load failed", error);
+  }
+
+  const walkerCandidates = await prisma.user.findMany({
+    where: { artistStatus: "APPROVED" },
+    orderBy: { name: "asc" },
+    take: 100,
     select: {
       id: true,
-      title: true,
-      district: true,
-      status: true,
-      source: true,
-      registeredBy: { select: { name: true, email: true } }
+      name: true,
+      email: true,
+      artistApplication: true
     }
   });
 
@@ -387,6 +448,7 @@ export default async function AdminPage() {
           district: exhibition.district,
           status: exhibition.status,
           source: exhibition.source,
+          homeHero: exhibition.homeHero,
           registeredByName: exhibition.registeredBy?.name ?? null,
           registeredByEmail: exhibition.registeredBy?.email ?? null
         }))}
@@ -416,6 +478,29 @@ export default async function AdminPage() {
           spaceCount: user._count.ownedSpaces,
           programCount: user._count.hostedPrograms,
           reservationCount: user._count.reservations
+        }))}
+        questions={questions.map((question) => ({
+          id: question.id,
+          kind: question.kind,
+          topic: question.topic,
+          status: question.status,
+          fromName: question.fromName,
+          fromEmail: question.fromEmail,
+          body: question.body,
+          answer: question.answer,
+          adminNote: question.adminNote,
+          unlistedArtistName: question.unlistedArtistName,
+          createdAt: question.createdAt.toISOString(),
+          artistName: question.artist
+            ? question.artist.nickname || question.artist.name
+            : null,
+          exhibitionTitle: question.exhibition?.title ?? null
+        }))}
+        walkers={walkerCandidates.map((user) => ({
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          showOnHome: readShowOnHome(user.artistApplication)
         }))}
       />
       <Footer />

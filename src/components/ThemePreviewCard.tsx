@@ -28,6 +28,9 @@ type ThemePreviewCardProps = {
   coverImageUrl?: string | null;
   coverTone?: string;
   footerLabel?: string;
+  /** 커버·본문 탭은 이동 대신 미리보기. 푸터 링크는 유지. */
+  selectInsteadOfNavigate?: boolean;
+  onPreview?: () => void;
 };
 
 export function ThemePreviewCard({
@@ -41,7 +44,9 @@ export function ThemePreviewCard({
   showCountdown = false,
   coverImageUrl,
   coverTone,
-  footerLabel = "전체보기"
+  footerLabel = "전체보기",
+  selectInsteadOfNavigate = false,
+  onPreview
 }: ThemePreviewCardProps) {
   const stopPreview = (stops ?? []).slice(0, 4);
   const useStops = stopPreview.length > 0;
@@ -74,18 +79,45 @@ export function ThemePreviewCard({
               "var(--surface)"
           };
 
+  const cover = selectInsteadOfNavigate ? (
+    <div
+      className="theme-card-cover"
+      style={coverStyle}
+      aria-hidden="true"
+      onClick={onPreview}
+    />
+  ) : (
+    <Link href={href} className="theme-card-cover" style={coverStyle} aria-hidden="true" />
+  );
+
+  const body = (
+    <>
+      <p className="theme-card-eyebrow">
+        <span className={`src-tag ${tag === "auto" ? "auto" : "manual"}`}>
+          {tag === "auto" ? "자동" : "수동"}
+        </span>
+        {label}
+      </p>
+      <p className="theme-card-desc">{description}</p>
+    </>
+  );
+
   return (
     <article className={`theme-card${compact ? " compact" : ""}`}>
-      <Link href={href} className="theme-card-cover" style={coverStyle} aria-hidden="true" />
-      <Link href={href} className="theme-card-body theme-card-body-link">
-        <p className="theme-card-eyebrow">
-          <span className={`src-tag ${tag === "auto" ? "auto" : "manual"}`}>
-            {tag === "auto" ? "자동" : "수동"}
-          </span>
-          {label}
-        </p>
-        <p className="theme-card-desc">{description}</p>
-      </Link>
+      {cover}
+      {selectInsteadOfNavigate ? (
+        <button
+          type="button"
+          className="theme-card-body theme-card-body-link"
+          onClick={onPreview}
+        >
+          {body}
+        </button>
+      ) : (
+        <Link href={href} className="theme-card-body theme-card-body-link">
+          {body}
+        </Link>
+      )}
 
       {useStops ? (
         <div className="theme-card-rows">
@@ -147,7 +179,11 @@ export function ThemePreviewCard({
 
             return (
               <div key={stop.id} className="theme-row">
-                {stop.href ? (
+                {selectInsteadOfNavigate ? (
+                  <button type="button" className="theme-row-main" onClick={onPreview}>
+                    {content}
+                  </button>
+                ) : stop.href ? (
                   <Link href={stop.href} className="theme-row-main">
                     {content}
                   </Link>

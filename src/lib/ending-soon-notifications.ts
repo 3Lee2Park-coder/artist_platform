@@ -3,6 +3,7 @@ import {
   buildEndingSoonEmail,
   getAppUrl
 } from "@/lib/email";
+import { createNotice, NOTICE_TYPES } from "@/lib/notices";
 import { sendEmailOnce } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
@@ -20,7 +21,8 @@ export async function sendEndingSoonNotifications() {
     checked: 0,
     sent: 0,
     skipped: 0,
-    failed: 0
+    failed: 0,
+    noticed: 0
   };
 
   for (const daysLeft of REMINDER_DAYS) {
@@ -58,11 +60,7 @@ export async function sendEndingSoonNotifications() {
       summary.checked += 1;
 
       const { user, exhibition } = save;
-      if (
-        !user.notifyEmail ||
-        !user.notifyEndingSoon ||
-        !user.emailVerifiedAt
-      ) {
+      if (!user.notifyEndingSoon) {
         summary.skipped += 1;
         continue;
       }
@@ -82,6 +80,21 @@ export async function sendEndingSoonNotifications() {
       }
 
       const dedupeKey = `${exhibition.id}:d${daysLeft}:${targetEndDate}`;
+      const notice = await createNotice({
+        userId: user.id,
+        type: NOTICE_TYPES.EXHIBITION_ENDING,
+        title: `「${exhibition.title}」 종료 ${daysLeft}일 전`,
+        body: `${exhibition.endDate}에 끝납니다. 아직 안 가 봤다면 지금이 마지막에 가깝습니다.`,
+        href: `/exhibitions/${exhibition.id}`,
+        dedupeKey: `ending:${dedupeKey}`
+      });
+      if (notice.created) summary.noticed += 1;
+
+      if (!user.notifyEmail || !user.emailVerifiedAt) {
+        summary.skipped += 1;
+        continue;
+      }
+
       const template = buildEndingSoonEmail({
         name: user.name,
         exhibitionTitle: exhibition.title,

@@ -8,7 +8,7 @@ import { SearchFilterBar } from "@/components/SearchFilterBar";
 
 const bottomTabs = [
   { label: "홈", href: "/" },
-  { label: "공간", href: "/spaces" },
+  { label: "덱", href: "/decks" },
   { label: "전시", href: "/exhibitions" },
   { label: "지도", href: "/map" },
   { label: "MY", href: "/my" }
@@ -38,6 +38,12 @@ export async function Header({ activeTab = "홈" }: HeaderProps) {
           </Suspense>
 
           <nav className="desktop-nav" aria-label="주요 메뉴">
+            <Link
+              href="/decks"
+              className={activeTab === "덱" ? "active" : undefined}
+            >
+              덱
+            </Link>
             <Link
               href="/spaces"
               className={activeTab === "공간" ? "active" : undefined}

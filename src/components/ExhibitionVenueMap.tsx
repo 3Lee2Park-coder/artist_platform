@@ -37,7 +37,8 @@ export function ExhibitionVenueMap({
           lat,
           lng,
           title: venue || title,
-          district
+          district,
+          region
         }
       ]
     : [];

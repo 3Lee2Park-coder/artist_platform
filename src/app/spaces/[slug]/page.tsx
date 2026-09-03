@@ -1,3 +1,4 @@
+import { AskArtistTrigger } from "@/components/AskArtistDialog";
 import { ExhibitionCard } from "@/components/ExhibitionCard";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -214,6 +215,14 @@ export default async function SpaceDetailPage({ params }: SpaceDetailPageProps) 
                     {space.owner.bio ? <p>{space.owner.bio}</p> : null}
                   </div>
                   <div className="hub-actions">
+                    <AskArtistTrigger
+                      className="primary-button"
+                      target={{
+                        artistId: space.owner.id,
+                        artistName: space.owner.name,
+                        imageUrl: space.owner.profileImageUrl
+                      }}
+                    />
                     <Link
                       className="secondary-button"
                       href={`/artists/${space.owner.id}`}

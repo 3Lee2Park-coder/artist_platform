@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminQuestionsPanel, type AdminQuestionRow, type AdminWalkerRow } from "@/components/AdminQuestionsPanel";
 import { RichIntroEditor } from "@/components/RichIntroEditor";
 import { CurationCourseBuilder } from "@/components/CurationCourseBuilder";
 import {
@@ -191,6 +192,7 @@ type OwnershipExhibitionRow = {
   district: string;
   status: string;
   source: string;
+  homeHero: boolean;
   registeredByName: string | null;
   registeredByEmail: string | null;
 };
@@ -236,6 +238,8 @@ type AdminDashboardProps = {
   ownershipExhibitions: OwnershipExhibitionRow[];
   ownershipPrograms: OwnershipProgramRow[];
   members: MemberRow[];
+  questions: AdminQuestionRow[];
+  walkers: AdminWalkerRow[];
 };
 
 const SITUATION_OPTIONS = [
@@ -268,7 +272,9 @@ export function AdminDashboard({
   ownershipSpaces,
   ownershipExhibitions,
   ownershipPrograms,
-  members
+  members,
+  questions,
+  walkers
 }: AdminDashboardProps) {
   const router = useRouter();
   const [tab, setTab] = useState<
@@ -279,6 +285,7 @@ export function AdminDashboard({
     | "review"
     | "ownership"
     | "members"
+    | "questions"
     | "events"
   >("curations");
   const [message, setMessage] = useState("");
@@ -722,6 +729,26 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
     router.refresh();
   }
 
+  async function toggleHomeHero(exhibition: OwnershipExhibitionRow) {
+    setMessage("");
+    const response = await fetch("/api/admin/exhibitions", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: exhibition.id, homeHero: !exhibition.homeHero })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error ?? "히어로 설정에 실패했습니다.");
+      return;
+    }
+    setMessage(
+      exhibition.homeHero
+        ? `「${exhibition.title}」을 히어로에서 내렸습니다. 최신 등록순으로 채워집니다.`
+        : `「${exhibition.title}」을 홈 히어로에 고정했습니다.`
+    );
+    router.refresh();
+  }
+
   async function savePlace() {
     setCreatingPlace(true);
     const payload = {
@@ -1003,6 +1030,13 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
             onClick={() => setTab("members")}
           >
             회원 ({members.length})
+          </button>
+          <button
+            type="button"
+            className={tab === "questions" ? "my-tab active" : "my-tab"}
+            onClick={() => setTab("questions")}
+          >
+            질문 ({questions.filter((item) => item.status === "PENDING").length})
           </button>
           <button
             type="button"
@@ -1867,6 +1901,7 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                         <h3>{exhibition.title}</h3>
                         <p>
                           {exhibition.district} · {exhibition.status} · {exhibition.source}
+                          {exhibition.homeHero ? " · 히어로 고정" : ""}
                         </p>
                         <p className="field-hint">
                           현재:{" "}
@@ -1918,6 +1953,13 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                           }
                         >
                           {transferringKey === key ? "연결 중…" : "등록자 연결"}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => toggleHomeHero(exhibition)}
+                        >
+                          {exhibition.homeHero ? "히어로에서 내리기" : "히어로에 올리기"}
                         </button>
                         <button
                           type="button"
@@ -2193,6 +2235,15 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
             <div className="empty-state">대기 중인 작가 신청이 없습니다.</div>
           )}
         </section>
+      )}
+
+      {tab === "questions" && (
+        <AdminQuestionsPanel
+          questions={questions}
+          walkers={walkers}
+          onRefresh={() => router.refresh()}
+          onMessage={setMessage}
+        />
       )}
 
       {tab === "events" && (
