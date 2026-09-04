@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CalendarDayItem } from "@/lib/calendar-archive";
 import Link from "next/link";
+
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const EXAMPLE_IMAGES = [
+  "/brand/hero-hide-and-seek.webp",
+  "/brand/ooof-moodbord.png"
+];
 
 type Preview = {
   saturday: string;
@@ -11,8 +17,79 @@ type Preview = {
   items: CalendarDayItem[];
 };
 
+function cellsForMonth(year: number, monthIndex: number) {
+  const first = new Date(year, monthIndex, 1);
+  const startPad = first.getDay();
+  const lastDate = new Date(year, monthIndex + 1, 0).getDate();
+  const cells: Array<number | null> = [];
+  for (let i = 0; i < startPad; i += 1) cells.push(null);
+  for (let day = 1; day <= lastDate; day += 1) cells.push(day);
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+function weekendDays(year: number, monthIndex: number) {
+  const lastDate = new Date(year, monthIndex + 1, 0).getDate();
+  const days: number[] = [];
+  for (let day = 1; day <= lastDate; day += 1) {
+    const weekday = new Date(year, monthIndex, day).getDay();
+    if (weekday === 0 || weekday === 6) days.push(day);
+  }
+  return days;
+}
+
+function MiniCalendar({
+  fills,
+  caption
+}: {
+  fills: Map<number, string>;
+  caption: string;
+}) {
+  const cells = useMemo(() => {
+    const date = new Date();
+    return cellsForMonth(date.getFullYear(), date.getMonth());
+  }, []);
+  const monthLabel = `${new Date().getMonth() + 1}월`;
+
+  return (
+    <div className="weekend-plan-cal">
+      <div className="weekend-plan-cal-head">
+        <strong>{monthLabel}</strong>
+        <span>{caption}</span>
+      </div>
+      <div className="weekend-plan-cal-weekdays">
+        {WEEKDAYS.map((day) => (
+          <span key={day}>{day}</span>
+        ))}
+      </div>
+      <div className="weekend-plan-cal-grid">
+        {cells.map((day, index) => {
+          const image = day ? fills.get(day) : undefined;
+          const weekday = index % 7;
+          return (
+            <span
+              key={`${day ?? "x"}-${index}`}
+              className={[
+                "weekend-plan-cal-cell",
+                day == null ? "is-empty" : "",
+                weekday === 0 || weekday === 6 ? "is-weekend" : "",
+                image ? "has-photo" : ""
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              style={image ? { backgroundImage: `url(${image})` } : undefined}
+            >
+              {day ?? ""}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function WeekendPlanTeaser() {
-  const [state, setState] = useState<"loading" | "guest" | "user">("loading");
+  const [state, setState] = useState<"guest" | "user">("guest");
   const [preview, setPreview] = useState<Preview | null>(null);
 
   useEffect(() => {
@@ -29,9 +106,22 @@ export function WeekendPlanTeaser() {
       .catch(() => setState("guest"));
   }, []);
 
-  if (state === "loading") return null;
-
-  const covers = (preview?.items ?? []).filter((item) => item.imageUrl).slice(0, 4);
+  const coverUrls = (preview?.items ?? [])
+    .map((item) => item.imageUrl)
+    .filter((url): url is string => Boolean(url));
+  const coverKey = coverUrls.join("|");
+  const fills = useMemo(() => {
+    const map = new Map<number, string>();
+    const now = new Date();
+    const weekends = weekendDays(now.getFullYear(), now.getMonth());
+    const photos = coverKey
+      ? coverKey.split("|")
+      : EXAMPLE_IMAGES;
+    weekends.slice(0, 6).forEach((day, index) => {
+      map.set(day, photos[index % photos.length]);
+    });
+    return map;
+  }, [coverKey]);
 
   return (
     <section className="home-section weekend-plan-teaser" aria-labelledby="weekend-plan-title">
@@ -53,16 +143,10 @@ export function WeekendPlanTeaser() {
           {state === "guest" ? "달력 만들기" : preview?.items.length ? "내 달력 열기" : "주말 코스 담기"}
         </Link>
       </div>
-      <div className="weekend-plan-mosaic" aria-hidden="true">
-        {covers.length > 0
-          ? covers.map((item) => (
-              <span
-                key={item.id}
-                style={{ backgroundImage: `url(${item.imageUrl})` }}
-              />
-            ))
-          : [0, 1, 2, 3].map((slot) => <span key={slot} className="is-blank" />)}
-      </div>
+      <MiniCalendar
+        fills={fills}
+        caption={coverUrls.length > 0 ? "이번 달" : "채워진 달력 예시"}
+      />
     </section>
   );
 }

@@ -137,13 +137,15 @@ export function HomeHeroSlider({ exhibitions }: HomeHeroSliderProps) {
             <div className="home-hero-slide-copy">
               <p className="home-hero-eyebrow">오늘 관람할 수 있는 전시</p>
               <h2 className="home-hero-slide-title">
-                지금 열려 있는 전시를 골라보세요
+                지금 열려 있는 전시를
+                <br className="home-hero-title-break" />
+                골라보세요
               </h2>
               <p className="home-hero-lead">
-                OOOF.에 등록된 진행 중 전시를 바로 확인할 수 있습니다.
+                포스터를 누르면 장소와 기간을 바로 확인할 수 있습니다.
               </p>
               <div className="home-hero-actions">
-                <Link className="secondary-button" href="/exhibitions">
+                <Link className="home-hero-more" href="/exhibitions">
                   전시 전체 보기
                 </Link>
               </div>

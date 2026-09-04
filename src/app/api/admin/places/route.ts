@@ -11,6 +11,17 @@ async function requireAdmin() {
   return session;
 }
 
+const rarityValue = z
+  .enum(["HIDDEN", "RARE", "COMMON"])
+  .optional()
+  .nullable()
+  .or(z.literal(""));
+
+function toRarity(value: string | null | undefined) {
+  if (!value) return null;
+  return value;
+}
+
 const placeSchema = z.object({
   name: z.string().min(1),
   type: z.enum(["CAFE", "RESTAURANT", "WALK", "ETC"]).default("CAFE"),
@@ -23,9 +34,10 @@ const placeSchema = z.object({
   sourceUrl: z.string().url().optional().or(z.literal("")),
   notes: z.string().optional(),
   editorialNote: z.string().optional(),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+    imageUrl: z.string().optional().nullable().or(z.literal("")),
   homeFeatured: z.boolean().optional(),
   homeSortOrder: z.number().int().optional(),
+  rarity: rarityValue,
   isActive: z.boolean().optional()
 });
 
@@ -86,6 +98,7 @@ export async function POST(request: Request) {
       imageUrl: data.imageUrl || null,
       homeFeatured: data.homeFeatured ?? false,
       homeSortOrder: data.homeSortOrder ?? 0,
+      rarity: toRarity(data.rarity),
       isActive: data.isActive ?? true
     }
   });
@@ -109,6 +122,7 @@ const patchSchema = z.object({
   imageUrl: z.string().optional().nullable(),
   homeFeatured: z.boolean().optional(),
   homeSortOrder: z.number().int().optional(),
+  rarity: rarityValue,
   isActive: z.boolean().optional()
 });
 
@@ -126,7 +140,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { id, tags, sourceUrl, notes, editorialNote, imageUrl, ...rest } =
+  const { id, tags, sourceUrl, notes, editorialNote, imageUrl, rarity, ...rest } =
     parsed.data;
 
   const place = await prisma.place.update({
@@ -137,7 +151,8 @@ export async function PATCH(request: Request) {
       ...(sourceUrl !== undefined ? { sourceUrl: sourceUrl || null } : {}),
       ...(notes !== undefined ? { notes: notes || null } : {}),
       ...(editorialNote !== undefined ? { editorialNote: editorialNote || null } : {}),
-      ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {})
+      ...(imageUrl !== undefined ? { imageUrl: imageUrl || null } : {}),
+      ...(rarity !== undefined ? { rarity: toRarity(rarity) } : {})
     }
   });
 

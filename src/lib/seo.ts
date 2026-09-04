@@ -1,7 +1,7 @@
 /** Per-page title/description helpers for Place · Curation · Exhibition. */
 
 import { BRAND } from "@/lib/brand";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, ogImage } from "@/lib/site";
 
 function clip(text: string, max = 155) {
   const trimmed = text.replace(/\s+/g, " ").trim();
@@ -23,6 +23,8 @@ export function publicMeta(input: {
   const images = (input.images ?? []).filter(
     (url): url is string => Boolean(url)
   );
+  // 페이지가 openGraph를 정의하면 루트 이미지를 물려받지 못하므로 기본 커버로 채운다
+  const ogImages = images.length > 0 ? images : [ogImage().url];
   return {
     title: input.title,
     description: input.description,
@@ -33,7 +35,13 @@ export function publicMeta(input: {
       url: input.canonical,
       locale: "ko_KR",
       siteName: `${BRAND.mark}(${BRAND.koreanAlias})`,
-      ...(images.length > 0 ? { images } : {})
+      images: ogImages
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title: input.title,
+      description: input.description,
+      images: ogImages
     }
   };
 }

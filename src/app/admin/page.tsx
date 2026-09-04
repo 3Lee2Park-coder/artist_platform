@@ -370,6 +370,7 @@ export default async function AdminPage() {
           imageUrl: place.imageUrl,
           homeFeatured: place.homeFeatured,
           homeSortOrder: place.homeSortOrder,
+          rarity: place.rarity ?? null,
           isActive: place.isActive,
           usedCount: place.usedCount
         }))}

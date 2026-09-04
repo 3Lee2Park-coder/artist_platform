@@ -63,3 +63,15 @@ export function absoluteUrl(path = "/") {
   if (!path || path === "/") return base;
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/** 카카오·인스타 공유 미리보기 기본 썸네일 (1200×630) */
+export const OG_IMAGE_PATH = "/brand/og-cover.jpg";
+
+export function ogImage() {
+  return {
+    url: absoluteUrl(OG_IMAGE_PATH),
+    width: 1200,
+    height: 630,
+    alt: `${BRAND.mark}(${BRAND.koreanAlias})`
+  };
+}

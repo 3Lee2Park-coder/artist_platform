@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
  * 개발 서버 HMR이 PrismaClient를 다시 만들 때마다 연결이 남는다.
  * Supabase는 클라이언트 연결이 200개에서 막히므로, 프로세스당 하나 + 풀 상한을 강제한다.
  */
-const PRISMA_CLIENT_REV = 6;
+const PRISMA_CLIENT_REV = 7;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

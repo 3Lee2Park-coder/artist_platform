@@ -63,6 +63,23 @@ function inferRarity(badge: string | null | undefined): CardRarity {
   return "COMMON";
 }
 
+export function parseCardRarity(value: string | null | undefined): CardRarity | null {
+  const rarity = (value ?? "").trim().toUpperCase();
+  if (rarity === "HIDDEN" || rarity === "RARE" || rarity === "COMMON") return rarity;
+  return null;
+}
+
+/** Place 카드 희귀도. 지정이 없으면 기존 규칙. */
+export function placeCardRarity(
+  place: { rarity?: string | null; homeFeatured?: boolean },
+  fallback: "home-hidden" | "deck" = "deck"
+): CardRarity {
+  const explicit = parseCardRarity(place.rarity);
+  if (explicit) return explicit;
+  if (fallback === "home-hidden") return "HIDDEN";
+  return place.homeFeatured ? "HIDDEN" : "COMMON";
+}
+
 function splitEditorial(note: string | null | undefined) {
   const text = (note ?? "").replace(/\s+/g, " ").trim();
   if (!text) return { oofNote: null as string | null, oofFact: null as string | null };
@@ -293,7 +310,7 @@ export async function resolveCardKeys(keys: string[]): Promise<OoofCard[]> {
           source: "place" as const,
           sourceId: record.id,
           kind: "PLACE" as const,
-          rarity: record.homeFeatured ? "HIDDEN" : "COMMON",
+          rarity: placeCardRarity(record, "deck"),
           number: String(index + 1).padStart(3, "0"),
           name: record.name,
           imageUrl: resolveMediaUrl(record.imageUrl) ?? null,

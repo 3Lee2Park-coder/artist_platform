@@ -91,6 +91,7 @@ export type PlaceCard = {
   imageUrl: string | null;
   homeFeatured: boolean;
   homeSortOrder: number;
+  rarity: string | null;
   nearbyExhibition: {
     id: string;
     title: string;
@@ -115,6 +116,7 @@ function toPlaceCard(
     imageUrl: string | null;
     homeFeatured: boolean;
     homeSortOrder: number;
+    rarity?: string | null;
   },
   nearbyExhibition: PlaceCard["nearbyExhibition"] = null
 ): PlaceCard {
@@ -134,6 +136,7 @@ function toPlaceCard(
     imageUrl: resolveMediaUrl(place.imageUrl) ?? null,
     homeFeatured: place.homeFeatured,
     homeSortOrder: place.homeSortOrder,
+    rarity: place.rarity ?? null,
     nearbyExhibition
   };
 }

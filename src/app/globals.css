@@ -5595,6 +5595,17 @@
     grid-column: 1 / -1;
   }
 
+  .admin-place-preview {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    height: 140px;
+    margin-top: 8px;
+    object-fit: cover;
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
   .admin-exhibition-pick-row {
     display: flex;
     flex-wrap: wrap;
@@ -10622,14 +10633,14 @@
   }
 
   .home-hero-stage {
-    min-height: clamp(460px, 50vw, 600px);
+    min-height: 0;
   }
 
   .home-hero-slide {
     display: grid;
     gap: clamp(18px, 3vw, 32px);
     align-items: center;
-    min-height: clamp(460px, 50vw, 600px);
+    min-height: 0;
     padding: clamp(22px, 4vw, 48px);
     border: 1px solid rgba(61, 74, 87, 0.12);
     border-radius: 30px;
@@ -10643,6 +10654,7 @@
   .home-hero-intro {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: stretch;
+    min-height: clamp(440px, 48vw, 560px);
   }
 
   .home-hero-intro-copy {
@@ -10737,8 +10749,8 @@
   }
 
   .home-hero-exhibitions {
-    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
-    align-items: stretch;
+    grid-template-columns: minmax(240px, 0.44fr) minmax(0, 1.56fr);
+    align-items: center;
   }
 
   .home-hero-eyebrow {
@@ -10763,11 +10775,35 @@
     color: var(--explorer-deep);
   }
 
+  .home-hero-slide-copy {
+    min-width: 0;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
   .home-hero-slide-title {
-    margin: 0 0 10px;
-    font-size: clamp(22px, 4vw, 32px);
+    margin: clamp(8px, 1.4vw, 16px) 0 clamp(12px, 1.8vw, 20px);
+    font-size: clamp(21px, 2.7vw, 30px);
     font-weight: 800;
-    line-height: 1.25;
+    line-height: 1.45;
+    letter-spacing: -0.02em;
+    color: var(--primary);
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .home-hero-more {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--explorer-deep);
+    text-decoration: none;
+  }
+
+  .home-hero-more::after {
+    content: " →";
   }
 
   .home-hero-lead {
@@ -10776,6 +10812,7 @@
     font-size: clamp(14.5px, 2.1vw, 17px);
     color: var(--secondary);
     line-height: 1.6;
+    word-break: keep-all;
   }
 
   .home-hero-points {
@@ -10809,15 +10846,19 @@
   .home-hero-card-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 16px;
     min-height: 0;
-    height: 100%;
-    align-items: stretch;
+    align-items: start;
   }
 
   .home-hero-card-row .exhibition-card.compact {
-    height: 100%;
+    height: auto;
     min-height: 0;
+  }
+
+  .home-hero-card-row .exhibition-card.compact .exhibition-card-image {
+    aspect-ratio: 4 / 5;
+    margin-bottom: 10px;
   }
 
   .home-hero-controls {
@@ -10867,9 +10908,8 @@
   }
 
   @media (min-width: 901px) {
-    .home-hero-stage,
-    .home-hero-slide {
-      height: clamp(500px, 54vw, 620px);
+    .home-hero-intro {
+      min-height: clamp(460px, 48vw, 560px);
     }
   }
 
@@ -10994,6 +11034,72 @@
 
     .home-hero-card-row > *:nth-child(n + 3) {
       display: none;
+    }
+
+    .home-hero-slide.home-hero-exhibitions {
+      gap: 12px;
+      padding: 14px 14px 12px;
+    }
+
+    .home-hero-exhibitions .home-hero-slide-copy {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 2px 12px;
+    }
+
+    .home-hero-exhibitions .home-hero-eyebrow,
+    .home-hero-exhibitions .home-hero-lead {
+      display: none;
+    }
+
+    .home-hero-exhibitions .home-hero-slide-title {
+      margin: 2px 0 4px;
+      flex: 1 1 180px;
+      font-size: 16.5px;
+      line-height: 1.35;
+    }
+
+    .home-hero-title-break {
+      display: none;
+    }
+
+    .home-hero-exhibitions .home-hero-actions,
+    .home-hero-exhibitions .home-hero-actions > a {
+      flex: 0 0 auto;
+      margin: 0;
+    }
+
+    .home-hero-exhibitions .home-hero-more {
+      min-height: 0;
+      font-size: 12px;
+    }
+
+    .home-hero-card-row .card-copy {
+      gap: 3px;
+    }
+
+    .home-hero-card-row .card-copy > p:not(.card-location) {
+      display: none;
+    }
+
+    .home-hero-card-row .card-location {
+      font-size: 11px;
+    }
+
+    .home-hero-card-row h3 {
+      font-size: 13px;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .home-hero-card-row .card-footer {
+      font-size: 11px;
     }
 
     .dk-home-pair {
@@ -11158,6 +11264,11 @@
       gap: 24px;
       padding: 22px 14px 14px;
       border-radius: 22px;
+    }
+
+    .home-hero-slide.home-hero-exhibitions {
+      gap: 10px;
+      padding: 12px 12px 10px;
     }
 
     .home-hero-slide.home-hero-intro {
@@ -11555,12 +11666,24 @@
   }
 
   .ooof-today-decks.is-open-stage .ooof-deck-controls {
-    margin: 0 0 4px;
+    position: relative;
+    z-index: 6;
+    flex: 0 0 auto;
+    margin: 8px 0 12px;
+    background: var(--background);
+  }
+
+  .ooof-today-decks.is-open-stage .ooof-spread-hint {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
   }
 
   .ooof-today-decks.is-open-stage .ooof-deck-spread-frame {
     flex: 1;
     min-height: 0;
+    margin-top: 4px;
+    padding-top: 16px;
+    align-items: flex-start;
   }
 
   .ooof-today-decks.is-open-stage .ooof-deck-spread {
@@ -11571,7 +11694,7 @@
   }
 
   .ooof-today-decks.is-open-stage .ooof-spread-card {
-    top: 42%;
+    top: 50%;
   }
 
   .ooof-today-decks.is-open-stage::before {
@@ -11895,6 +12018,23 @@
     border-color: #1a1a1a;
   }
 
+  .ooof-deck-experience.is-open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ooof-deck-experience.is-open .ooof-deck-controls {
+    position: relative;
+    z-index: 6;
+    flex: 0 0 auto;
+    margin: 8px 0 14px;
+    background: var(--background);
+  }
+
+  .ooof-deck-experience.is-open .ooof-spread-hint {
+    flex: 0 0 auto;
+  }
+
   .ooof-deck-spread-frame {
     display: flex;
     justify-content: center;
@@ -11903,7 +12043,7 @@
     max-width: 100%;
     overflow: hidden;
     height: calc(560px * var(--spread-scale, 1));
-    touch-action: pan-y;
+    touch-action: none;
     cursor: grab;
   }
 
@@ -11928,7 +12068,8 @@
   .ooof-spread-card {
     position: absolute;
     left: 50%;
-    top: 32%;
+    /* 위로 뻗는 카드(--spread-y 최소 -48px)까지 프레임 안에 들어오는 기준선 */
+    top: 46%;
     width: 214px;
     transform: translate(calc(-50% + var(--spread-x, 0px)), calc(-50% + var(--spread-y, 0px))) rotate(var(--spread-r, 0deg));
     transform-origin: center;
@@ -12046,7 +12187,16 @@
     cursor: pointer;
     text-align: left;
     gap: 8px;
+    min-height: 0;
     transition: transform 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  .ooof-card-top,
+  .ooof-card-kick,
+  .ooof-card-name-row,
+  .ooof-card-note,
+  .ooof-flip-hint {
+    flex-shrink: 0;
   }
 
   .ooof-card-3d:hover .ooof-card-front {
@@ -12157,20 +12307,6 @@
   .ooof-card-name-row strong {
     font-size: 16px;
     line-height: 1.25;
-  }
-
-  .ooof-card-name-row span {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-  }
-
-  .ooof-card-3d.is-catalog .ooof-card-photo {
-    flex: 1 1 auto;
-    min-height: 56%;
-  }
-
-  .ooof-card-3d.is-catalog .ooof-card-name-row strong {
     display: -webkit-box;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -12180,10 +12316,18 @@
     overflow-wrap: anywhere;
   }
 
-  .ooof-card-3d.is-catalog .ooof-card-name-row span {
+  .ooof-card-name-row span {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .ooof-card-3d.is-catalog .ooof-card-photo {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .ooof-card-note {
@@ -12191,6 +12335,11 @@
     font-size: 12px;
     color: var(--secondary);
     line-height: 1.4;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .ooof-card-kick span {
@@ -12220,7 +12369,7 @@
     justify-content: center;
     gap: 6px;
     align-self: center;
-    margin-top: 2px;
+    margin-top: auto;
     padding: 5px 11px;
     border: 1px solid rgba(26, 26, 26, 0.28);
     border-radius: 999px;
@@ -12620,8 +12769,8 @@
     }
 
     .ooof-catalog-grid .ooof-card-photo {
-      min-height: 62%;
-      flex-shrink: 0;
+      min-height: 0;
+      flex: 1 1 auto;
     }
 
     .ooof-catalog-grid .ooof-card-name-row {
@@ -13017,7 +13166,7 @@
 
   .weekend-plan-teaser {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 300px);
     gap: 24px;
     align-items: center;
   }
@@ -13025,26 +13174,87 @@
   .weekend-plan-copy h2 {
     margin: 6px 0 10px;
     font-size: clamp(22px, 3vw, 32px);
+    word-break: keep-all;
   }
 
-  .weekend-plan-mosaic {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .weekend-plan-cal {
+    width: 100%;
+    max-width: 300px;
+    justify-self: end;
+    padding: 10px;
+    border: 1px solid var(--ooof-border, rgba(26, 26, 26, 0.12));
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 32px rgba(61, 74, 87, 0.08);
+  }
+
+  .weekend-plan-cal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     gap: 8px;
-    min-height: 180px;
+    margin-bottom: 10px;
   }
 
-  .weekend-plan-mosaic span {
-    display: block;
-    min-height: 88px;
-    border-radius: 12px;
-    background: var(--surface);
+  .weekend-plan-cal-head strong {
+    font-size: 15px;
+  }
+
+  .weekend-plan-cal-head span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .weekend-plan-cal-weekdays,
+  .weekend-plan-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .weekend-plan-cal-weekdays {
+    margin-bottom: 5px;
+  }
+
+  .weekend-plan-cal-weekdays span {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--muted);
+  }
+
+  .weekend-plan-cal-cell {
+    aspect-ratio: 3 / 4;
+    min-height: 0;
+    border-radius: 6px;
+    border: 1px solid rgba(26, 26, 26, 0.08);
+    background: var(--ooof-paper, #faf8f5);
     background-size: cover;
     background-position: center;
+    font-size: 8px;
+    font-weight: 800;
+    color: var(--ooof-ink, #1a1a1a);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 2px 3px;
   }
 
-  .weekend-plan-mosaic span.is-blank {
-    background: linear-gradient(180deg, #efe8df, #d9cfc4);
+  .weekend-plan-cal-cell.is-empty {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .weekend-plan-cal-cell.is-weekend:not(.is-empty):not(.has-photo) {
+    background: rgba(196, 109, 84, 0.08);
+  }
+
+  .weekend-plan-cal-cell.has-photo {
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    border-color: transparent;
   }
 
   .share-day-cards {
@@ -13054,9 +13264,20 @@
     margin-top: 24px;
   }
 
+  @media (max-width: 1100px) {
+    .weekend-plan-cal {
+      max-width: 240px;
+    }
+  }
+
   @media (max-width: 800px) {
     .weekend-plan-teaser {
       grid-template-columns: 1fr;
+    }
+
+    .weekend-plan-cal {
+      max-width: 220px;
+      justify-self: center;
     }
 
     .day-calendar-weekdays,

@@ -11,9 +11,11 @@
 | [SUPPLY_WEDGE.md](./SUPPLY_WEDGE.md) | NFX Wedge · ICP · 공급 KPI | 2 |
 | [PARTNERSHIP_PROPOSAL.md](./PARTNERSHIP_PROPOSAL.md) | 작가 파트너십 제안서 · CTA | 3 |
 | [GTM.md](./GTM.md) | 시장 · 세그먼트 · 채널 · 가격 · 지표 | 4 |
+| [GROWTH_CHANNELS.md](./GROWTH_CHANNELS.md) | 노출·홍보 채널 우선순위 · 주간 루틴 · UTM | 4 |
 | [BRAND_BRIEF_v0.2.md](./BRAND_BRIEF_v0.2.md) | 외부 카피 · Claims · 톤 요약 (SSOT) | 상시 |
 | [BRAND_NAME_SHORTLIST.md](./BRAND_NAME_SHORTLIST.md) | OOOF. 결정 기록 + 과거 후보 | Archive |
-| [OUTREACH_EMAILS.md](./OUTREACH_EMAILS.md) | Type A/B/C · 긍정 회신 | 상시 |
+| [OUTREACH_EMAILS.md](./OUTREACH_EMAILS.md) | Type A/B/C · 긍정 회신 · 갤러리 DM | 상시 |
+| [OUTREACH_SCHOOLS.md](./OUTREACH_SCHOOLS.md) | 교사 / 졸업전 학생 아웃리치 · 찾는 방법 | 상시 |
 | [ONE_PAGER_OUTLINE.md](./ONE_PAGER_OUTLINE.md) | 작가용 원페이저 목차 | 상시 |
 
 운영: [../ops/OUTREACH_DOR.md](../ops/OUTREACH_DOR.md), [../ops/ARTIST_OPS_SHEET.csv](../ops/ARTIST_OPS_SHEET.csv), [../ops/DEPLOY_SMOKE_CHECKLIST.md](../ops/DEPLOY_SMOKE_CHECKLIST.md)

@@ -50,7 +50,7 @@ function useSpreadScale() {
       const width = root.clientWidth;
       const overlay = root.closest(".is-open-stage");
       const height = overlay
-        ? Math.max(280, window.innerHeight - 150)
+        ? Math.max(240, window.innerHeight - 260)
         : Math.max(320, Math.min(SPREAD_CANVAS.height, width * 0.78));
       const next = Math.min(
         1,
@@ -126,6 +126,7 @@ export function DeckExperience({
     startX: number;
     startY: number;
     moved: boolean;
+    cardKey: string | null;
   } | null>(null);
   const skipClickRef = useRef(false);
   const [dragHint, setDragHint] = useState(false);
@@ -147,15 +148,21 @@ export function DeckExperience({
     });
   }
 
+  function cardKeyFromEvent(event: React.PointerEvent<HTMLElement>) {
+    const host = (event.target as HTMLElement | null)?.closest?.("[data-spread-key]");
+    return host?.getAttribute("data-spread-key") ?? null;
+  }
+
   function onSpreadPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (phase !== "open" || selectedKey || spreadCards.length < 2) return;
+    skipClickRef.current = false;
+    if (phase !== "open" || selectedKey) return;
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      moved: false
+      moved: false,
+      cardKey: cardKeyFromEvent(event)
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
   }
 
   function onSpreadPointerMove(event: React.PointerEvent<HTMLDivElement>) {
@@ -174,9 +181,23 @@ export function DeckExperience({
     if (!drag || drag.pointerId !== event.pointerId) return;
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
-    if (!drag.moved || Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy)) return;
-    skipClickRef.current = true;
-    rotateCards(dx < 0 ? 1 : -1);
+    const isSwipe =
+      spreadCards.length >= 2 &&
+      drag.moved &&
+      Math.abs(dx) >= 42 &&
+      Math.abs(dx) > Math.abs(dy);
+
+    if (isSwipe) {
+      skipClickRef.current = true;
+      rotateCards(dx < 0 ? 1 : -1);
+      return;
+    }
+
+    // 스와이프 핸들러가 click을 삼키는 환경에서도 탭이면 카드를 연다
+    if (Math.abs(dx) < 28 && Math.abs(dy) < 28 && drag.cardKey) {
+      skipClickRef.current = true;
+      setSelectedKey(drag.cardKey);
+    }
   }
 
   function openDeck() {
@@ -358,6 +379,7 @@ export function DeckExperience({
                 return (
                   <div
                     key={card.key}
+                    data-spread-key={card.key}
                     className={`ooof-spread-card${isSelected ? " is-selected" : ""}${selectedKey && !isSelected ? " is-dim" : ""}`}
                     style={{
                       ["--spread-x" as string]: `${slot.x}px`,

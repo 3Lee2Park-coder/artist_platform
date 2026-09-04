@@ -6,7 +6,7 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { JsonLd } from "@/components/JsonLd";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { BRAND, brandTitle } from "@/lib/brand";
-import { absoluteUrl, getSiteUrl, siteConfig } from "@/lib/site";
+import { absoluteUrl, getSiteUrl, ogImage, siteConfig } from "@/lib/site";
 import "./globals.css";
 
 /** Latin brand / numerals — paired with Pretendard for Hangul UI */
@@ -35,12 +35,14 @@ export const metadata: Metadata = {
     url: absoluteUrl("/"),
     siteName: `${BRAND.mark}(${BRAND.koreanAlias})`,
     title: brandTitle(),
-    description: BRAND.seoDescription
+    description: BRAND.seoDescription,
+    images: [ogImage()]
   },
   twitter: {
     card: "summary_large_image",
     title: brandTitle(),
-    description: BRAND.seoDescription
+    description: BRAND.seoDescription,
+    images: [ogImage().url]
   },
   robots: {
     index: true,

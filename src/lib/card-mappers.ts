@@ -1,4 +1,5 @@
 import type { OoofCard, CardRarity } from "@/lib/cards";
+import { placeCardRarity } from "@/lib/cards";
 import type { PlaceCard } from "@/lib/places";
 import type { Exhibition } from "@/types/exhibition";
 
@@ -23,7 +24,7 @@ export function cardFromPlace(place: PlaceCard, index = 0): OoofCard {
     source: "place",
     sourceId: place.id,
     kind: "PLACE",
-    rarity: "HIDDEN",
+    rarity: placeCardRarity(place, "home-hidden"),
     number: String(index + 1).padStart(3, "0"),
     name: place.name,
     imageUrl: place.imageUrl,

@@ -282,6 +282,8 @@ model Place {
   editorialNote String?
   homeFeatured  Boolean @default(false)
   homeSortOrder Int     @default(0)
+  // HIDDEN | RARE | COMMON. null이면 카드 매핑 기존 규칙
+  rarity     String?
   isActive   Boolean   @default(true)
   usedCount  Int       @default(0)
   lastUsedAt DateTime?

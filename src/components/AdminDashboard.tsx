@@ -88,6 +88,7 @@ type PlaceRow = {
   imageUrl: string | null;
   homeFeatured: boolean;
   homeSortOrder: number;
+  rarity: string | null;
   isActive: boolean;
   usedCount: number;
 };
@@ -106,7 +107,8 @@ const EMPTY_PLACE_FORM = {
   editorialNote: "",
   imageUrl: "",
   homeFeatured: false,
-  homeSortOrder: "0"
+  homeSortOrder: "0",
+  rarity: ""
 };
 
 type PlaceTipRow = {
@@ -319,6 +321,8 @@ export function AdminDashboard({
   const [placeForm, setPlaceForm] = useState(EMPTY_PLACE_FORM);
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
   const [creatingPlace, setCreatingPlace] = useState(false);
+  const [placeImageFile, setPlaceImageFile] = useState<File | null>(null);
+  const [placeImagePreview, setPlaceImagePreview] = useState<string | null>(null);
   const [tipBusyId, setTipBusyId] = useState<string | null>(null);
   const pendingTipCount = placeTips.filter((tip) => tip.status === "PENDING").length;
 
@@ -751,51 +755,70 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
 
   async function savePlace() {
     setCreatingPlace(true);
-    const payload = {
-      name: placeForm.name,
-      type: placeForm.type,
-      region: placeForm.region,
-      district: placeForm.district,
-      address: placeForm.address,
-      lat: Number(placeForm.lat),
-      lng: Number(placeForm.lng),
-      tags: placeForm.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      sourceUrl: placeForm.sourceUrl,
-      notes: placeForm.notes,
-      editorialNote: placeForm.editorialNote,
-      imageUrl: placeForm.imageUrl,
-      homeFeatured: placeForm.homeFeatured,
-      homeSortOrder: Number(placeForm.homeSortOrder) || 0
-    };
-    const response = await fetch("/api/admin/places", {
-      method: editingPlaceId ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        editingPlaceId ? { id: editingPlaceId, ...payload } : payload
-      )
-    });
-    setCreatingPlace(false);
+    try {
+      let imageUrl = placeForm.imageUrl;
+      if (placeImageFile) {
+        imageUrl = await uploadPlaceImage(placeImageFile);
+      }
+      const payload = {
+        name: placeForm.name,
+        type: placeForm.type,
+        region: placeForm.region,
+        district: placeForm.district,
+        address: placeForm.address,
+        lat: Number(placeForm.lat),
+        lng: Number(placeForm.lng),
+        tags: placeForm.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        sourceUrl: placeForm.sourceUrl,
+        notes: placeForm.notes,
+        editorialNote: placeForm.editorialNote,
+        imageUrl,
+        homeFeatured: placeForm.homeFeatured,
+        homeSortOrder: Number(placeForm.homeSortOrder) || 0,
+        rarity: placeForm.rarity
+      };
+      const response = await fetch("/api/admin/places", {
+        method: editingPlaceId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          editingPlaceId ? { id: editingPlaceId, ...payload } : payload
+        )
+      });
 
-    if (response.ok) {
-      setMessage(
-        editingPlaceId
-          ? "Place가 수정되었습니다."
-          : "Place Pool에 추가되었습니다."
-      );
-      resetPlaceForm();
-      router.refresh();
-    } else {
-      const data = await response.json();
-      setMessage(data.error ?? "장소 저장에 실패했습니다.");
+      if (response.ok) {
+        setMessage(
+          editingPlaceId
+            ? "Place가 수정되었습니다."
+            : "Place Pool에 추가되었습니다."
+        );
+        resetPlaceForm();
+        router.refresh();
+      } else {
+        const data = await response.json();
+        setMessage(data.error ?? "장소 저장에 실패했습니다.");
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "장소 저장에 실패했습니다.");
+    } finally {
+      setCreatingPlace(false);
     }
+  }
+
+  function clearPlaceImagePreview() {
+    setPlaceImagePreview((current) => {
+      if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+      return null;
+    });
+    setPlaceImageFile(null);
   }
 
   function resetPlaceForm() {
     setEditingPlaceId(null);
     setPlaceForm(EMPTY_PLACE_FORM);
+    clearPlaceImagePreview();
   }
 
   function loadPlaceForEdit(place: PlaceRow) {
@@ -814,8 +837,11 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
       editorialNote: place.editorialNote ?? "",
       imageUrl: place.imageUrl ?? "",
       homeFeatured: place.homeFeatured,
-      homeSortOrder: String(place.homeSortOrder ?? 0)
+      homeSortOrder: String(place.homeSortOrder ?? 0),
+      rarity: place.rarity ?? ""
     });
+    clearPlaceImagePreview();
+    if (place.imageUrl) setPlaceImagePreview(place.imageUrl);
     setMessage(`「${place.name}」 수정 모드입니다. 저장하면 바로 반영됩니다.`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -1464,23 +1490,44 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  onChange={async (event) => {
+                  onChange={(event) => {
                     const file = event.target.files?.[0];
+                    event.target.value = "";
                     if (!file) return;
-                    try {
-                      const imageUrl = await uploadPlaceImage(file);
-                      setPlaceForm((prev) => ({ ...prev, imageUrl }));
-                      setMessage("이미지가 업로드되었습니다.");
-                    } catch (error) {
-                      setMessage(
-                        error instanceof Error ? error.message : "업로드 실패"
-                      );
-                    }
+                    setPlaceImageFile(file);
+                    setPlaceImagePreview((current) => {
+                      if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+                      return URL.createObjectURL(file);
+                    });
                   }}
                 />
-                {placeForm.imageUrl ? (
-                  <span className="field-hint">업로드됨</span>
-                ) : null}
+                {placeImagePreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={placeImagePreview}
+                    alt=""
+                    className="admin-place-preview"
+                  />
+                ) : (
+                  <span className="field-hint">저장할 때 함께 등록됩니다.</span>
+                )}
+              </label>
+              <label>
+                희귀도
+                <select
+                  value={placeForm.rarity}
+                  onChange={(event) =>
+                    setPlaceForm((prev) => ({ ...prev, rarity: event.target.value }))
+                  }
+                >
+                  <option value="">기존 규칙 (자동)</option>
+                  <option value="HIDDEN">Hidden</option>
+                  <option value="RARE">Rare</option>
+                  <option value="COMMON">Common</option>
+                </select>
+                <span className="field-hint">
+                  비우면 홈 노출이면 Hidden, 아니면 Common입니다.
+                </span>
               </label>
               <label className="admin-check">
                 <input
@@ -1568,6 +1615,13 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                       {place.homeFeatured ? (
                         <span className="status-pill ok">HOME</span>
                       ) : null}
+                      {place.rarity ? (
+                        <span className="status-pill">{place.rarity}</span>
+                      ) : (
+                        <span className="status-pill">
+                          {place.homeFeatured ? "HIDDEN(자동)" : "COMMON(자동)"}
+                        </span>
+                      )}
                       {place.imageUrl ? (
                         <span className="status-pill ok">PHOTO</span>
                       ) : null}
@@ -1584,7 +1638,7 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                         수정
                       </button>
                       <label className="secondary-button">
-                        사진
+                        사진 수정
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
