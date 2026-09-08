@@ -82,6 +82,7 @@ export function TodayDeckSection({ curations, limit = 2 }: TodayDeckSectionProps
           isLoggedIn={loggedIn}
           defaultOpen
           loginRedirect="/"
+          detailHref={`${openDeck.href}?open=1`}
           onClose={() => setOpenId(null)}
         />
       ) : (

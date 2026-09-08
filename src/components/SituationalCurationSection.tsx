@@ -111,7 +111,7 @@ export function SituationalCurationSection({
               <ThemePreviewCard
                 label={curation.title}
                 description={curation.subtitle ?? curation.description ?? ""}
-                href={`/curations/${curation.id}`}
+                href={`/decks/${curation.id}`}
                 exhibitions={curation.exhibitions}
                 stops={
                   curation.stops.some((stop) => !stop.id.startsWith("legacy-"))

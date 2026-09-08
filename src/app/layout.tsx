@@ -84,18 +84,35 @@ export default function RootLayout({
             "@graph": [
               {
                 "@type": "WebSite",
+                "@id": `${getSiteUrl()}/#website`,
                 name: `${BRAND.mark}(${BRAND.koreanAlias})`,
                 alternateName: [BRAND.mark, BRAND.koreanAlias, BRAND.fullName],
                 url: getSiteUrl(),
                 description: BRAND.seoDescription,
-                inLanguage: "ko-KR"
+                inLanguage: "ko-KR",
+                publisher: { "@id": `${getSiteUrl()}/#organization` },
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: {
+                    "@type": "EntryPoint",
+                    urlTemplate: `${getSiteUrl()}/exhibitions?q={search_term_string}`
+                  },
+                  "query-input": "required name=search_term_string"
+                }
               },
               {
                 "@type": "Organization",
+                "@id": `${getSiteUrl()}/#organization`,
                 name: `${BRAND.mark}(${BRAND.koreanAlias})`,
                 legalName: BRAND.fullName,
                 url: getSiteUrl(),
-                description: BRAND.seoDescription
+                description: BRAND.seoDescription,
+                knowsAbout: [
+                  "서울 가볼만한 곳",
+                  "전시 데이트 코스",
+                  "동네 전시",
+                  "전시 근처 카페"
+                ]
               }
             ]
           }}

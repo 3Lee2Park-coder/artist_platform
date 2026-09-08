@@ -12,13 +12,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     "",
     "/exhibitions",
-    "/curations",
     "/decks",
     "/spaces",
     "/programs",
     "/map",
     "/about",
-    "/for-artists"
+    "/for-artists",
+    "/llms.txt",
+    "/llms/decks.md",
+    "/llms/places.md",
+    "/llms/exhibitions.md"
   ].map((path) => ({
     url: `${siteUrl}${path || "/"}`,
     lastModified: new Date(),
@@ -28,9 +31,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? 1
         : path === "/exhibitions" || path === "/map"
           ? 0.9
-          : path === "/curations" || path === "/decks"
+          : path === "/decks"
             ? 0.85
-            : path === "/about"
+            : path === "/about" || path.startsWith("/llms")
               ? 0.6
               : 0.7
   }));
@@ -108,12 +111,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: item.updatedAt,
       changeFrequency: "daily" as const,
       priority: 0.85
-    })),
-    ...curations.map((item) => ({
-      url: `${siteUrl}/curations/${item.id}`,
-      lastModified: item.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.6
     })),
     ...artists.map((item) => ({
       url: `${siteUrl}/artists/${item.id}`,

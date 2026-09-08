@@ -497,7 +497,7 @@ export function MapPageClient({
             </div>
           ))}
           <Link
-            href={`/curations/${activeCuration.id}`}
+            href={`/decks/${activeCuration.id}`}
             className="secondary-button map-curation-detail-link"
           >
             큐레이션 자세히 보기

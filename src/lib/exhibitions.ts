@@ -727,6 +727,8 @@ export type CurationStopItem = {
   openingHours?: string | null;
   categoryLabel?: string | null;
   ownerUserId?: string | null;
+  placeRarity?: string | null;
+  homeFeatured?: boolean;
   // 전시 정차에만 존재 — 기간이 끝난 코스를 노출에서 빼기 위해 필요
   startDate?: string | null;
   endDate?: string | null;
@@ -881,7 +883,9 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
                   address: stop.place.address,
                   district: stop.place.district,
                   categoryLabel:
-                    PLACE_TYPE_LABEL[stop.place.type] ?? stop.place.type
+                    PLACE_TYPE_LABEL[stop.place.type] ?? stop.place.type,
+                  placeRarity: stop.place.rarity ?? null,
+                  homeFeatured: stop.place.homeFeatured
                 };
               }
               return null;

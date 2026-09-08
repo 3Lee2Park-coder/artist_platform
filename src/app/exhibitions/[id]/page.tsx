@@ -9,7 +9,7 @@ import { Header } from "@/components/Header";
 import { ReservationWidget } from "@/components/ReservationWidget";
 import { getSession } from "@/lib/auth";
 import { logEvent } from "@/lib/events";
-import { exhibitionJsonLd, exhibitionSeo, publicMeta } from "@/lib/seo";
+import { entityKeywords, exhibitionJsonLd, exhibitionSeo, publicMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import {
   SOURCE_BADGE,
@@ -50,7 +50,15 @@ export async function generateMetadata({ params }: ExhibitionDetailPageProps) {
     title: seo.title,
     description: seo.description,
     canonical,
-    images: [exhibition.heroImageUrl]
+    images: [exhibition.heroImageUrl],
+    keywords: entityKeywords(
+      exhibition.title,
+      exhibition.artist,
+      exhibition.district,
+      exhibition.venue,
+      "전시 추천",
+      "동네 전시"
+    )
   });
 }
 
@@ -107,9 +115,13 @@ export default async function ExhibitionDetailPage({
           canonical: `/exhibitions/${exhibition.id}`,
           venue: exhibition.venue,
           address: exhibition.address,
+          district: exhibition.district,
+          artist: exhibition.artist,
           startDate: exhibition.startDate,
           endDate: exhibition.endDate,
-          image: exhibition.heroImageUrl
+          image: exhibition.heroImageUrl,
+          lat: exhibition.mapPosition?.lat,
+          lng: exhibition.mapPosition?.lng
         })}
       />
       <Header activeTab="전시" />

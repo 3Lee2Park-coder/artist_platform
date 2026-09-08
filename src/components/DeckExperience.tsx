@@ -5,6 +5,7 @@ import { DeckStack } from "@/components/DeckStack";
 import { OoofCard } from "@/components/OoofCard";
 import type { OoofCard as OoofCardModel } from "@/lib/cards";
 import type { OoofDeck } from "@/lib/decks";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useEffect, useRef, useState } from "react";
 
@@ -14,6 +15,10 @@ type DeckExperienceProps = {
   defaultOpen?: boolean;
   onClose?: () => void;
   loginRedirect?: string;
+  /** 상세 페이지에 이미 제목이 있을 때 덱 헤더의 h1을 숨긴다 */
+  hideHeading?: boolean;
+  /** 홈 오버레이처럼 카드만 펼친 경우, 실제 코스 페이지로 보내는 링크 */
+  detailHref?: string;
 };
 
 type Phase = "closed" | "opening" | "open";
@@ -78,7 +83,9 @@ export function DeckExperience({
   isLoggedIn,
   defaultOpen = false,
   onClose,
-  loginRedirect
+  loginRedirect,
+  hideHeading = false,
+  detailHref
 }: DeckExperienceProps) {
   const router = useRouter();
   const { hostRef, scale } = useSpreadScale();
@@ -305,12 +312,21 @@ export function DeckExperience({
       style={{ ["--spread-scale" as string]: String(scale) }}
     >
       {phase !== "closed" ? (
-        <button type="button" className="ooof-deck-close" onClick={closeDeck}>
-          덱 닫기
-        </button>
+        <div className="ooof-deck-nav">
+          {detailHref ? (
+            <Link href={detailHref} className="ooof-deck-detail">
+              코스 보기
+            </Link>
+          ) : null}
+          <button type="button" className="ooof-deck-close" onClick={closeDeck}>
+            덱 닫기
+          </button>
+        </div>
       ) : null}
 
-      <header className={`ooof-deck-head${phase === "open" ? " is-compact" : ""}`}>
+      <header
+        className={`ooof-deck-head${phase === "open" ? " is-compact" : ""}${hideHeading ? " is-embedded" : ""}`}
+      >
         <p>
           OOOF. DECK {deck.number}
           <span>·</span>
@@ -322,7 +338,7 @@ export function DeckExperience({
             </>
           ) : null}
         </p>
-        <h1>{deck.title}</h1>
+        {hideHeading ? null : <h1>{deck.title}</h1>}
         {phase !== "open" && deck.curatorNote ? (
           <p className="ooof-deck-note">
             {deck.isCurated ? <span>왜 이 카드들인가</span> : null}

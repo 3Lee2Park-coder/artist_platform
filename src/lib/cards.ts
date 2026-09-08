@@ -130,7 +130,13 @@ export function cardFromStop(
     source,
     sourceId: stop.refId,
     kind,
-    rarity: inferRarity(stop.editorialBadge),
+    rarity:
+      kind === "PLACE"
+        ? placeCardRarity(
+            { rarity: stop.placeRarity, homeFeatured: stop.homeFeatured },
+            "deck"
+          )
+        : inferRarity(stop.editorialBadge),
     number: String(index + 1).padStart(3, "0"),
     name: stop.title,
     imageUrl: stop.heroImageUrl,

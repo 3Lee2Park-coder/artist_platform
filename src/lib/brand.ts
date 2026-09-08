@@ -29,7 +29,10 @@ export const BRAND = {
     "큐레이션",
     "전시 코스",
     "놀거리",
-    "숨은 전시"
+    "숨은 전시",
+    "전시 근처 카페",
+    "서울 숨은 장소",
+    "전시 코스 추천"
   ] as const,
   campaignLine: "못 찾겠다, 꾀꼬리? OOOF.",
   productLine: "꼭꼭 숨은 전시를 찾다.",

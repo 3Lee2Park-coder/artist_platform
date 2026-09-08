@@ -25,6 +25,7 @@ type CurationDetailClientProps = {
   relatedCurations: CurationSummary[];
   exhibitions: CurationExhibitionItem[];
   isLoggedIn: boolean;
+  defaultOpen?: boolean;
 };
 
 function formatPeriod(startDate: string, endDate: string) {
@@ -54,7 +55,8 @@ export function CurationDetailClient({
   deck = null,
   relatedCurations,
   exhibitions,
-  isLoggedIn
+  isLoggedIn,
+  defaultOpen = false
 }: CurationDetailClientProps) {
   const router = useRouter();
   const [region, setRegion] = useState("all");
@@ -79,6 +81,14 @@ export function CurationDetailClient({
 
   // 식판으로 낼 수 있는 코스 — 칸이 하나라도 있어야 한다
   const hasDeck = Boolean(deck && deck.cardCount > 0);
+
+  useEffect(() => {
+    if (!defaultOpen) return;
+    document.getElementById("curation-deck")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, [defaultOpen]);
 
   const basePlace = useMemo(() => {
     if (curation.basePlace) {
@@ -265,8 +275,13 @@ export function CurationDetailClient({
         </p>
 
         {hasDeck && deck ? (
-          <div className="curation-dosirak-wrap">
-            <DeckExperience deck={deck} isLoggedIn={isLoggedIn} />
+          <div id="curation-deck" className="curation-dosirak-wrap">
+            <DeckExperience
+              deck={deck}
+              isLoggedIn={isLoggedIn}
+              hideHeading
+              defaultOpen={defaultOpen}
+            />
             {!deck.servable ? (
               <p className="curation-dosirak-warn">
                 전시 기간이 지난 곳이 있습니다. 동네 장소 카드는 그대로 들를 수 있어요.

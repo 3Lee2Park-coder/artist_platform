@@ -146,7 +146,7 @@ export function FeaturedCurationHero({ curations }: FeaturedCurationHeroProps) {
             </p>
           ) : null}
           <div className="featured-curation-actions">
-            <Link className="primary-button" href={`/curations/${curation.id}`}>
+            <Link className="primary-button" href={`/decks/${curation.id}`}>
               코스 걷기
             </Link>
             <span className="featured-curation-count">

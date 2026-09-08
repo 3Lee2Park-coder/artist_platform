@@ -86,7 +86,7 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
             {featuredCuration ? (
               <Link
                 className="primary-button"
-                href={`/curations/${featuredCuration.id}`}
+                href={`/decks/${featuredCuration.id}`}
               >
                 <span className="home-focus-cta-full">
                   {featuredCuration.title} 걷기
@@ -116,7 +116,7 @@ export function HomeClusterHero({ spaces, curations }: HomeClusterHeroProps) {
                 {slides.length > 1 ? ` · ${index + 1}/${slides.length}` : ""}
               </p>
               <Link
-                href={`/curations/${featuredCuration.id}`}
+                href={`/decks/${featuredCuration.id}`}
                 className="home-focus-feature-title"
               >
                 {featuredCuration.title}

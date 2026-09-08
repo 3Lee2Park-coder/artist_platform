@@ -11880,20 +11880,50 @@
     --spread-scale: 1;
   }
 
-  .ooof-deck-close {
+  .ooof-deck-nav {
     position: fixed;
     top: 78px;
     right: 18px;
     z-index: 85;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ooof-deck-close,
+  .ooof-deck-detail {
     padding: 10px 14px;
     border-radius: 999px;
     border: 1px solid var(--ooof-ink);
     background: var(--ooof-paper);
+    color: var(--ooof-ink);
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.12em;
+    text-decoration: none;
     cursor: pointer;
     box-shadow: 0 8px 20px rgba(26, 26, 26, 0.12);
+  }
+
+  .ooof-deck-detail {
+    background: #1a1a1a;
+    color: #faf8f5;
+    border-color: #1a1a1a;
+  }
+
+  @media (max-width: 640px) {
+    .ooof-deck-nav {
+      top: 70px;
+      right: 10px;
+      gap: 6px;
+    }
+
+    .ooof-deck-close,
+    .ooof-deck-detail {
+      padding: 8px 12px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
   }
 
   .ooof-deck-head {
@@ -11912,6 +11942,10 @@
 
   .ooof-deck-head.is-compact p {
     font-size: 10px;
+  }
+
+  .ooof-deck-head.is-embedded {
+    margin-bottom: 10px;
   }
 
   .ooof-deck-head p {

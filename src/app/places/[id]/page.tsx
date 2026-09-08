@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { PlaceTipForm } from "@/components/PlaceTipForm";
 import { ThemePreviewCard } from "@/components/ThemePreviewCard";
 import { buildPlaceIntro, getPlaceById, PLACE_TYPE_LABEL } from "@/lib/places";
-import { placeJsonLd, placeSeo, publicMeta } from "@/lib/seo";
+import { entityKeywords, placeJsonLd, placeSeo, publicMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -29,7 +29,15 @@ export async function generateMetadata({ params }: PlaceDetailPageProps) {
     title: seo.title,
     description: seo.description,
     canonical,
-    images: [place.imageUrl]
+    images: [place.imageUrl],
+    keywords: entityKeywords(
+      place.name,
+      place.district,
+      place.typeLabel,
+      "가볼만한 곳",
+      "전시 근처",
+      "서울 숨은 장소"
+    )
   });
 }
 
@@ -59,7 +67,13 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
           canonical: `/places/${place.id}`,
           address: place.address,
           district: place.district,
-          image: place.imageUrl
+          typeLabel: PLACE_TYPE_LABEL[place.type] ?? place.type,
+          image: place.imageUrl,
+          lat: place.lat,
+          lng: place.lng,
+          sameAs: place.sourceUrl,
+          nearbyExhibitions: place.nearbyExhibitions,
+          curations: place.curations
         })}
       />
       <Header />
@@ -93,7 +107,7 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
                 <ul>
                   {place.curations.map((curation) => (
                     <li key={curation.id}>
-                      <Link href={`/curations/${curation.id}`}>
+                      <Link href={`/decks/${curation.id}`}>
                         {curation.title}
                       </Link>
                     </li>
@@ -203,7 +217,7 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
                           ? `${curation.neighborhood} 코스`
                           : "동네 코스")
                       }
-                      href={`/curations/${curation.id}`}
+                      href={`/decks/${curation.id}`}
                       tag="manual"
                       compact
                       coverImageUrl={curation.coverImageUrl}

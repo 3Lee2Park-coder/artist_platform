@@ -228,7 +228,7 @@ export function toDosirak(
   return {
     id: curation.id,
     number: seriesNumber(order),
-    href: `/curations/${curation.id}`,
+    href: `/decks/${curation.id}`,
     title: curation.title,
     subtitle: curation.subtitle,
     intro: curation.subtitle,
