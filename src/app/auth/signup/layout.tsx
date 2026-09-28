@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "계정",
-  robots: { index: false, follow: false }
+  title: "회원가입"
 };
 
-export default function AuthLayout({
+export default function SignupLayout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
   return children;
