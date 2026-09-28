@@ -1,7 +1,11 @@
+import { CollectActions } from "@/components/CollectActions";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { PlaceTipForm } from "@/components/PlaceTipForm";
 import { ThemePreviewCard } from "@/components/ThemePreviewCard";
+import { TrackedLink } from "@/components/TrackedLink";
+import { getSession } from "@/lib/auth";
+import { isCardSaved, makeCardKey } from "@/lib/cards";
 import { buildPlaceIntro, getPlaceById, PLACE_TYPE_LABEL } from "@/lib/places";
 import { entityKeywords, placeJsonLd, placeSeo, publicMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
@@ -43,11 +47,14 @@ export async function generateMetadata({ params }: PlaceDetailPageProps) {
 
 export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) {
   const { id } = await params;
-  const place = await getPlaceById(id);
+  const [place, session] = await Promise.all([getPlaceById(id), getSession()]);
 
   if (!place) {
     notFound();
   }
+
+  const cardKey = makeCardKey("place", place.id);
+  const cardSaved = await isCardSaved(session?.id, cardKey);
 
   const mapUrl =
     place.sourceUrl ||
@@ -107,9 +114,18 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
                 <ul>
                   {place.curations.map((curation) => (
                     <li key={curation.id}>
-                      <Link href={`/decks/${curation.id}`}>
+                      <TrackedLink
+                        href={`/decks/${curation.id}`}
+                        eventType="RELATED_DECK_CLICK"
+                        source="place_detail_courses"
+                        metadata={{
+                          deckId: curation.id,
+                          curationId: curation.id,
+                          fromPlaceId: place.id
+                        }}
+                      >
                         {curation.title}
-                      </Link>
+                      </TrackedLink>
                     </li>
                   ))}
                 </ul>
@@ -126,6 +142,15 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
                 지도에서 보기
               </a>
             </div>
+            <CollectActions
+              cardKey={cardKey}
+              isLoggedIn={Boolean(session)}
+              loginRedirect={`/places/${place.id}`}
+              initialSaved={cardSaved}
+            />
+            <p className="place-detail-collect-note">
+              저장보다 먼저, 위 코스나 아래 근처 전시를 보고 하루 동선을 잡으면 됩니다.
+            </p>
           </div>
         </section>
 
@@ -227,6 +252,11 @@ export default async function PlaceDetailPage({ params }: PlaceDetailPageProps) 
                           ? `${curation.durationText} · 코스 보기`
                           : "코스 보기"
                       }
+                      trackRelatedDeck={{
+                        deckId: curation.id,
+                        fromPlaceId: place.id,
+                        source: "place_related_curations"
+                      }}
                     />
                   ))}
                 </div>

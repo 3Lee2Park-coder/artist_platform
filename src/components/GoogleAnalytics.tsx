@@ -1,16 +1,23 @@
 import Script from "next/script";
 
+/**
+ * Canonical GA4: G-C7TPEQPJVQ (NEXT_PUBLIC_GA_MEASUREMENT_ID).
+ * Google Ads: load AW-… only when NEXT_PUBLIC_GOOGLE_ADS_ID is set (conversions
+ * also fire from GoogleAdsConversionTracker). Never default a second G- ID here —
+ * dual gtag('config', G-…) looked like GA4-Config noise and double page_views.
+ *
+ * send_page_view: false — AnalyticsPageView sends page_view after title settles.
+ */
 const GA_MEASUREMENT_ID =
   process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-C7TPEQPJVQ";
-const GOOGLE_ADS_TAG_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_ADS_TAG_ID ?? "G-856LRPYS7Y";
+const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID ?? "";
 
 export function GoogleAnalytics() {
-  const tagIds = Array.from(
-    new Set([GA_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID].filter(Boolean))
-  );
+  const configIds: string[] = [];
+  if (GA_MEASUREMENT_ID) configIds.push(GA_MEASUREMENT_ID);
+  if (GOOGLE_ADS_ID.startsWith("AW-")) configIds.push(GOOGLE_ADS_ID);
 
-  if (tagIds.length === 0) {
+  if (configIds.length === 0) {
     return null;
   }
 
@@ -18,7 +25,7 @@ export function GoogleAnalytics() {
     <>
       <Script
         async
-        src={`https://www.googletagmanager.com/gtag/js?id=${tagIds[0]}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${configIds[0]}`}
         strategy="afterInteractive"
       />
       <Script id="google-analytics" strategy="afterInteractive">
@@ -26,7 +33,12 @@ export function GoogleAnalytics() {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          ${tagIds.map((id) => `gtag('config', '${id}');`).join("\n          ")}
+          ${configIds
+            .map(
+              (id) =>
+                `gtag('config', '${id}', { send_page_view: false });`
+            )
+            .join("\n          ")}
         `}
       </Script>
     </>

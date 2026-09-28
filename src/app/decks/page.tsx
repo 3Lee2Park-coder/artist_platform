@@ -10,7 +10,7 @@ import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
-const PAGE_TITLE = "서울 전시 발견 코스 — 전시와 동네 장소를 한 번에";
+const PAGE_TITLE = "덱 · 전시와 동네를 잇는 코스";
 const PAGE_DESCRIPTION =
   "OOOF.(우프)가 함께 둘러보기 좋은 전시·공간·동네 장소를 카드로 묶은 서울 전시 데이트 코스입니다.";
 

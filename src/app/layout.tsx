@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Suspense } from "react";
+import { AnalyticsIdentity } from "@/components/AnalyticsIdentity";
+import { AnalyticsPageView } from "@/components/AnalyticsPageView";
 import { GoogleAdsConversionTracker } from "@/components/GoogleAdsConversionTracker";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import {
+  GoogleTagManager,
+  GoogleTagManagerNoscript
+} from "@/components/GoogleTagManager";
 import { JsonLd } from "@/components/JsonLd";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { BRAND, brandTitle } from "@/lib/brand";
@@ -68,6 +74,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={poppins.variable} suppressHydrationWarning>
       <head>
+        <GoogleTagManager />
         <GoogleAnalytics />
         <Suspense fallback={null}>
           <GoogleAdsConversionTracker />
@@ -78,6 +85,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <GoogleTagManagerNoscript />
         <JsonLd
           data={{
             "@context": "https://schema.org",
@@ -120,6 +128,10 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <NavigationProgress />
         </Suspense>
+        <Suspense fallback={null}>
+          <AnalyticsPageView />
+        </Suspense>
+        <AnalyticsIdentity />
         {children}
       </body>
     </html>
