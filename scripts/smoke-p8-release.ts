@@ -438,8 +438,9 @@ async function main() {
     detail: String(bad.status)
   });
 
-  // cleanup
-  if (createdQuestionIds.length) {
+  // cleanup — only when explicitly allowed. Never wipe shared/prod rows by default.
+  const allowCleanup = process.env.P8_SMOKE_CLEANUP === "1";
+  if (createdQuestionIds.length && allowCleanup) {
     await prisma.questionNotification.deleteMany({
       where: { questionId: { in: createdQuestionIds } }
     });
@@ -453,6 +454,13 @@ async function main() {
       where: { questionId: { in: createdQuestionIds } }
     });
     await prisma.question.deleteMany({ where: { id: { in: createdQuestionIds } } });
+    console.log("cleanup_deleted", createdQuestionIds.length);
+  } else if (createdQuestionIds.length) {
+    console.log(
+      "cleanup_skipped",
+      createdQuestionIds.length,
+      "(set P8_SMOKE_CLEANUP=1 to delete smoke rows)"
+    );
   }
 
   await prisma.$disconnect();
