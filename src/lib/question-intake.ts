@@ -387,7 +387,9 @@ export function prepareExhibitionAsk(input: {
     recipientId: input.recipientType === "artist" ? input.artistId : null,
     contactChannel: "ops"
   });
-  if ("error" in recipient) return recipient;
+  if ("error" in recipient) {
+    return { error: recipient.error };
+  }
 
   return { question: prepared, recipient };
 }

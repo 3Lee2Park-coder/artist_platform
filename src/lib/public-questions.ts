@@ -56,7 +56,11 @@ export async function listPublicQuestionsForExhibition(
       toPublicQuestion({
         ...row,
         status: row.status as PublicQuestion["status"],
-        audience: row.audience as PublicQuestion["audience"]
+        audience: row.audience as PublicQuestion["audience"],
+        answers: row.answers.map((answer) => ({
+          ...answer,
+          visibility: answer.visibility as "private" | "public" | "withdrawn"
+        }))
       })
     )
     .filter((item) => item.answers.length > 0);
