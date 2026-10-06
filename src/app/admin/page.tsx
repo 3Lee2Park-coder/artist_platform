@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { readShowOnHome } from "@/lib/walkers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -295,6 +296,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   return (
     <>
       <Header activeTab="MY" />
+      <Suspense fallback={<main className="section"><p>관리자를 불러오는 중…</p></main>}>
       <AdminDashboard
         initialTab={initialTab}
         initialIntakeId={initialIntakeId}
@@ -565,6 +567,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           showOnHome: readShowOnHome(user.artistApplication)
         }))}
       />
+      </Suspense>
       <Footer />
     </>
   );

@@ -80,8 +80,15 @@ export function AdminIntakeInbox({ initialSelectedId = null }: AdminIntakeInboxP
     }
     const rows = (data.questions ?? []) as IntakeQuestion[];
     setQuestions(rows);
-    if (initialSelectedId && rows.some((item) => item.id === initialSelectedId)) {
-      setSelectedId(initialSelectedId);
+    if (initialSelectedId) {
+      if (rows.some((item) => item.id === initialSelectedId)) {
+        setSelectedId(initialSelectedId);
+      } else {
+        setSelectedId(null);
+        setMessage(
+          "알림에 연결된 질문을 목록에서 찾지 못했습니다. 아래 전시 질문 목록에서 직접 골라 주세요. (테스트 후 삭제된 알림일 수 있습니다.)"
+        );
+      }
     }
   }
 
@@ -173,10 +180,11 @@ export function AdminIntakeInbox({ initialSelectedId = null }: AdminIntakeInboxP
 
   return (
     <section className="register-card wide my-section">
-      <h2>전시 질문 (게스트·로그인)</h2>
+      <h2>전시 질문 함 — 여기가 Inbox 알림과 연결됩니다</h2>
       <p className="auth-description">
-        전시 상세 「작가에게 물어보기」로 들어온 질문입니다. OOOF.가 대신 답하거나, 작가·갤러리용
-        만료형 링크를 만들어 전달하세요. 링크 원문은 DB에 저장되지 않습니다.
+        MY Inbox 「새 질문이 접수됐어요」알림의 질문입니다. 게스트·로그인 모두 여기에
+        쌓입니다. 목록을 누르면 전시·작가·장소가 보이고, 바로 답변하거나 작가용 링크를 만들 수
+        있습니다.
       </p>
       <form
         className="exhibition-ask-form"

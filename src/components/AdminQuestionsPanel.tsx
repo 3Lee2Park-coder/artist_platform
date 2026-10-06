@@ -129,11 +129,10 @@ export function AdminQuestionsPanel({
       </section>
 
       <section className="register-card wide my-section">
-        <h2>작가 질문 ({pendingCount}건 대기)</h2>
+        <h2>카드·홈 「작가에게 묻기」 (구 경로) ({pendingCount}건 대기)</h2>
         <p className="auth-description">
-          등록 작가는 승인 후 본인에게 전달됩니다. 작가가 없거나 아직 연결되지
-          않은 질문은 운영이 대신 묻고 답합니다. 전시·작품과 무관한 글은
-          반려하세요.
+          카드/홈에서 남긴 예전 질문입니다. 전시 상세 「작가에게 물어보기」로 온
+          게스트·회원 질문은 위쪽 <strong>전시 질문</strong> 함에서 확인하세요.
         </p>
         {questions.length > 0 ? (
           <div className="my-list">

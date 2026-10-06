@@ -18,8 +18,8 @@ import {
   type StoryBlock
 } from "@/lib/story";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type Application = {
   userId: string;
@@ -303,6 +303,24 @@ export function AdminDashboard({
   initialIntakeId = null
 }: AdminDashboardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const intakeFromUrl = searchParams.get("intake");
+  const resolvedTab =
+    tabFromUrl === "questions" ||
+    tabFromUrl === "places" ||
+    tabFromUrl === "tips" ||
+    tabFromUrl === "applications" ||
+    tabFromUrl === "review" ||
+    tabFromUrl === "ownership" ||
+    tabFromUrl === "members" ||
+    tabFromUrl === "events" ||
+    tabFromUrl === "curations"
+      ? tabFromUrl
+      : intakeFromUrl
+        ? "questions"
+        : initialTab;
+  const resolvedIntakeId = intakeFromUrl?.trim() || initialIntakeId;
   const [tab, setTab] = useState<
     | "curations"
     | "places"
@@ -313,8 +331,12 @@ export function AdminDashboard({
     | "members"
     | "questions"
     | "events"
-  >(initialTab);
+  >(resolvedTab);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setTab(resolvedTab);
+  }, [resolvedTab]);
   const [transferDrafts, setTransferDrafts] = useState<Record<string, string>>(
     {}
   );
@@ -2320,7 +2342,7 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
 
       {tab === "questions" && (
         <>
-          <AdminIntakeInbox initialSelectedId={initialIntakeId} />
+          <AdminIntakeInbox initialSelectedId={resolvedIntakeId} />
           <AdminQuestionsPanel
             questions={questions}
             walkers={walkers}
