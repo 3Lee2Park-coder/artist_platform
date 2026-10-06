@@ -137,12 +137,16 @@ async function main() {
     hasStatusCopy: myText.includes("답변이 왔어요")
   });
 
-  await prisma.questionAnswer.deleteMany({ where: { questionId: q.id } });
-  await prisma.questionResponseToken.deleteMany({ where: { questionId: q.id } });
-  await prisma.questionRecipient.deleteMany({ where: { questionId: q.id } });
-  await prisma.questionNotification.deleteMany({ where: { questionId: q.id } }).catch(() => undefined);
-  await prisma.notice.deleteMany({ where: { dedupeKey: `intake-answer:${q.id}` } }).catch(() => undefined);
-  await prisma.question.delete({ where: { id: q.id } });
+  if (process.env.P8_SMOKE_CLEANUP === "1") {
+    await prisma.questionAnswer.deleteMany({ where: { questionId: q.id } });
+    await prisma.questionResponseToken.deleteMany({ where: { questionId: q.id } });
+    await prisma.questionRecipient.deleteMany({ where: { questionId: q.id } });
+    await prisma.questionNotification.deleteMany({ where: { questionId: q.id } }).catch(() => undefined);
+    await prisma.notice.deleteMany({ where: { dedupeKey: `intake-answer:${q.id}` } }).catch(() => undefined);
+    await prisma.question.delete({ where: { id: q.id } });
+  } else {
+    console.log("cleanup_skipped", q.id, "(set P8_SMOKE_CLEANUP=1 to delete)");
+  }
   await prisma.$disconnect();
 }
 

@@ -128,12 +128,13 @@ async function main() {
   });
   console.log("unpublish", unpublish.status);
 
-  await prisma.questionAnswer.deleteMany({
-    where: { questionId: { in: [created.id, ...extras.map((q) => q.id)] } }
-  });
-  await prisma.question.deleteMany({
-    where: { id: { in: [created.id, ...extras.map((q) => q.id)] } }
-  });
+  const ids = [created.id, ...extras.map((q) => q.id)];
+  if (process.env.P8_SMOKE_CLEANUP === "1") {
+    await prisma.questionAnswer.deleteMany({ where: { questionId: { in: ids } } });
+    await prisma.question.deleteMany({ where: { id: { in: ids } } });
+  } else {
+    console.log("cleanup_skipped", ids.length, "(set P8_SMOKE_CLEANUP=1 to delete)");
+  }
   await prisma.$disconnect();
 }
 

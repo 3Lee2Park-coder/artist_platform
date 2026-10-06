@@ -137,10 +137,14 @@ async function main() {
     answers.map((a) => ({ visibility: a.visibility, text: a.text.slice(0, 40) }))
   );
 
-  await prisma.questionAnswer.deleteMany({ where: { questionId: q.id } });
-  await prisma.questionResponseToken.deleteMany({ where: { questionId: q.id } });
-  await prisma.questionRecipient.deleteMany({ where: { questionId: q.id } });
-  await prisma.question.delete({ where: { id: q.id } });
+  if (process.env.P8_SMOKE_CLEANUP === "1") {
+    await prisma.questionAnswer.deleteMany({ where: { questionId: q.id } });
+    await prisma.questionResponseToken.deleteMany({ where: { questionId: q.id } });
+    await prisma.questionRecipient.deleteMany({ where: { questionId: q.id } });
+    await prisma.question.delete({ where: { id: q.id } });
+  } else {
+    console.log("cleanup_skipped", q.id, "(set P8_SMOKE_CLEANUP=1 to delete)");
+  }
   await prisma.$disconnect();
 }
 
