@@ -1,18 +1,20 @@
 import { ArtworkCard } from "@/components/ArtworkCard";
 import { CollectActions } from "@/components/CollectActions";
+import { ExhibitionAsk } from "@/components/ExhibitionAsk";
 import { ExhibitionCourseSection } from "@/components/ExhibitionCourseSection";
+import { ExhibitionPublicQa } from "@/components/ExhibitionPublicQa";
 import { ExhibitionReviewPanel } from "@/components/ExhibitionReviewPanel";
 import { ExhibitionVenueMap } from "@/components/ExhibitionVenueMap";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { ExhibitionStickyBar } from "@/components/ExhibitionStickyBar";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { ReservationWidget } from "@/components/ReservationWidget";
 import { getSession } from "@/lib/auth";
 import { isCardSaved, makeCardKey } from "@/lib/cards";
 import { getTodayKST } from "@/lib/date";
 import { getExhibitionCourseContext } from "@/lib/exhibition-context";
 import { logEvent } from "@/lib/events";
+import { listPublicQuestionsForExhibition } from "@/lib/public-questions";
 import { entityKeywords, exhibitionJsonLd, exhibitionSeo, publicMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
 import { detectTrafficChannel } from "@/lib/traffic-channel";
@@ -99,7 +101,7 @@ export default async function ExhibitionDetailPage({
   });
 
   const cardKey = makeCardKey("exhibition", exhibition.id);
-  const [exhibitionArtworks, viewerState, cardSaved, courseContext, reviewBundle] =
+  const [exhibitionArtworks, viewerState, cardSaved, courseContext, reviewBundle, publicQa] =
     await Promise.all([
       getArtworksByExhibitionId(exhibition.id),
       getViewerExhibitionState(exhibition.id, session?.id),
@@ -109,7 +111,8 @@ export default async function ExhibitionDetailPage({
         exhibition.mapPosition.lat,
         exhibition.mapPosition.lng
       ),
-      getExhibitionReviews(exhibition.id, session?.id)
+      getExhibitionReviews(exhibition.id, session?.id),
+      listPublicQuestionsForExhibition(exhibition.id)
     ]);
   const { reviews, stats, myReview } = reviewBundle;
   const badge = SOURCE_BADGE[exhibition.source];
@@ -212,14 +215,6 @@ export default async function ExhibitionDetailPage({
               />
             )}
           </div>
-
-          <div id="reservation">
-            <ReservationWidget
-              exhibition={exhibition}
-              isLoggedIn={Boolean(session)}
-              userName={session?.name}
-            />
-          </div>
         </section>
 
         <section className="detail-layout">
@@ -306,6 +301,14 @@ export default async function ExhibitionDetailPage({
               isLoggedIn={Boolean(session)}
               loginRedirect={`/exhibitions/${exhibition.id}`}
               initialSaved={cardSaved || viewerState.saved}
+            />
+            {publicQa.length > 0 ? <ExhibitionPublicQa items={publicQa} /> : null}
+            <ExhibitionAsk
+              exhibitionId={exhibition.id}
+              title={exhibition.title}
+              artistName={exhibition.artist}
+              venueName={exhibition.space?.name || exhibition.venue}
+              isLoggedIn={Boolean(session)}
             />
           </article>
 
@@ -444,7 +447,7 @@ export default async function ExhibitionDetailPage({
 
       <ExhibitionStickyBar
         exhibitionId={exhibition.id}
-        reservable={exhibition.reservable}
+        reservable={false}
         isLoggedIn={Boolean(session)}
         initialSaved={viewerState.saved}
         courseHref={

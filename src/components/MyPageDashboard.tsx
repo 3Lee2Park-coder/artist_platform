@@ -4,7 +4,8 @@ import {
   MyNoticesSection,
   MyQuestionsSection,
   type AskedQuestion,
-  type InboxNotice
+  type InboxNotice,
+  type IntakeAskedQuestion
 } from "@/components/MyInboxSection";
 import {
   MyExhibitionLibrary,
@@ -126,6 +127,7 @@ type MyPageDashboardProps = {
   artistQuestions: ArtistQuestionItem[];
   notices?: InboxNotice[];
   askedQuestions?: AskedQuestion[];
+  intakeQuestions?: IntakeAskedQuestion[];
   initialTab?: "member" | "artist";
 };
 
@@ -171,6 +173,7 @@ export function MyPageDashboard({
   artistQuestions,
   notices = [],
   askedQuestions = [],
+  intakeQuestions = [],
   initialTab = "member"
 }: MyPageDashboardProps) {
   const router = useRouter();
@@ -536,7 +539,7 @@ export function MyPageDashboard({
             <VisitArchiveSection entries={visitArchive} userName={userName} />
           </section>
 
-          <MyQuestionsSection questions={askedQuestions} />
+          <MyQuestionsSection questions={askedQuestions} intakeQuestions={intakeQuestions} />
 
           <MyExhibitionLibrary
             today={today}

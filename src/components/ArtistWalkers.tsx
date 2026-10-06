@@ -30,7 +30,7 @@ export function ArtistWalkers({ walkers }: ArtistWalkersProps) {
                 setUnlisted(false);
                 setActive(walker);
               }}
-              aria-label={`${walker.displayName}에게 질문하기`}
+              aria-label={`${walker.displayName}에게 물어보기`}
             >
               <span
                 className="walker-face"

@@ -103,12 +103,12 @@ export function AskArtistDialog({
 
     if (response.status === 401 || data.loginRequired) {
       setLoggedIn(false);
-      setError("로그인 후 질문을 남길 수 있습니다.");
+      setError("로그인 후 물어볼 수 있어요.");
       return;
     }
 
     if (!response.ok) {
-      setError(data.error ?? "질문을 보내지 못했습니다.");
+      setError(data.error ?? "질문을 보내지 못했어요. 잠시 후 다시 시도해 주세요.");
       return;
     }
 
@@ -116,14 +116,14 @@ export function AskArtistDialog({
   }
 
   const heading = operatorFallback
-    ? "술래가 대신 물어 보겠습니다"
+    ? "OOOF.가 대신 물어볼게요"
     : unlisted
-      ? "찾고 있는 작가를 알려 주세요"
-      : `${walker?.displayName}에게 묻기`;
+      ? "찾는 작가를 알려 주세요"
+      : `${walker?.displayName}에게 물어보기`;
 
   const description = operatorFallback
-    ? "이 발견에는 아직 작가가 연결되어 있지 않습니다. OOOF.가 작가에게 대신 묻고, 답변을 MY 질문 함에 남겨 드립니다."
-    : "전시·작품·관람에 대한 질문을 남겨 주세요. 비방·욕설 등 관련 없는 질문은 반려될 수 있습니다.";
+    ? "아직 작가가 연결되어 있지 않아요. 궁금한 점을 남기면 OOOF.가 대신 물어보고, 답은 MY 질문 함에 남겨 둘게요."
+    : "작품을 보다가 궁금한 게 생겼나요? 전시·작품·관람에 대해 짧게 남겨 주세요.";
 
   return (
     <div className="ask-dialog-backdrop" role="presentation" onClick={onClose}>
@@ -139,11 +139,10 @@ export function AskArtistDialog({
 
         {done ? (
           <>
-            <p className="eyebrow">질문 접수</p>
-            <h2 id="ask-dialog-title">질문을 남겼습니다</h2>
+            <p className="eyebrow">Ask</p>
+            <h2 id="ask-dialog-title">질문을 보냈어요</h2>
             <p className="auth-description">
-              비방·욕설 등 관련 없는 질문은 반려될 수 있습니다. 답변이 오면 MY
-              질문 함과 알림에 남고, 이메일로도 알려 드립니다.
+              답변이 오면 MY 질문 함과 알림에 남고, 메일로도 알려 드릴게요.
             </p>
             <div className="hub-actions">
               <Link className="primary-button" href="/my#inbox">
@@ -157,7 +156,7 @@ export function AskArtistDialog({
         ) : (
           <>
             <p className="eyebrow">
-              {operatorFallback ? "아직 작가가 없어요" : unlisted ? "아직 없는 작가" : "작가에게 묻기"}
+              {operatorFallback ? "대신 물어보기" : unlisted ? "찾는 작가" : "Ask"}
             </p>
             <h2 id="ask-dialog-title">{heading}</h2>
             <p className="auth-description">{description}</p>
@@ -165,7 +164,7 @@ export function AskArtistDialog({
             {loggedIn === false ? (
               <div className="hub-actions">
                 <Link className="primary-button" href={loginHref}>
-                  로그인하고 질문하기
+                  로그인하고 물어보기
                 </Link>
                 <button type="button" className="secondary-button" onClick={onClose}>
                   닫기
@@ -181,7 +180,7 @@ export function AskArtistDialog({
                       onChange={(event) => setUnlistedName(event.target.value)}
                       placeholder={
                         operatorFallback
-                          ? "알고 있으면 적어 주세요 (없어도 됩니다)"
+                          ? "알고 있으면 적어 주세요 (없어도 돼요)"
                           : "예: 김○○"
                       }
                       required={!operatorFallback}
@@ -190,7 +189,7 @@ export function AskArtistDialog({
                 ) : null}
 
                 <label>
-                  질문 종류
+                  주제
                   <select
                     value={topic}
                     onChange={(event) => setTopic(event.target.value as QuestionTopic)}
@@ -204,12 +203,13 @@ export function AskArtistDialog({
                 </label>
 
                 <label>
-                  질문
+                  궁금한 점
                   <textarea
                     value={body}
                     onChange={(event) => setBody(event.target.value)}
-                    rows={5}
-                    placeholder="보고 싶은 전시나 작품에 대해 구체적으로 적어 주세요."
+                    rows={4}
+                    maxLength={500}
+                    placeholder="짧게 적어도 좋아요"
                     required
                   />
                 </label>
@@ -223,14 +223,18 @@ export function AskArtistDialog({
                   />
                 </label>
 
-                {error ? <p className="form-error">{error}</p> : null}
+                {error ? (
+                  <p className="form-error" role="alert">
+                    {error}
+                  </p>
+                ) : null}
 
                 <button
                   type="submit"
                   className="primary-button full-width"
                   disabled={loading || loggedIn !== true}
                 >
-                  {loading ? "보내는 중…" : "질문 남기기"}
+                  {loading ? "보내는 중…" : "작가에게 물어보기"}
                 </button>
               </form>
             )}
@@ -244,7 +248,7 @@ export function AskArtistDialog({
 export function AskArtistTrigger({
   target,
   className,
-  children = "작가에게 묻기"
+  children = "작가에게 물어보기"
 }: {
   target: AskArtistTarget;
   className?: string;

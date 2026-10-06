@@ -14,12 +14,15 @@ import { parseTasteArray } from "@/lib/taste";
 import { getUserDecks } from "@/lib/user-decks";
 import { getVisitArchive } from "@/lib/visit-archive";
 import { listNotices } from "@/lib/notices";
+import { listAskerIntakeQuestions } from "@/lib/asker-questions";
 import { OPERATOR_UNLISTED_NAME } from "@/lib/question-topics";
 import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "마이페이지"
 };
+
+export const dynamic = "force-dynamic";
 
 function parseCategories(value: string): string[] {
   try {
@@ -53,11 +56,11 @@ export default async function MyPage({
 
   const today = getTodayKST();
   const user = await getUserById(session.id);
+  // ADMIN은 관리 화면이 따로 있으므로, 작가 패널은 실제 작가/갤러리만 올린다.
   const isArtist = Boolean(
     user &&
       (user.role === "ARTIST" ||
         user.role === "GALLERY" ||
-        user.role === "ADMIN" ||
         user.artistStatus === "APPROVED")
   );
   const { view } = await searchParams;
@@ -75,42 +78,192 @@ export default async function MyPage({
     endDate: true
   } as const;
 
-  const memberReservations = await prisma.reservation.findMany({
-    where: {
-      userId: session.id,
-      status: { in: ["CONFIRMED"] },
-      visitDate: { gte: today }
-    },
-    include: {
-      exhibition: { select: exhibitionSelect },
-      program: {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          heroImageUrl: true,
-          heroTone: true,
-          space: { select: { name: true, district: true } },
-          exhibition: {
-            select: { venue: true, district: true, region: true, title: true }
+  const [
+    memberReservations,
+    allMemberReservations,
+    visitRows,
+    visitArchive,
+    saves,
+    reviews,
+    artistExhibitions,
+    artistSpaces,
+    artistPrograms,
+    artistApplication,
+    artistQuestionsRaw,
+    artistReservationsRaw,
+    myDecks,
+    notices,
+    askedQuestionsRaw,
+    intakeQuestions
+  ] = await Promise.all([
+    prisma.reservation.findMany({
+      where: {
+        userId: session.id,
+        status: { in: ["CONFIRMED"] },
+        visitDate: { gte: today }
+      },
+      include: {
+        exhibition: { select: exhibitionSelect },
+        program: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            heroImageUrl: true,
+            heroTone: true,
+            space: { select: { name: true, district: true } },
+            exhibition: {
+              select: { venue: true, district: true, region: true, title: true }
+            }
           }
         }
+      },
+      orderBy: [{ visitDate: "asc" }, { slot: "asc" }]
+    }),
+    prisma.reservation.findMany({
+      where: {
+        userId: session.id,
+        status: { in: ["CONFIRMED", "ATTENDED"] },
+        exhibitionId: { not: null }
+      },
+      select: {
+        exhibitionId: true,
+        exhibition: { select: { curationAvailable: true } }
       }
-    },
-    orderBy: [{ visitDate: "asc" }, { slot: "asc" }]
-  });
-
-  const allMemberReservations = await prisma.reservation.findMany({
-    where: {
-      userId: session.id,
-      status: { in: ["CONFIRMED", "ATTENDED"] },
-      exhibitionId: { not: null }
-    },
-    select: {
-      exhibitionId: true,
-      exhibition: { select: { curationAvailable: true } }
-    }
-  });
+    }),
+    prisma.visit.findMany({
+      where: { userId: session.id, exhibitionId: { not: null } },
+      include: {
+        exhibition: {
+          select: exhibitionSelect
+        }
+      },
+      orderBy: { visitedAt: "desc" },
+      take: 200
+    }),
+    getVisitArchive(session.id),
+    prisma.saveExhibition.findMany({
+      where: { userId: session.id },
+      include: {
+        exhibition: {
+          select: exhibitionSelect
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100
+    }),
+    prisma.review.findMany({
+      where: { userId: session.id },
+      include: { exhibition: { select: { id: true, title: true, venue: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 100
+    }),
+    isArtist
+      ? prisma.exhibition.findMany({
+          where: { registeredById: session.id },
+          include: { _count: { select: { reservations: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 50
+        })
+      : Promise.resolve([]),
+    isArtist
+      ? prisma.space.findMany({
+          where: { ownerUserId: session.id },
+          include: { _count: { select: { programs: true, exhibitions: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 50
+        })
+      : Promise.resolve([]),
+    isArtist
+      ? prisma.program.findMany({
+          where: {
+            OR: [
+              { hostUserId: session.id },
+              { space: { ownerUserId: session.id } },
+              { exhibition: { registeredById: session.id } }
+            ]
+          },
+          include: {
+            space: { select: { id: true, name: true, slug: true } },
+            exhibition: { select: { id: true, title: true, venue: true } }
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50
+        })
+      : Promise.resolve([]),
+    isArtist
+      ? prisma.artistApplication.findUnique({ where: { userId: session.id } }).catch((error) => {
+          console.error("artistProfile load failed", error);
+          return null;
+        })
+      : Promise.resolve(null),
+    isArtist
+      ? prisma.artistQuestion
+          .findMany({
+            where: {
+              artistUserId: session.id,
+              status: { in: ["APPROVED", "ANSWERED"] }
+            },
+            orderBy: { createdAt: "desc" },
+            take: 40
+          })
+          .catch((error) => {
+            console.error("artistQuestions load failed", error);
+            return [] as Awaited<ReturnType<typeof prisma.artistQuestion.findMany>>;
+          })
+      : Promise.resolve([]),
+    isArtist
+      ? prisma.reservation.findMany({
+          where: {
+            OR: [
+              { exhibition: { registeredById: session.id } },
+              {
+                program: {
+                  OR: [
+                    { hostUserId: session.id },
+                    { space: { ownerUserId: session.id } },
+                    { exhibition: { registeredById: session.id } }
+                  ]
+                }
+              }
+            ]
+          },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            exhibition: {
+              select: { id: true, title: true, venue: true, district: true }
+            },
+            program: {
+              select: {
+                id: true,
+                title: true,
+                space: { select: { name: true, district: true } },
+                exhibition: { select: { venue: true, district: true, title: true } }
+              }
+            }
+          },
+          orderBy: [{ visitDate: "asc" }, { slot: "asc" }],
+          take: 100
+        })
+      : Promise.resolve([]),
+    getUserDecks(session.id).catch((error) => {
+      console.error("myDecks load failed", error);
+      return [] as Awaited<ReturnType<typeof getUserDecks>>;
+    }),
+    listNotices(session.id),
+    prisma.artistQuestion
+      .findMany({
+        where: { fromUserId: session.id },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: { artist: { select: { name: true, nickname: true } } }
+      })
+      .catch((error) => {
+        console.error("askedQuestions load failed", error);
+        return [];
+      }),
+    listAskerIntakeQuestions(session.id)
+  ]);
 
   const artistTalkExhibitionIds = new Set(
     allMemberReservations
@@ -118,44 +271,12 @@ export default async function MyPage({
       .map((reservation) => reservation.exhibitionId)
   );
 
-  // 다녀온 전시 (예약과 독립된 방문 인증) — 공간/프로그램 방문은 아카이브에서 별도 표시
-  const visits = (
-    await prisma.visit.findMany({
-      where: { userId: session.id, exhibitionId: { not: null } },
-      include: {
-        exhibition: {
-          select: exhibitionSelect
-        }
-      },
-      orderBy: { visitedAt: "desc" }
-    })
-  ).filter(
+  const visits = visitRows.filter(
     (visit): visit is (typeof visit) & {
       exhibitionId: string;
       exhibition: NonNullable<(typeof visit)["exhibition"]>;
     } => Boolean(visit.exhibitionId && visit.exhibition)
   );
-
-  // 전시·공간·프로그램을 아우르는 방문 아카이브
-  const visitArchive = await getVisitArchive(session.id);
-
-  // 저장(찜)한 전시
-  const saves = await prisma.saveExhibition.findMany({
-    where: { userId: session.id },
-    include: {
-      exhibition: {
-        select: exhibitionSelect
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-
-  // 내 리뷰
-  const reviews = await prisma.review.findMany({
-    where: { userId: session.id },
-    include: { exhibition: { select: { id: true, title: true, venue: true } } },
-    orderBy: { createdAt: "desc" }
-  });
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
@@ -283,114 +404,38 @@ export default async function MyPage({
 
   const recommendCount = reviews.filter((review) => review.recommend).length;
 
-  const artistExhibitions = isArtist
-    ? await prisma.exhibition.findMany({
-        where: { registeredById: session.id },
-        include: { _count: { select: { reservations: true } } },
-        orderBy: { createdAt: "desc" }
-      })
-    : [];
 
-  const artistSpaces = isArtist
-    ? await prisma.space.findMany({
-        where: { ownerUserId: session.id },
-        include: { _count: { select: { programs: true, exhibitions: true } } },
-        orderBy: { createdAt: "desc" }
-      })
-    : [];
 
-  const artistPrograms = isArtist
-    ? await prisma.program.findMany({
-        where: {
-          OR: [
-            { hostUserId: session.id },
-            { space: { ownerUserId: session.id } },
-            { exhibition: { registeredById: session.id } }
-          ]
-        },
-        include: {
-          space: { select: { id: true, name: true, slug: true } },
-          exhibition: { select: { id: true, title: true, venue: true } }
-        },
-        orderBy: { createdAt: "desc" }
-      })
-    : [];
-
-  let artistProfile: { showOnHome: boolean; profileImageUrl: string | null } | null =
-    null;
-  if (isArtist) {
-    try {
-      const application = await prisma.artistApplication.findUnique({
-        where: { userId: session.id }
-      });
-      if (application) {
-        artistProfile = {
-          showOnHome: readShowOnHome(application),
-          profileImageUrl: application.profileImageUrl
-        };
+  const artistProfile = artistApplication
+    ? {
+        showOnHome: readShowOnHome(artistApplication),
+        profileImageUrl: artistApplication.profileImageUrl
       }
-    } catch (error) {
-      console.error("artistProfile load failed", error);
-    }
-  }
+    : null;
 
-  let artistQuestions: Array<{
-    id: string;
-    topic: string;
-    fromName: string;
-    body: string;
-    answer: string | null;
-    status: string;
-    createdAt: Date;
-  }> = [];
-  if (isArtist) {
-    try {
-      artistQuestions = await prisma.artistQuestion.findMany({
-        where: {
-          artistUserId: session.id,
-          status: { in: ["APPROVED", "ANSWERED"] }
-        },
-        orderBy: { createdAt: "desc" },
-        take: 40
-      });
-    } catch (error) {
-      console.error("artistQuestions load failed", error);
-    }
-  }
+  const artistQuestions = artistQuestionsRaw.map((question) => ({
+    id: question.id,
+    topic: question.topic,
+    fromName: question.fromName,
+    body: question.body,
+    answer: question.answer,
+    status: question.status,
+    createdAt: question.createdAt
+  }));
 
-  const artistReservationsRaw = isArtist
-    ? await prisma.reservation.findMany({
-        where: {
-          OR: [
-            { exhibition: { registeredById: session.id } },
-            {
-              program: {
-                OR: [
-                  { hostUserId: session.id },
-                  { space: { ownerUserId: session.id } },
-                  { exhibition: { registeredById: session.id } }
-                ]
-              }
-            }
-          ]
-        },
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          exhibition: {
-            select: { id: true, title: true, venue: true, district: true }
-          },
-          program: {
-            select: {
-              id: true,
-              title: true,
-              space: { select: { name: true, district: true } },
-              exhibition: { select: { venue: true, district: true, title: true } }
-            }
-          }
-        },
-        orderBy: [{ visitDate: "asc" }, { slot: "asc" }]
-      })
-    : [];
+  const askedQuestions = askedQuestionsRaw.map((question) => ({
+    id: question.id,
+    kind: question.kind,
+    topic: question.topic,
+    status: question.status,
+    body: question.body,
+    answer: question.answer,
+    artistName: question.artist
+      ? displayName(question.artist)
+      : question.unlistedArtistName || OPERATOR_UNLISTED_NAME,
+    createdAt: question.createdAt,
+    answeredAt: question.answeredAt
+  }));
 
   const artistReservations = artistReservationsRaw
     .map((reservation) => {
@@ -429,49 +474,6 @@ export default async function MyPage({
       return null;
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-
-  let myDecks: Awaited<ReturnType<typeof getUserDecks>> = [];
-  try {
-    myDecks = await getUserDecks(session.id);
-  } catch (error) {
-    console.error("myDecks load failed", error);
-  }
-
-  const notices = await listNotices(session.id);
-  let askedQuestions: Array<{
-    id: string;
-    kind: string;
-    topic: string;
-    status: string;
-    body: string;
-    answer: string | null;
-    artistName: string;
-    createdAt: Date;
-    answeredAt: Date | null;
-  }> = [];
-  try {
-    const rows = await prisma.artistQuestion.findMany({
-      where: { fromUserId: session.id },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      include: { artist: { select: { name: true, nickname: true } } }
-    });
-    askedQuestions = rows.map((question) => ({
-      id: question.id,
-      kind: question.kind,
-      topic: question.topic,
-      status: question.status,
-      body: question.body,
-      answer: question.answer,
-      artistName: question.artist
-        ? displayName(question.artist)
-        : question.unlistedArtistName || OPERATOR_UNLISTED_NAME,
-      createdAt: question.createdAt,
-      answeredAt: question.answeredAt
-    }));
-  } catch (error) {
-    console.error("askedQuestions load failed", error);
-  }
 
   const slotSummaryMap = new Map<
     string,
@@ -573,6 +575,7 @@ export default async function MyPage({
           createdAt: question.createdAt.toISOString(),
           answeredAt: question.answeredAt?.toISOString() ?? null
         }))}
+        intakeQuestions={intakeQuestions}
       />
       <Footer />
     </>

@@ -1847,6 +1847,228 @@
     white-space: normal;
     overflow-wrap: anywhere;
   }
+
+  .detail-info-sub {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .detail-info-chip {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft, #f3e7e2);
+    color: var(--accent, #c46d54);
+    font-size: 11px;
+    font-weight: 800;
+    vertical-align: middle;
+  }
+
+  .detail-info-chip.is-ended {
+    background: #f1f1f1;
+    color: var(--muted);
+  }
+
+  .exhibition-ended-banner {
+    margin-bottom: 16px;
+  }
+
+  .detail-side-course {
+    margin: 16px 0 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .detail-side-course-label {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .detail-side-course-link {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .detail-side-course-link:hover,
+  .detail-side-course-link:focus-visible {
+    border-color: var(--accent, #c46d54);
+    background: var(--accent-soft, #f7eee9);
+    outline: none;
+  }
+
+  .detail-side-course-thumb {
+    width: 56px;
+    height: 72px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .detail-side-course-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .detail-side-course-copy strong {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .detail-side-course-copy span {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .detail-side-course-copy em {
+    color: var(--accent, #c46d54);
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .exhibition-course-section {
+    display: grid;
+    gap: 28px;
+  }
+
+  .exhibition-course-lead {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--surface);
+  }
+
+  .exhibition-course-lead-media {
+    min-height: 160px;
+    border-radius: 16px;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .exhibition-course-lead-copy {
+    display: grid;
+    align-content: center;
+    gap: 8px;
+  }
+
+  .exhibition-course-lead-copy h2 {
+    margin: 0;
+    font-size: 22px;
+  }
+
+  .exhibition-course-lead-copy p {
+    margin: 0;
+    color: var(--secondary);
+  }
+
+  .exhibition-course-lead-copy .primary-button {
+    justify-self: start;
+    margin-top: 8px;
+  }
+
+  .exhibition-course-more {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+  }
+
+  .exhibition-course-desc {
+    color: var(--secondary);
+    font-size: 14px;
+  }
+
+  .exhibition-course-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 260px);
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .exhibition-course-card {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    scroll-snap-align: start;
+  }
+
+  .exhibition-course-thumb {
+    width: 72px;
+    height: 96px;
+    border-radius: 10px;
+    background: var(--surface);
+    background-size: cover;
+    background-position: center;
+  }
+
+  .exhibition-course-meta {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .exhibition-course-meta small {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .exhibition-course-meta strong {
+    font-size: 15px;
+    line-height: 1.3;
+  }
+
+  .exhibition-course-meta em {
+    color: var(--secondary);
+    font-style: normal;
+    font-size: 12px;
+  }
+
+  .sticky-course {
+    white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    .exhibition-course-lead {
+      grid-template-columns: 1fr;
+    }
+
+    .exhibition-course-lead-media {
+      min-height: 140px;
+    }
+  }
   
   .detail-description {
     max-width: 800px;
@@ -2475,22 +2697,23 @@
       line-height: 1.65;
     }
 
+    /* 소개 이미지는 가로 캐러셀+cover 자르기 대신, 데스크톱과 같이 전체 비율로 세로 나열 */
     .detail-description-gallery {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 6px;
+      display: grid;
+      gap: 12px;
+      overflow: visible;
+      padding-bottom: 0;
     }
 
     .detail-description-gallery img {
-      flex: 0 0 min(78vw, 280px);
-      width: min(78vw, 280px);
-      height: 200px;
-      object-fit: cover;
+      flex: none;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      max-height: none;
+      object-fit: contain;
+      object-position: center;
       border-radius: 12px;
-      scroll-snap-align: start;
     }
 
     .detail-side-card {
@@ -3949,6 +4172,9 @@
 
   .detail-description-gallery img {
     width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
     border-radius: 16px;
     display: block;
   }
@@ -4411,7 +4637,14 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 8px;
+    margin: 16px 0 8px;
+  }
+
+  .place-detail-collect-note {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .place-related {
@@ -12449,11 +12682,99 @@
     margin: 0;
   }
 
+  .ooof-card-collect-hint {
+    margin: 8px 0 6px;
+    font-size: 10px;
+    line-height: 1.45;
+    letter-spacing: 0;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
   .ooof-card-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-top: auto;
+  }
+
+  .collect-actions {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    margin-top: 14px;
+  }
+
+  .collect-actions-hint {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--secondary);
+  }
+
+  .collect-actions-row,
+  .collect-cal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .collect-actions-row button,
+  .collect-cal button,
+  .collect-cal a {
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--ooof-ink, #1a1a1a);
+    background: #fff;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .collect-actions-row button.is-on {
+    border-color: var(--ooof-terracotta, #c46d54);
+    color: var(--ooof-terracotta, #c46d54);
+  }
+
+  .collect-actions-row button.is-fill,
+  .collect-cal button.is-fill {
+    background: #1a1a1a;
+    color: #faf8f5;
+    border-color: #1a1a1a;
+  }
+
+  .collect-cal {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .collect-cal label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .collect-cal input[type="date"] {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .collect-actions-msg {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--secondary);
   }
 
   .ooof-card-actions button,
@@ -13039,6 +13360,50 @@
     background-position: center;
   }
 
+  .day-calendar-thumb.is-cover {
+    box-shadow: 0 0 0 2px var(--ooof-terracotta, #c46d54);
+  }
+
+  .day-calendar-cover-hint {
+    margin: 0 0 10px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .day-calendar-entry-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .day-calendar-cover-pick {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fff;
+    color: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .day-calendar-cover-pick.is-on {
+    border-color: var(--ooof-terracotta, #c46d54);
+    color: var(--ooof-terracotta, #c46d54);
+  }
+
+  .day-calendar-photo {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .day-calendar-photo input {
+    display: none;
+  }
+
   .day-calendar-entry small {
     display: block;
     color: var(--muted);
@@ -13341,3 +13706,228 @@
       animation: none !important;
     }
   }
+
+.exhibition-ask {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--ink, #1a1a1a) 10%, transparent);
+}
+
+.exhibition-ask-context-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--ink, #1a1a1a) 62%, transparent);
+}
+
+.my-question-page,
+.question-response-page {
+  padding: 1.75rem 1.1rem 2.5rem;
+  max-width: 720px;
+}
+
+.my-question-page h1,
+.question-response-page h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.4rem;
+}
+
+.my-question-status {
+  margin-bottom: 1.1rem;
+}
+
+.my-question-heading {
+  font-size: 1.02rem;
+  margin: 1.2rem 0 0.45rem;
+}
+
+.my-question-body {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.my-question-waiting,
+.my-question-cta,
+.my-question-related,
+.my-question-back {
+  margin-top: 1.25rem;
+}
+
+.my-empty-soft {
+  color: color-mix(in srgb, var(--ink, #1a1a1a) 70%, transparent);
+}
+
+.exhibition-public-qa {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--ink, #1a1a1a) 12%, transparent);
+}
+
+.exhibition-public-qa h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.exhibition-public-qa ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.exhibition-public-qa li {
+  display: grid;
+  gap: 4px;
+}
+
+.exhibition-public-qa-q,
+.exhibition-public-qa-a {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.exhibition-public-qa-q {
+  font-size: 0.92rem;
+  color: color-mix(in srgb, var(--ink, #1a1a1a) 72%, transparent);
+}
+
+.exhibition-public-qa-q::before {
+  content: "Q. ";
+  font-weight: 600;
+  color: var(--ink, #1a1a1a);
+}
+
+.exhibition-public-qa-a {
+  font-size: 0.98rem;
+}
+
+.exhibition-public-qa-a::before {
+  content: "A. ";
+  font-weight: 600;
+}
+
+.exhibition-ask-lead,
+.exhibition-ask-success,
+.exhibition-ask-hint,
+.exhibition-ask-error {
+  margin: 0;
+}
+
+.exhibition-ask-lead {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.exhibition-ask-form {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.exhibition-ask-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.exhibition-ask-form textarea,
+.exhibition-ask-form input,
+.exhibition-ask-form select {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.exhibition-ask-context {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.exhibition-ask-context div {
+  display: flex;
+  gap: 8px;
+}
+
+.exhibition-ask-context dt {
+  color: var(--secondary);
+}
+
+.exhibition-ask-context dd {
+  margin: 0;
+}
+
+.exhibition-ask-hint {
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.exhibition-ask-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.exhibition-ask-error {
+  color: #9b2c2c;
+  font-size: 13px;
+}
+
+.exhibition-ask-success {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .exhibition-ask,
+  .exhibition-ask-form,
+  .exhibition-ask .primary-button,
+  .exhibition-ask .secondary-button {
+    width: 100%;
+  }
+}
+
+.admin-intake {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.admin-intake-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-intake-list button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+}
+
+.admin-intake-detail {
+  display: grid;
+  gap: 10px;
+}
+
+@media (max-width: 800px) {
+  .admin-intake {
+    grid-template-columns: 1fr;
+  }
+}
