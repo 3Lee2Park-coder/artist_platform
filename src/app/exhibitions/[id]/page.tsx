@@ -1,19 +1,25 @@
 import { ArtworkCard } from "@/components/ArtworkCard";
-import { ExhibitionCard } from "@/components/ExhibitionCard";
+import { CollectActions } from "@/components/CollectActions";
+import { ExhibitionAsk } from "@/components/ExhibitionAsk";
+import { ExhibitionCourseSection } from "@/components/ExhibitionCourseSection";
+import { ExhibitionPublicQa } from "@/components/ExhibitionPublicQa";
 import { ExhibitionReviewPanel } from "@/components/ExhibitionReviewPanel";
 import { ExhibitionVenueMap } from "@/components/ExhibitionVenueMap";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { ExhibitionStickyBar } from "@/components/ExhibitionStickyBar";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { ReservationWidget } from "@/components/ReservationWidget";
 import { getSession } from "@/lib/auth";
+import { isCardSaved, makeCardKey } from "@/lib/cards";
+import { getTodayKST } from "@/lib/date";
+import { getExhibitionCourseContext } from "@/lib/exhibition-context";
 import { logEvent } from "@/lib/events";
+import { listPublicQuestionsForExhibition } from "@/lib/public-questions";
 import { entityKeywords, exhibitionJsonLd, exhibitionSeo, publicMeta } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
+import { detectTrafficChannel } from "@/lib/traffic-channel";
 import {
   SOURCE_BADGE,
-  getAllExhibitions,
   getArtworksByExhibitionId,
   getExhibitionById,
   getExhibitionReviews,
@@ -75,36 +81,49 @@ export default async function ExhibitionDetailPage({
     notFound();
   }
 
+  const today = getTodayKST();
+  const isEnded = exhibition.endDate < today;
+  const isUpcoming = exhibition.startDate > today;
   const fromCuration = from === "curation" && Boolean(curationId);
+  const channel = fromCuration ? "internal" : await detectTrafficChannel();
+
   await logEvent({
     type: "EXHIBITION_VIEW",
     userId: session?.id,
+    userRole: session?.role,
     exhibitionId: exhibition.id,
     source: fromCuration ? "curation" : "detail_page",
-    metadata: fromCuration ? { curationId, from: "curation" } : undefined
+    metadata: {
+      channel,
+      ...(fromCuration ? { curationId, from: "curation" } : {}),
+      ended: isEnded
+    }
   });
 
-  const exhibitionArtworks = await getArtworksByExhibitionId(exhibition.id);
-  const allExhibitions = await getAllExhibitions();
-  const relatedExhibitions = allExhibitions
-    .filter(
-      (item) =>
-        item.id !== exhibition.id &&
-        item.categories.some((category) => exhibition.categories.includes(category))
-    )
-    .slice(0, 3);
-
-  const viewerState = await getViewerExhibitionState(exhibition.id, session?.id);
-  const { reviews, stats, myReview } = await getExhibitionReviews(
-    exhibition.id,
-    session?.id
-  );
+  const cardKey = makeCardKey("exhibition", exhibition.id);
+  const [exhibitionArtworks, viewerState, cardSaved, courseContext, reviewBundle, publicQa] =
+    await Promise.all([
+      getArtworksByExhibitionId(exhibition.id),
+      getViewerExhibitionState(exhibition.id, session?.id),
+      isCardSaved(session?.id, cardKey),
+      getExhibitionCourseContext(
+        exhibition.id,
+        exhibition.mapPosition.lat,
+        exhibition.mapPosition.lng
+      ),
+      getExhibitionReviews(exhibition.id, session?.id),
+      listPublicQuestionsForExhibition(exhibition.id)
+    ]);
+  const { reviews, stats, myReview } = reviewBundle;
   const badge = SOURCE_BADGE[exhibition.source];
   const descriptionParagraphs = exhibition.description
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
   const pageSeo = exhibitionSeo(exhibition);
+  const primaryCourse = courseContext.courses[0] ?? null;
+  const periodLabel = isEnded ? "종료" : isUpcoming ? "예정" : "진행 중";
+  const visitLabel = exhibition.reservable ? "온라인 예약" : "현장 방문";
 
   return (
     <>
@@ -145,9 +164,41 @@ export default async function ExhibitionDetailPage({
           </div>
         ) : null}
 
+        {isEnded ? (
+          <div className="status-banner warn exhibition-ended-banner" role="status">
+            <strong>이 전시는 {formatDate(exhibition.endDate)}에 종료되었습니다.</strong>
+            {primaryCourse ? (
+              <span>
+                {" "}
+                같은 동네의 진행 중 코스를 보려면{" "}
+                <Link href={`/decks/${primaryCourse.id}`}>
+                  {primaryCourse.title}
+                </Link>
+                을 열어 보세요.
+              </span>
+            ) : courseContext.nextStops[0] ? (
+              <span>
+                {" "}
+                근처에서 이어갈 곳은{" "}
+                <Link href={courseContext.nextStops[0].href}>
+                  {courseContext.nextStops[0].title}
+                </Link>
+                입니다.
+              </span>
+            ) : (
+              <span>
+                {" "}
+                <Link href="/decks">다른 코스</Link>나{" "}
+                <Link href="/map">지도</Link>에서 진행 중 전시를 찾아보세요.
+              </span>
+            )}
+          </div>
+        ) : null}
+
         <section className="detail-hero">
           <div className="detail-hero-image">
             <span className={`source-badge ${badge.tone}`}>{badge.label}</span>
+            {isEnded ? <span className="source-badge public">종료</span> : null}
             {exhibition.heroImageUrl ? (
               <img
                 className="detail-hero-photo"
@@ -164,22 +215,20 @@ export default async function ExhibitionDetailPage({
               />
             )}
           </div>
-
-          <div id="reservation">
-            <ReservationWidget
-              exhibition={exhibition}
-              isLoggedIn={Boolean(session)}
-              userName={session?.name}
-            />
-          </div>
         </section>
 
         <section className="detail-layout">
           <article className="detail-main-copy">
-            <p className="eyebrow">{exhibition.exhibitionType}</p>
+            <p className="eyebrow">
+              {exhibition.exhibitionType}
+              {exhibition.categories.length
+                ? ` · ${exhibition.categories.join(", ")}`
+                : ""}
+            </p>
             <h1>{exhibition.title}</h1>
             <p className="detail-summary">{exhibition.summary}</p>
 
+            {/* NOL/인터파크처럼 제목 바로 아래 사실만 — 새 섹션 타이틀 없이 기존 그리드 확장 */}
             <dl className="detail-info-grid">
               <div>
                 <dt>작가</dt>
@@ -192,12 +241,17 @@ export default async function ExhibitionDetailPage({
                     <>
                       <Link className="text-link" href={`/spaces/${exhibition.space.slug}`}>
                         {exhibition.space.name}
-                      </Link>{" "}
-                      · {exhibition.region} {exhibition.district}
+                      </Link>
+                      <span className="detail-info-sub">
+                        {exhibition.region} {exhibition.district}
+                      </span>
                     </>
                   ) : (
                     <>
-                      {exhibition.region} {exhibition.district} · {exhibition.venue}
+                      {exhibition.venue}
+                      <span className="detail-info-sub">
+                        {exhibition.region} {exhibition.district}
+                      </span>
                     </>
                   )}
                 </dd>
@@ -206,11 +260,19 @@ export default async function ExhibitionDetailPage({
                 <dt>기간</dt>
                 <dd>
                   {formatDate(exhibition.startDate)} - {formatDate(exhibition.endDate)}
+                  <span className={`detail-info-chip${isEnded ? " is-ended" : ""}`}>
+                    {periodLabel}
+                  </span>
                 </dd>
               </div>
               <div>
-                <dt>카테고리</dt>
-                <dd>{exhibition.categories.join(", ")}</dd>
+                <dt>입장</dt>
+                <dd>
+                  {visitLabel}
+                  {exhibition.address ? (
+                    <span className="detail-info-sub">{exhibition.address}</span>
+                  ) : null}
+                </dd>
               </div>
             </dl>
 
@@ -233,15 +295,59 @@ export default async function ExhibitionDetailPage({
                 </div>
               ) : null}
             </div>
+
+            <CollectActions
+              cardKey={cardKey}
+              isLoggedIn={Boolean(session)}
+              loginRedirect={`/exhibitions/${exhibition.id}`}
+              initialSaved={cardSaved || viewerState.saved}
+            />
+            {publicQa.length > 0 ? <ExhibitionPublicQa items={publicQa} /> : null}
+            <ExhibitionAsk
+              exhibitionId={exhibition.id}
+              title={exhibition.title}
+              artistName={exhibition.artist}
+              venueName={exhibition.space?.name || exhibition.venue}
+              isLoggedIn={Boolean(session)}
+            />
           </article>
 
           <aside className="detail-side-card">
             <h3>운영 정보</h3>
             <ul>
-              <li>큐레이션 {exhibition.curationAvailable ? "제공" : "미제공"}</li>
-              <li>{exhibition.reservable ? "온라인 예약 가능" : "문의 후 방문"}</li>
+              <li>{periodLabel}</li>
+              <li>{visitLabel}</li>
               <li>{exhibition.exhibitionType}</li>
             </ul>
+            {primaryCourse ? (
+              <div className="detail-side-course">
+                <p className="detail-side-course-label">같은 날 이어서</p>
+                <Link
+                  href={`/decks/${primaryCourse.id}?open=1`}
+                  className="detail-side-course-link"
+                >
+                  <span
+                    className="detail-side-course-thumb"
+                    style={
+                      primaryCourse.coverImageUrl
+                        ? { backgroundImage: `url(${primaryCourse.coverImageUrl})` }
+                        : { background: primaryCourse.coverTone }
+                    }
+                    aria-hidden
+                  />
+                  <span className="detail-side-course-copy">
+                    <strong>{primaryCourse.title}</strong>
+                    <span>
+                      {primaryCourse.durationText ||
+                        (primaryCourse.neighborhood
+                          ? `${primaryCourse.neighborhood} 코스`
+                          : `${primaryCourse.stopCount}곳 코스`)}
+                    </span>
+                    <em>코스 펼쳐보기 →</em>
+                  </span>
+                </Link>
+              </div>
+            ) : null}
             <div className="share-action-stack">
               <ShareActionButton
                 label="전시 공유"
@@ -266,6 +372,13 @@ export default async function ExhibitionDetailPage({
             </div>
           </aside>
         </section>
+
+        <ExhibitionCourseSection
+          exhibitionId={exhibition.id}
+          courses={courseContext.courses}
+          nextStops={courseContext.nextStops}
+          source={courseContext.source}
+        />
 
         {exhibition.artistVideo ? (
           <section className="detail-section detail-video-section">
@@ -330,29 +443,22 @@ export default async function ExhibitionDetailPage({
           reviews={reviews}
           myReview={myReview}
         />
-
-        {relatedExhibitions.length > 0 ? (
-          <section className="detail-section">
-            <div className="section-header">
-              <div>
-                <p className="eyebrow">Related</p>
-                <h2>비슷한 전시</h2>
-              </div>
-            </div>
-            <div className="exhibition-grid">
-              {relatedExhibitions.map((item) => (
-                <ExhibitionCard key={`related-${item.id}`} exhibition={item} compact />
-              ))}
-            </div>
-          </section>
-        ) : null}
       </main>
 
       <ExhibitionStickyBar
         exhibitionId={exhibition.id}
-        reservable={exhibition.reservable}
+        reservable={false}
         isLoggedIn={Boolean(session)}
         initialSaved={viewerState.saved}
+        courseHref={
+          primaryCourse
+            ? `/decks/${primaryCourse.id}?open=1`
+            : courseContext.nextStops.length
+              ? "#course-next"
+              : null
+        }
+        courseLabel={primaryCourse ? "주변 코스 보기" : courseContext.nextStops.length ? "근처 보기" : null}
+        courseId={primaryCourse?.id ?? null}
       />
 
       <Footer />

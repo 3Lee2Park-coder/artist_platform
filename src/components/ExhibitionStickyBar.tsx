@@ -1,5 +1,7 @@
 "use client";
 
+import { trackProductEvent } from "@/lib/client-analytics";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -8,13 +10,19 @@ type ExhibitionStickyBarProps = {
   reservable: boolean;
   isLoggedIn: boolean;
   initialSaved: boolean;
+  courseHref?: string | null;
+  courseLabel?: string | null;
+  courseId?: string | null;
 };
 
 export function ExhibitionStickyBar({
   exhibitionId,
   reservable,
   isLoggedIn,
-  initialSaved
+  initialSaved,
+  courseHref,
+  courseLabel,
+  courseId
 }: ExhibitionStickyBarProps) {
   const router = useRouter();
   const [saved, setSaved] = useState(initialSaved);
@@ -22,6 +30,16 @@ export function ExhibitionStickyBar({
 
   async function toggleSave() {
     if (!isLoggedIn) {
+      void trackProductEvent({
+        type: "SAVE_INTENT",
+        exhibitionId,
+        source: "sticky_bar",
+        gaOnly: true,
+        metadata: {
+          contentType: "exhibition",
+          contentId: exhibitionId
+        }
+      });
       router.push(`/auth/login?redirect=/exhibitions/${exhibitionId}`);
       return;
     }
@@ -36,7 +54,20 @@ export function ExhibitionStickyBar({
 
     if (response.ok) {
       const data = await response.json();
-      setSaved(Boolean(data.saved));
+      const nextSaved = Boolean(data.saved);
+      setSaved(nextSaved);
+      if (nextSaved) {
+        void trackProductEvent({
+          type: "SAVE",
+          exhibitionId,
+          source: "sticky_bar",
+          gaOnly: true,
+          metadata: {
+            contentType: "exhibition",
+            contentId: exhibitionId
+          }
+        });
+      }
       router.refresh();
     }
   }
@@ -44,15 +75,27 @@ export function ExhibitionStickyBar({
   function scrollToReservation() {
     const target = document.getElementById("reservation");
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
-    fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "RESERVATION_INTENT",
-        exhibitionId,
-        source: "sticky_bar"
-      })
-    }).catch(() => undefined);
+    void trackProductEvent({
+      type: "RESERVATION_INTENT",
+      exhibitionId,
+      source: "sticky_bar"
+    });
+  }
+
+  function onCourseClick() {
+    const isDeck =
+      Boolean(courseId) ||
+      Boolean(courseHref && courseHref.startsWith("/decks/"));
+    void trackProductEvent({
+      type: isDeck ? "RELATED_DECK_CLICK" : "RELATED_COURSE_CLICK",
+      exhibitionId,
+      source: "sticky_bar",
+      metadata: {
+        href: courseHref ?? null,
+        deckId: courseId ?? null,
+        curationId: courseId ?? null
+      }
+    });
   }
 
   return (
@@ -64,8 +107,27 @@ export function ExhibitionStickyBar({
         disabled={pending}
       >
         <span aria-hidden="true">{saved ? "♥" : "♡"}</span>
-        {saved ? "저장됨" : "저장"}
+        {saved ? "카드 저장됨" : "카드 저장"}
       </button>
+      {courseHref && courseLabel ? (
+        courseHref.startsWith("#") ? (
+          <a
+            className="secondary-button sticky-course"
+            href={courseHref}
+            onClick={onCourseClick}
+          >
+            {courseLabel}
+          </a>
+        ) : (
+          <Link
+            className="secondary-button sticky-course"
+            href={courseHref}
+            onClick={onCourseClick}
+          >
+            {courseLabel}
+          </Link>
+        )
+      ) : null}
       {reservable ? (
         <button type="button" className="primary-button sticky-reserve" onClick={scrollToReservation}>
           예약하기

@@ -4,6 +4,7 @@ import { AddToDeckDialog } from "@/components/AddToDeckDialog";
 import { DeckStack } from "@/components/DeckStack";
 import { OoofCard } from "@/components/OoofCard";
 import type { OoofCard as OoofCardModel } from "@/lib/cards";
+import { trackProductEvent } from "@/lib/client-analytics";
 import type { OoofDeck } from "@/lib/decks";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -203,6 +204,9 @@ export function DeckExperience({
     // 스와이프 핸들러가 click을 삼키는 환경에서도 탭이면 카드를 연다
     if (Math.abs(dx) < 28 && Math.abs(dy) < 28 && drag.cardKey) {
       skipClickRef.current = true;
+      const card = cards.find((item) => item.key === drag.cardKey);
+      const stopIndex = order.findIndex((index) => cards[index]?.key === drag.cardKey);
+      if (card) trackStopClick(card, stopIndex >= 0 ? stopIndex : 0);
       setSelectedKey(drag.cardKey);
     }
   }
@@ -257,8 +261,38 @@ export function DeckExperience({
     }, 1000);
   }
 
+  function trackStopClick(card: OoofCardModel, stopIndex: number) {
+    void trackProductEvent({
+      type: "DECK_STOP_CLICK",
+      exhibitionId: card.exhibitionId ?? undefined,
+      source: deck.isCurated ? "curated_deck" : "my_deck",
+      metadata: {
+        deckId: deck.id,
+        stopId: card.sourceId,
+        stopIndex,
+        cardKey: card.key,
+        kind: card.kind,
+        href: card.href
+      }
+    });
+  }
+
   async function patchCard(card: OoofCardModel, action: "save" | "visit", extra?: Record<string, string>) {
     if (!isLoggedIn) {
+      if (action === "save") {
+        void trackProductEvent({
+          type: "SAVE_INTENT",
+          exhibitionId: card.exhibitionId ?? undefined,
+          source: "deck_experience",
+          gaOnly: true,
+          metadata: {
+            contentType: card.kind.toLowerCase(),
+            contentId: card.sourceId,
+            cardKey: card.key,
+            deckId: deck.id
+          }
+        });
+      }
       router.push(`/auth/login?redirect=${loginRedirect ?? deck.href}`);
       return false;
     }
@@ -285,6 +319,20 @@ export function DeckExperience({
           : item
       )
     );
+    if (action === "save" && data.saved) {
+      void trackProductEvent({
+        type: "SAVE",
+        exhibitionId: card.exhibitionId ?? undefined,
+        source: "deck_experience",
+        gaOnly: true,
+        metadata: {
+          contentType: card.kind.toLowerCase(),
+          contentId: card.sourceId,
+          cardKey: card.key,
+          deckId: deck.id
+        }
+      });
+    }
     return true;
   }
 
@@ -414,6 +462,7 @@ export function DeckExperience({
                           event.preventDefault();
                           return;
                         }
+                        trackStopClick(card, index);
                         setSelectedKey(card.key);
                       }}
                       aria-label={`${card.name} 카드 보기`}
@@ -440,7 +489,9 @@ export function DeckExperience({
               onFlip={(next) => setFlipped((current) => ({ ...current, [selected.key]: next }))}
               onSave={async (card) => {
                 const ok = await patchCard(card, "save");
-                if (ok) setAddKey(card.key);
+                if (ok) {
+                  setMessage("카드를 저장했습니다. MY 달력의 「카드 담기」에서 날짜에 올릴 수 있습니다.");
+                }
               }}
               onVisit={(card) => patchCard(card, "visit")}
               onAddToDeck={(card) => {
@@ -460,7 +511,9 @@ export function DeckExperience({
         <AddToDeckDialog
           cardKey={addKey}
           onClose={() => setAddKey(null)}
-          onAdded={() => setMessage("덱에 담았습니다.")}
+          onAdded={() =>
+            setMessage("내 덱에 넣었습니다. MY 달력의 「덱 담기」에서 날짜에 올릴 수 있습니다.")
+          }
         />
       ) : null}
 

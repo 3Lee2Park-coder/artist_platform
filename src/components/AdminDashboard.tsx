@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminIntakeInbox } from "@/components/AdminIntakeInbox";
 import { AdminQuestionsPanel, type AdminQuestionRow, type AdminWalkerRow } from "@/components/AdminQuestionsPanel";
 import { RichIntroEditor } from "@/components/RichIntroEditor";
 import { CurationCourseBuilder } from "@/components/CurationCourseBuilder";
@@ -17,8 +18,8 @@ import {
   type StoryBlock
 } from "@/lib/story";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type Application = {
   userId: string;
@@ -137,9 +138,15 @@ type RecentEvent = {
   type: string;
   createdAt: string;
   source: string | null;
+  channel: string | null;
   metadata: string;
   userLabel: string;
   exhibitionTitle: string;
+};
+
+type ChannelCount = {
+  channel: string;
+  count: number;
 };
 
 type CurationMetric = {
@@ -232,6 +239,7 @@ type AdminDashboardProps = {
   places: PlaceRow[];
   placeTips: PlaceTipRow[];
   eventSummaries: EventSummary[];
+  channelCounts: ChannelCount[];
   recentEvents: RecentEvent[];
   curationMetrics: CurationMetric[];
   reviewSpaces: ReviewSpaceRow[];
@@ -242,6 +250,18 @@ type AdminDashboardProps = {
   members: MemberRow[];
   questions: AdminQuestionRow[];
   walkers: AdminWalkerRow[];
+  intakePendingCount?: number;
+  initialTab?:
+    | "curations"
+    | "places"
+    | "tips"
+    | "applications"
+    | "review"
+    | "ownership"
+    | "members"
+    | "questions"
+    | "events";
+  initialIntakeId?: string | null;
 };
 
 const SITUATION_OPTIONS = [
@@ -267,6 +287,7 @@ export function AdminDashboard({
   places,
   placeTips,
   eventSummaries,
+  channelCounts,
   recentEvents,
   curationMetrics,
   reviewSpaces,
@@ -276,9 +297,30 @@ export function AdminDashboard({
   ownershipPrograms,
   members,
   questions,
-  walkers
+  walkers,
+  intakePendingCount = 0,
+  initialTab = "curations",
+  initialIntakeId = null
 }: AdminDashboardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const intakeFromUrl = searchParams.get("intake");
+  const resolvedTab =
+    tabFromUrl === "questions" ||
+    tabFromUrl === "places" ||
+    tabFromUrl === "tips" ||
+    tabFromUrl === "applications" ||
+    tabFromUrl === "review" ||
+    tabFromUrl === "ownership" ||
+    tabFromUrl === "members" ||
+    tabFromUrl === "events" ||
+    tabFromUrl === "curations"
+      ? tabFromUrl
+      : intakeFromUrl
+        ? "questions"
+        : initialTab;
+  const resolvedIntakeId = intakeFromUrl?.trim() || initialIntakeId;
   const [tab, setTab] = useState<
     | "curations"
     | "places"
@@ -289,8 +331,12 @@ export function AdminDashboard({
     | "members"
     | "questions"
     | "events"
-  >("curations");
+  >(resolvedTab);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setTab(resolvedTab);
+  }, [resolvedTab]);
   const [transferDrafts, setTransferDrafts] = useState<Record<string, string>>(
     {}
   );
@@ -1062,7 +1108,10 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
             className={tab === "questions" ? "my-tab active" : "my-tab"}
             onClick={() => setTab("questions")}
           >
-            질문 ({questions.filter((item) => item.status === "PENDING").length})
+            질문 (
+            {questions.filter((item) => item.status === "PENDING").length +
+              intakePendingCount}
+            )
           </button>
           <button
             type="button"
@@ -2292,12 +2341,15 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
       )}
 
       {tab === "questions" && (
-        <AdminQuestionsPanel
-          questions={questions}
-          walkers={walkers}
-          onRefresh={() => router.refresh()}
-          onMessage={setMessage}
-        />
+        <>
+          <AdminIntakeInbox initialSelectedId={resolvedIntakeId} />
+          <AdminQuestionsPanel
+            questions={questions}
+            walkers={walkers}
+            onRefresh={() => router.refresh()}
+            onMessage={setMessage}
+          />
+        </>
       )}
 
       {tab === "events" && (
@@ -2394,7 +2446,31 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
           </section>
 
           <section className="register-card wide my-section">
-            <h2>이벤트 요약</h2>
+            <h2>유입 채널 (전시 조회 · 최근 30일)</h2>
+            <p className="auth-description">
+              네이버 검색 유입이 실제로 전시 상세에 닿는지 봅니다. 인앱 브라우저는 리퍼러가
+              비어 direct/other로 남을 수 있습니다. 운영자(ADMIN) 조회는 제외됩니다.
+            </p>
+            {channelCounts.length > 0 ? (
+              <div className="stat-grid">
+                {channelCounts.map((row) => (
+                  <div key={row.channel} className="stat-card">
+                    <span>{channelLabel(row.channel)}</span>
+                    <strong>{row.count}회</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">아직 채널 데이터가 없습니다.</div>
+            )}
+          </section>
+
+          <section className="register-card wide my-section">
+            <h2>이벤트 요약 (최근 30일)</h2>
+            <p className="auth-description">
+              볼 퍼널: 전시 조회 → 정보 확인(지도) → 코스/근처 클릭 → 덱 열기. 저장은 후순위
+              참고 지표입니다.
+            </p>
             {eventSummaries.length > 0 ? (
               <div className="stat-grid">
                 {eventSummaries.map((event) => (
@@ -2419,6 +2495,7 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                       <th>일시</th>
                       <th>이벤트</th>
                       <th>전시</th>
+                      <th>채널</th>
                       <th>사용자</th>
                       <th>출처</th>
                     </tr>
@@ -2429,6 +2506,7 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
                         <td>{formatEventDate(event.createdAt)}</td>
                         <td>{eventLabel(event.type)}</td>
                         <td>{event.exhibitionTitle}</td>
+                        <td>{event.channel ? channelLabel(event.channel) : "-"}</td>
                         <td>{event.userLabel}</td>
                         <td>{event.source ?? "-"}</td>
                       </tr>
@@ -2446,15 +2524,34 @@ ${place ? `${place.name}에서 시작` : "첫 지점에서 시작"}
   );
 }
 
+function channelLabel(channel: string) {
+  const labels: Record<string, string> = {
+    naver_search: "네이버 검색",
+    google_search: "구글 검색",
+    direct: "직접/앱",
+    internal: "내부 이동",
+    social: "소셜",
+    other: "기타",
+    unknown: "미확인"
+  };
+  return labels[channel] ?? channel;
+}
+
 function eventLabel(type: string) {
   const labels: Record<string, string> = {
     EXHIBITION_VIEW: "전시 상세 조회",
     EXHIBITION_SHARE: "전시 공유",
+    EXHIBITION_ENGAGE: "전시 정보 확인",
+    RELATED_COURSE_CLICK: "코스/근처 클릭",
     ARTIST_SHARE: "작가 홍보 공유",
     VISIT_SHARE: "방문 기록 공유",
     CURATION_VIEW: "큐레이션 조회",
     CURATION_SHARE: "큐레이션 공유",
     PLACE_CLICK: "거점 플레이스 클릭",
+    DECK_VIEW: "덱 조회",
+    DECK_OPEN: "덱 열기",
+    DOSIRAK_IMPRESSION: "도시락 노출",
+    DOSIRAK_OPEN: "도시락 열기",
     SAVE_CREATE: "저장",
     SAVE_REMOVE: "저장 취소",
     VISIT_CREATE: "다녀왔어요",
@@ -2462,7 +2559,9 @@ function eventLabel(type: string) {
     REVIEW_UPSERT: "리뷰 작성/수정",
     REVIEW_DELETE: "리뷰 삭제",
     RESERVATION_CREATE: "예약 완료",
-    RESERVATION_INTENT: "예약 클릭"
+    RESERVATION_INTENT: "예약 클릭",
+    SPACE_VIEW: "공간 조회",
+    PROGRAM_VIEW: "프로그램 조회"
   };
 
   return labels[type] ?? type;

@@ -45,6 +45,19 @@ export function makeCardKey(source: CardSource, id: string) {
   return `${source}:${id}`;
 }
 
+export async function isCardSaved(userId: string | null | undefined, cardKey: string) {
+  if (!userId) return false;
+  try {
+    const row = await prisma.savedCard.findUnique({
+      where: { userId_cardKey: { userId, cardKey } },
+      select: { cardKey: true }
+    });
+    return Boolean(row);
+  } catch {
+    return false;
+  }
+}
+
 export function parseCardKey(key: string): { source: CardSource; id: string } | null {
   const split = key.indexOf(":");
   if (split < 1) return null;

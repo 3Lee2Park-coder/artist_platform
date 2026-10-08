@@ -8,247 +8,299 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { readShowOnHome } from "@/lib/walkers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "관리자"
 };
 
-export default async function AdminPage() {
+type AdminPageProps = {
+  searchParams: Promise<{ tab?: string; intake?: string }>;
+};
+
+export default async function AdminPage({ searchParams }: AdminPageProps) {
   const session = await getSession();
+  const params = await searchParams;
 
   if (!session) {
-    redirect("/auth/login?redirect=/admin");
+    const qs = new URLSearchParams();
+    if (params.tab) qs.set("tab", params.tab);
+    if (params.intake) qs.set("intake", params.intake);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    redirect(`/auth/login?redirect=${encodeURIComponent(`/admin${suffix}`)}`);
   }
 
   if (session.role !== "ADMIN") {
     redirect("/");
   }
 
-  const applications = await prisma.artistApplication.findMany({
-    where: { status: "PENDING" },
-    include: { user: { select: { id: true, name: true, email: true } } },
-    orderBy: { createdAt: "desc" }
-  });
+  const initialTab =
+    params.tab === "questions" ||
+    params.tab === "places" ||
+    params.tab === "tips" ||
+    params.tab === "applications" ||
+    params.tab === "review" ||
+    params.tab === "ownership" ||
+    params.tab === "members" ||
+    params.tab === "events" ||
+    params.tab === "curations"
+      ? params.tab
+      : params.intake
+        ? "questions"
+        : "curations";
+  const initialIntakeId = params.intake?.trim() || null;
 
-  const members = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 300,
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      artistStatus: true,
-      emailVerifiedAt: true,
-      createdAt: true,
-      phone: true,
-      _count: {
-        select: {
-          exhibitions: true,
-          ownedSpaces: true,
-          hostedPrograms: true,
-          reservations: true
-        }
-      }
+
+  const ownershipExhibitionSelect = {
+    id: true,
+    title: true,
+    district: true,
+    status: true,
+    source: true,
+    homeHero: true,
+    registeredBy: { select: { name: true, email: true } }
+  } as const;
+
+  const ownershipExhibitionFallbackSelect = {
+    id: true,
+    title: true,
+    district: true,
+    status: true,
+    source: true,
+    registeredBy: { select: { name: true, email: true } }
+  } as const;
+
+  async function loadOwnershipExhibitions() {
+    try {
+      return await prisma.exhibition.findMany({
+        where: { source: { not: "PUBLIC_API" } },
+        orderBy: { updatedAt: "desc" },
+        take: 200,
+        select: ownershipExhibitionSelect
+      });
+    } catch (error) {
+      console.error("admin exhibitions homeHero select failed", error);
+      const fallback = await prisma.exhibition.findMany({
+        where: { source: { not: "PUBLIC_API" } },
+        orderBy: { updatedAt: "desc" },
+        take: 200,
+        select: ownershipExhibitionFallbackSelect
+      });
+      return fallback.map((item) => ({ ...item, homeHero: false }));
     }
-  });
+  }
 
-  const curations = await prisma.curation.findMany({
-    orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
-    include: {
-      basePlace: { select: { id: true, name: true } },
-      stops: {
-        orderBy: { sortOrder: "asc" },
-        include: {
-          space: {
-            select: {
-              id: true,
-              name: true,
-              district: true,
-              lat: true,
-              lng: true
-            }
-          },
-          exhibition: {
-            select: {
-              id: true,
-              title: true,
-              district: true,
-              lat: true,
-              lng: true
-            }
-          },
-          place: {
-            select: {
-              id: true,
-              name: true,
-              district: true,
-              lat: true,
-              lng: true
-            }
+  const [
+    applications,
+    members,
+    curations,
+    exhibitions,
+    places,
+    placeTips,
+    spaces,
+    eventBundle,
+    curationMetrics,
+    reviewSpaces,
+    reviewPrograms,
+    ownershipSpaces,
+    ownershipExhibitions,
+    questions,
+    walkerCandidates,
+    ownershipPrograms,
+    intakePendingCount
+  ] = await Promise.all([
+    prisma.artistApplication.findMany({
+      where: { status: "PENDING" },
+      include: { user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 300,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        artistStatus: true,
+        emailVerifiedAt: true,
+        createdAt: true,
+        phone: true,
+        _count: {
+          select: {
+            exhibitions: true,
+            ownedSpaces: true,
+            hostedPrograms: true,
+            reservations: true
           }
         }
-      },
-      exhibitions: {
-        orderBy: { sortOrder: "asc" },
-        include: { exhibition: { select: { id: true, title: true } } }
       }
-    }
-  });
-
-  const exhibitions = await prisma.exhibition.findMany({
-    where: { status: "PUBLISHED" },
-    select: {
-      id: true,
-      title: true,
-      source: true,
-      region: true,
-      district: true,
-      lat: true,
-      lng: true
-    },
-    orderBy: { createdAt: "desc" }
-  });
-
-  const places = await prisma.place.findMany({
-    orderBy: [{ district: "asc" }, { name: "asc" }]
-  });
-
-  const placeTips = await prisma.placeTip.findMany({
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    take: 200,
-    include: {
-      user: { select: { name: true, nickname: true, email: true } },
-      place: { select: { id: true, name: true } }
-    }
-  });
-
-  const spaces = await prisma.space.findMany({
-    where: { status: "PUBLISHED", isPublic: true },
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      district: true,
-      address: true,
-      lat: true,
-      lng: true,
-      visitPolicy: true
-    },
-    orderBy: [{ district: "asc" }, { name: "asc" }]
-  });
-
-  const { eventSummaries, recentEvents } = await getAdminEventData();
-  const curationMetrics = await getCurationMetrics().catch(() => []);
-
-  const reviewSpaces = await prisma.space.findMany({
-    where: { OR: [{ status: "DRAFT" }, { isPublic: false }] },
-    orderBy: { createdAt: "desc" },
-    include: { owner: { select: { name: true, email: true } } }
-  });
-
-  const reviewPrograms = await prisma.program.findMany({
-    where: { OR: [{ status: "DRAFT" }, { isPublic: false }] },
-    orderBy: { createdAt: "desc" },
-    include: {
-      space: { select: { name: true } },
-      exhibition: { select: { title: true, venue: true } },
-      host: { select: { name: true, email: true } }
-    }
-  });
-
-  const ownershipSpaces = await prisma.space.findMany({
-    orderBy: [{ district: "asc" }, { name: "asc" }],
-    include: { owner: { select: { name: true, email: true } } }
-  });
-
-  let ownershipExhibitions: Array<{
-    id: string;
-    title: string;
-    district: string;
-    status: string;
-    source: string;
-    homeHero: boolean;
-    registeredBy: { name: string; email: string } | null;
-  }> = [];
-  try {
-    ownershipExhibitions = await prisma.exhibition.findMany({
-      where: { source: { not: "PUBLIC_API" } },
-      orderBy: { updatedAt: "desc" },
-      take: 200,
-      select: {
-        id: true,
-        title: true,
-        district: true,
-        status: true,
-        source: true,
-        homeHero: true,
-        registeredBy: { select: { name: true, email: true } }
-      }
-    });
-  } catch (error) {
-    console.error("admin exhibitions homeHero select failed", error);
-    const fallback = await prisma.exhibition.findMany({
-      where: { source: { not: "PUBLIC_API" } },
-      orderBy: { updatedAt: "desc" },
-      take: 200,
-      select: {
-        id: true,
-        title: true,
-        district: true,
-        status: true,
-        source: true,
-        registeredBy: { select: { name: true, email: true } }
-      }
-    });
-    ownershipExhibitions = fallback.map((item) => ({ ...item, homeHero: false }));
-  }
-
-  let questions: Prisma.ArtistQuestionGetPayload<{
-    include: {
-      artist: { select: { name: true; nickname: true } };
-      exhibition: { select: { title: true } };
-    };
-  }>[] = [];
-  try {
-    questions = await prisma.artistQuestion.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 120,
+    }),
+    prisma.curation.findMany({
+      orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
       include: {
-        artist: { select: { name: true, nickname: true } },
-        exhibition: { select: { title: true } }
+        basePlace: { select: { id: true, name: true } },
+        stops: {
+          orderBy: { sortOrder: "asc" },
+          include: {
+            space: {
+              select: {
+                id: true,
+                name: true,
+                district: true,
+                lat: true,
+                lng: true
+              }
+            },
+            exhibition: {
+              select: {
+                id: true,
+                title: true,
+                district: true,
+                lat: true,
+                lng: true
+              }
+            },
+            place: {
+              select: {
+                id: true,
+                name: true,
+                district: true,
+                lat: true,
+                lng: true
+              }
+            }
+          }
+        },
+        exhibitions: {
+          orderBy: { sortOrder: "asc" },
+          include: { exhibition: { select: { id: true, title: true } } }
+        }
       }
-    });
-  } catch (error) {
-    console.error("admin questions load failed", error);
-  }
+    }),
+    prisma.exhibition.findMany({
+      where: { status: "PUBLISHED" },
+      select: {
+        id: true,
+        title: true,
+        source: true,
+        region: true,
+        district: true,
+        lat: true,
+        lng: true
+      },
+      orderBy: { createdAt: "desc" },
+      take: 500
+    }),
+    prisma.place.findMany({
+      orderBy: [{ district: "asc" }, { name: "asc" }],
+      take: 500
+    }),
+    prisma.placeTip.findMany({
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      take: 200,
+      include: {
+        user: { select: { name: true, nickname: true, email: true } },
+        place: { select: { id: true, name: true } }
+      }
+    }),
+    prisma.space.findMany({
+      where: { status: "PUBLISHED", isPublic: true },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        district: true,
+        address: true,
+        lat: true,
+        lng: true,
+        visitPolicy: true
+      },
+      orderBy: [{ district: "asc" }, { name: "asc" }],
+      take: 500
+    }),
+    getAdminEventData(),
+    getCurationMetrics().catch(() => []),
+    prisma.space.findMany({
+      where: { OR: [{ status: "DRAFT" }, { isPublic: false }] },
+      orderBy: { createdAt: "desc" },
+      include: { owner: { select: { name: true, email: true } } },
+      take: 200
+    }),
+    prisma.program.findMany({
+      where: { OR: [{ status: "DRAFT" }, { isPublic: false }] },
+      orderBy: { createdAt: "desc" },
+      include: {
+        space: { select: { name: true } },
+        exhibition: { select: { title: true, venue: true } },
+        host: { select: { name: true, email: true } }
+      },
+      take: 200
+    }),
+    prisma.space.findMany({
+      orderBy: [{ district: "asc" }, { name: "asc" }],
+      include: { owner: { select: { name: true, email: true } } },
+      take: 500
+    }),
+    loadOwnershipExhibitions(),
+    prisma.artistQuestion
+      .findMany({
+        orderBy: { createdAt: "desc" },
+        take: 120,
+        include: {
+          artist: { select: { name: true, nickname: true } },
+          exhibition: { select: { title: true } }
+        }
+      })
+      .catch((error) => {
+        console.error("admin questions load failed", error);
+        return [] as Prisma.ArtistQuestionGetPayload<{
+          include: {
+            artist: { select: { name: true; nickname: true } };
+            exhibition: { select: { title: true } };
+          };
+        }>[];
+      }),
+    prisma.user.findMany({
+      where: { artistStatus: "APPROVED" },
+      orderBy: { name: "asc" },
+      take: 100,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        artistApplication: true
+      }
+    }),
+    prisma.program.findMany({
+      orderBy: [{ startDate: "desc" }],
+      take: 200,
+      include: {
+        space: { select: { name: true } },
+        exhibition: { select: { title: true, venue: true } },
+        host: { select: { name: true, email: true } }
+      }
+    }),
+    prisma.question.count({
+      where: { status: { in: ["submitted", "sent"] } }
+    }).catch((error) => {
+      console.error("admin intake pending count failed", error);
+      return 0;
+    })
+  ]);
 
-  const walkerCandidates = await prisma.user.findMany({
-    where: { artistStatus: "APPROVED" },
-    orderBy: { name: "asc" },
-    take: 100,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      artistApplication: true
-    }
-  });
-
-  const ownershipPrograms = await prisma.program.findMany({
-    orderBy: [{ startDate: "desc" }],
-    take: 200,
-    include: {
-      space: { select: { name: true } },
-      exhibition: { select: { title: true, venue: true } },
-      host: { select: { name: true, email: true } }
-    }
-  });
+  const { eventSummaries, recentEvents, channelCounts } = eventBundle;
 
   return (
     <>
       <Header activeTab="MY" />
+      <Suspense fallback={<main className="section"><p>관리자를 불러오는 중…</p></main>}>
       <AdminDashboard
+        initialTab={initialTab}
+        initialIntakeId={initialIntakeId}
+        intakePendingCount={intakePendingCount}
         applications={applications.map((application) => ({
           userId: application.userId,
           name: application.user.name,
@@ -395,17 +447,28 @@ export default async function AdminPage() {
             count: summary._count._all
           }))
           .sort((a, b) => b.count - a.count)}
-        recentEvents={recentEvents.map((event) => ({
-          id: event.id,
-          type: event.type,
-          createdAt: event.createdAt.toISOString(),
-          source: event.source,
-          metadata: event.metadata,
-          userLabel: event.user
-            ? `${event.user.name} (${event.user.email})`
-            : "비회원",
-          exhibitionTitle: event.exhibition?.title ?? "-"
-        }))}
+        channelCounts={channelCounts}
+        recentEvents={recentEvents.map((event) => {
+          let channel: string | null = null;
+          try {
+            const meta = JSON.parse(event.metadata || "{}") as { channel?: string };
+            channel = typeof meta.channel === "string" ? meta.channel : null;
+          } catch {
+            channel = null;
+          }
+          return {
+            id: event.id,
+            type: event.type,
+            createdAt: event.createdAt.toISOString(),
+            source: event.source,
+            channel,
+            metadata: event.metadata,
+            userLabel: event.user
+              ? `${event.user.name} (${event.user.email})`
+              : "비회원",
+            exhibitionTitle: event.exhibition?.title ?? "-"
+          };
+        })}
         curationMetrics={curationMetrics}
         reviewSpaces={reviewSpaces.map((space) => ({
           id: space.id,
@@ -504,6 +567,7 @@ export default async function AdminPage() {
           showOnHome: readShowOnHome(user.artistApplication)
         }))}
       />
+      </Suspense>
       <Footer />
     </>
   );
@@ -520,22 +584,58 @@ function safeJsonArray(value: string): string[] {
 
 async function getAdminEventData() {
   try {
-    const eventSummaries = await prisma.eventLog.groupBy({
-      by: ["type"],
-      _count: { _all: true }
-    });
-    const recentEvents = await prisma.eventLog.findMany({
-      take: 50,
-      orderBy: { createdAt: "desc" },
-      include: {
-        user: { select: { name: true, email: true } },
-        exhibition: { select: { title: true } }
-      }
-    });
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
 
-    return { eventSummaries, recentEvents };
+    const [eventSummaries, recentEvents, channelRows] = await Promise.all([
+      prisma.eventLog.groupBy({
+        by: ["type"],
+        where: { createdAt: { gte: since } },
+        _count: { _all: true }
+      }),
+      prisma.eventLog.findMany({
+        take: 80,
+        orderBy: { createdAt: "desc" },
+        where: {
+          OR: [{ userId: null }, { user: { role: { not: "ADMIN" } } }]
+        },
+        include: {
+          user: { select: { name: true, email: true, role: true } },
+          exhibition: { select: { title: true } }
+        }
+      }),
+      prisma.eventLog.findMany({
+        where: {
+          type: "EXHIBITION_VIEW",
+          createdAt: { gte: since },
+          OR: [{ userId: null }, { user: { role: { not: "ADMIN" } } }]
+        },
+        select: { metadata: true },
+        take: 800
+      })
+    ]);
+
+    const channelCounts: Record<string, number> = {};
+    for (const row of channelRows) {
+      let channel = "unknown";
+      try {
+        const meta = JSON.parse(row.metadata || "{}") as { channel?: string };
+        if (typeof meta.channel === "string" && meta.channel) channel = meta.channel;
+      } catch {
+        // ignore
+      }
+      channelCounts[channel] = (channelCounts[channel] ?? 0) + 1;
+    }
+
+    return {
+      eventSummaries,
+      recentEvents,
+      channelCounts: Object.entries(channelCounts)
+        .map(([channel, count]) => ({ channel, count }))
+        .sort((a, b) => b.count - a.count)
+    };
   } catch (error) {
     console.error("Failed to load admin event logs", error);
-    return { eventSummaries: [], recentEvents: [] };
+    return { eventSummaries: [], recentEvents: [], channelCounts: [] };
   }
 }

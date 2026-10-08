@@ -6,6 +6,10 @@ import { z } from "zod";
 const eventSchema = z.object({
   type: z.enum([
     "EXHIBITION_SHARE",
+    "EXHIBITION_ENGAGE",
+    "RELATED_COURSE_CLICK",
+    "RELATED_DECK_CLICK",
+    "DECK_STOP_CLICK",
     "ARTIST_SHARE",
     "VISIT_SHARE",
     "RESERVATION_INTENT",
@@ -23,7 +27,9 @@ const eventSchema = z.object({
   exhibitionId: z.string().min(1).optional(),
   reservationId: z.string().min(1).optional(),
   source: z.string().max(80).optional(),
-  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional()
+  metadata: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .optional()
 });
 
 export async function POST(request: Request) {
@@ -40,6 +46,7 @@ export async function POST(request: Request) {
   await logEvent({
     type: parsed.data.type,
     userId: session?.id,
+    userRole: session?.role,
     exhibitionId: parsed.data.exhibitionId,
     reservationId: parsed.data.reservationId,
     source: parsed.data.source,

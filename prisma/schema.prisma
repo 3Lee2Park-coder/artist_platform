@@ -48,11 +48,16 @@ model User {
   placeTips           PlaceTip[]
   questionsAsked      ArtistQuestion[]   @relation("QuestionsAsked")
   questionsReceived   ArtistQuestion[]   @relation("QuestionsReceived")
+  intakeQuestions     Question[]         @relation("QuestionAsker")
+  artistContextQuestions Question[]      @relation("QuestionArtist")
+  questionAnswers     QuestionAnswer[]   @relation("QuestionResponder")
+  questionNotifications QuestionNotification[]
   decks               UserDeck[]
   savedCards          SavedCard[]
   notices             Notice[]
   calendarEntries     CalendarEntry[]
   calendarShares      CalendarShare[]
+  calendarDayCovers   CalendarDayCover[]
 }
 
 model ArtistApplication {
@@ -227,6 +232,7 @@ model Exhibition {
   eventLogs     EventLog[]
   programs      Program[]
   artistQuestions ArtistQuestion[]
+  intakeQuestions Question[]
 
   @@index([homeHero, createdAt])
 }
@@ -242,6 +248,7 @@ model Artwork {
   imageUrl     String?
 
   exhibition Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  intakeQuestions Question[]
 }
 
 model Tag {
@@ -294,6 +301,7 @@ model Place {
   curationStops CurationStop[]
   tips          PlaceTip[]
   visits        Visit[]
+  intakeQuestions Question[]
 
   @@index([homeFeatured, homeSortOrder])
 }
@@ -351,6 +359,104 @@ model ArtistQuestion {
   @@index([status, createdAt])
   @@index([artistUserId, status])
   @@index([fromEmail, createdAt])
+}
+
+// P1 질문 도메인. 기존 ArtistQuestion(카드 「작가에게 묻기」)과 별도다.
+// 전시·작가·작품·장소 중 하나는 앱 검증과 DB CHECK로 필수.
+model Question {
+  id           String   @id @default(cuid())
+  userId       String?
+  contactEmail String?
+  exhibitionId String?
+  artistId     String?
+  workId       String?
+  venueId      String?
+  text         String
+  // submitted | sent | answered | closed | rejected
+  status       String   @default("submitted")
+  // private | public_candidate
+  audience     String   @default("private")
+  notifyOnAnswer Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  asker       User?       @relation("QuestionAsker", fields: [userId], references: [id], onDelete: SetNull)
+  artist      User?       @relation("QuestionArtist", fields: [artistId], references: [id], onDelete: SetNull)
+  exhibition  Exhibition? @relation(fields: [exhibitionId], references: [id], onDelete: SetNull)
+  work        Artwork?    @relation(fields: [workId], references: [id], onDelete: SetNull)
+  venue       Place?      @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  recipients  QuestionRecipient[]
+  answers     QuestionAnswer[]
+  tokens      QuestionResponseToken[]
+  notifications QuestionNotification[]
+
+  @@index([status, createdAt])
+  @@index([exhibitionId])
+  @@index([artistId])
+  @@index([workId])
+  @@index([venueId])
+  @@index([userId])
+}
+
+model QuestionRecipient {
+  id            String    @id @default(cuid())
+  questionId    String
+  // artist | gallery | organizer | ooof
+  recipientType String
+  recipientId   String?
+  contactChannel String
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  respondedAt   DateTime?
+  opsNote       String?
+  createdAt     DateTime  @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model QuestionAnswer {
+  id          String   @id @default(cuid())
+  questionId  String
+  responderId String?
+  text        String
+  // private | public | withdrawn
+  visibility  String   @default("private")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  question  Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  responder User?    @relation("QuestionResponder", fields: [responderId], references: [id], onDelete: SetNull)
+
+  @@index([questionId, visibility])
+}
+
+model QuestionResponseToken {
+  id         String    @id @default(cuid())
+  questionId String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model QuestionNotification {
+  id         String    @id @default(cuid())
+  questionId String
+  userId     String?
+  channel    String
+  sentAt     DateTime  @default(now())
+  readAt     DateTime?
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([questionId, sentAt])
 }
 
 model Curation {
@@ -533,7 +639,7 @@ model NotificationLog {
 model Notice {
   id        String    @id @default(cuid())
   userId    String
-  // QUESTION_ANSWER | QUESTION_RECEIVED | QUESTION_REJECTED | EXHIBITION_ENDING
+  // QUESTION_ANSWER | QUESTION_RECEIVED | QUESTION_REJECTED | INTAKE_QUESTION | EXHIBITION_ENDING
   type      String
   title     String
   body      String?
@@ -620,6 +726,20 @@ model CalendarShare {
   date       String
   shareToken String   @unique
   createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// 날짜 칸에 띄울 대표 이미지. itemRef는 CalendarEntry.id 또는 visit-<Visit.id>.
+model CalendarDayCover {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  itemRef   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

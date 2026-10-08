@@ -4,6 +4,11 @@ type SearchPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+export const metadata = {
+  title: "검색",
+  robots: { index: false, follow: false }
+};
+
 /**
  * 예전 /search 링크 호환.
  * 메뉴 «전시»와 필터 결과는 /exhibitions 디렉터리로 모읍니다.

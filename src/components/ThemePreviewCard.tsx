@@ -1,4 +1,7 @@
+"use client";
+
 import { ThemePreviewRow } from "@/components/ThemePreviewRow";
+import { trackProductEvent } from "@/lib/client-analytics";
 import {
   CURATION_STOP_TYPE_LABEL,
   daysUntilEnd,
@@ -31,6 +34,12 @@ type ThemePreviewCardProps = {
   /** 커버·본문 탭은 이동 대신 미리보기. 푸터 링크는 유지. */
   selectInsteadOfNavigate?: boolean;
   onPreview?: () => void;
+  trackRelatedDeck?: {
+    deckId: string;
+    fromPlaceId?: string;
+    fromExhibitionId?: string;
+    source?: string;
+  };
 };
 
 export function ThemePreviewCard({
@@ -46,11 +55,27 @@ export function ThemePreviewCard({
   coverTone,
   footerLabel = "전체보기",
   selectInsteadOfNavigate = false,
-  onPreview
+  onPreview,
+  trackRelatedDeck
 }: ThemePreviewCardProps) {
   const stopPreview = (stops ?? []).slice(0, 4);
   const useStops = stopPreview.length > 0;
   const exhibitionPreview = exhibitions.slice(0, 3);
+
+  function trackDeckClick() {
+    if (!trackRelatedDeck) return;
+    void trackProductEvent({
+      type: "RELATED_DECK_CLICK",
+      exhibitionId: trackRelatedDeck.fromExhibitionId,
+      source: trackRelatedDeck.source ?? "theme_preview_card",
+      metadata: {
+        deckId: trackRelatedDeck.deckId,
+        curationId: trackRelatedDeck.deckId,
+        fromPlaceId: trackRelatedDeck.fromPlaceId ?? null,
+        href
+      }
+    });
+  }
 
   const coverFromStop = stopPreview.find((stop) => stop.heroImageUrl || stop.heroTone);
   const coverStyle = coverImageUrl
@@ -87,7 +112,13 @@ export function ThemePreviewCard({
       onClick={onPreview}
     />
   ) : (
-    <Link href={href} className="theme-card-cover" style={coverStyle} aria-hidden="true" />
+    <Link
+      href={href}
+      className="theme-card-cover"
+      style={coverStyle}
+      aria-hidden="true"
+      onClick={trackDeckClick}
+    />
   );
 
   const body = (
@@ -114,7 +145,11 @@ export function ThemePreviewCard({
           {body}
         </button>
       ) : (
-        <Link href={href} className="theme-card-body theme-card-body-link">
+        <Link
+          href={href}
+          className="theme-card-body theme-card-body-link"
+          onClick={trackDeckClick}
+        >
           {body}
         </Link>
       )}
@@ -216,7 +251,7 @@ export function ThemePreviewCard({
         </div>
       ) : null}
 
-      <Link href={href} className="theme-card-foot">
+      <Link href={href} className="theme-card-foot" onClick={trackDeckClick}>
         {footerLabel} →
       </Link>
     </article>
