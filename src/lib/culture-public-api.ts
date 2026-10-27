@@ -1,4 +1,5 @@
 import { getTodayKST } from "@/lib/date";
+import { EXHIBITION_REDIRECTS } from "@/lib/exhibition-redirects";
 import {
   defaultCoordsForRegion,
   enrichPublicLocation,
@@ -273,7 +274,7 @@ export async function syncPublicExhibitions(
           exhibitionType: "갤러리 초대전/기획전 전시",
           heroTone:
             "linear-gradient(135deg, #f3e7d3 0%, #c9a26a 50%, #5c4326 100%)",
-          status: "PUBLISHED"
+          status: EXHIBITION_REDIRECTS[id] ? "HIDDEN" : "PUBLISHED"
         }
       });
       result.imported += 1;
