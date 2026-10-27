@@ -14,6 +14,7 @@ import type {
   HeroTabKey
 } from "@/types/exhibition";
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 type DbExhibition = Awaited<ReturnType<typeof fetchExhibitionsFromDb>>[number];
 
@@ -763,8 +764,8 @@ const PLACE_TYPE_LABEL: Record<string, string> = {
   ETC: "가볼 곳"
 };
 
-export async function getPublishedCurations(): Promise<CurationSummary[]> {
-  const records = await prisma.curation.findMany({
+async function fetchPublishedCurationRecords() {
+  return prisma.curation.findMany({
     where: { published: true },
     // featured → sortOrder → 최신 수정순
     orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { updatedAt: "desc" }],
@@ -790,7 +791,16 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
       }
     }
   });
+}
 
+const getCachedPublishedCurationRecords = unstable_cache(
+  async () => fetchPublishedCurationRecords(),
+  ["curations-published-v1"],
+  { revalidate: 60, tags: ["curations"] }
+);
+
+export const getPublishedCurations = cache(async (): Promise<CurationSummary[]> => {
+  const records = await getCachedPublishedCurationRecords();
   return records.map((curation) => {
     const exhibitions = curation.exhibitions
       .filter((item) => item.exhibition.status === "PUBLISHED")
@@ -948,13 +958,19 @@ export async function getPublishedCurations(): Promise<CurationSummary[]> {
             imageUrl: resolveMediaUrl(curation.basePlace.imageUrl) ?? null
           }
         : null,
-      createdAt: curation.createdAt.toISOString(),
-      updatedAt: curation.updatedAt.toISOString(),
+      createdAt:
+        curation.createdAt instanceof Date
+          ? curation.createdAt.toISOString()
+          : String(curation.createdAt),
+      updatedAt:
+        curation.updatedAt instanceof Date
+          ? curation.updatedAt.toISOString()
+          : String(curation.updatedAt),
       exhibitions,
       stops
     };
   });
-}
+});
 
 export async function getCurationById(id: string): Promise<CurationSummary | null> {
   const curations = await getPublishedCurations();

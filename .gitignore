@@ -13,3 +13,6 @@ pnpm-debug.log*
 *.db
 .vercel
 .env*
+/test-results/
+/playwright-report/
+/blob-report/

@@ -32,6 +32,7 @@ export async function getVisitArchive(
   const visits = await prisma.visit.findMany({
     where: { userId },
     orderBy: { visitedAt: "desc" },
+    take: 100,
     include: {
       exhibition: {
         select: {

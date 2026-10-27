@@ -24,7 +24,7 @@ function asCurationId(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-/** EventLog metadata.curationId 기준 큐레이션별 집계 */
+/** EventLog metadata.curationId 기준 큐레이션별 집계 (최근 90일, 상한 있음) */
 export async function getCurationMetrics(): Promise<CurationMetricRow[]> {
   const curations = await prisma.curation.findMany({
     select: { id: true, title: true, neighborhood: true },
@@ -35,8 +35,12 @@ export async function getCurationMetrics(): Promise<CurationMetricRow[]> {
     return [];
   }
 
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
+
   const events = await prisma.eventLog.findMany({
     where: {
+      createdAt: { gte: since },
       type: {
         in: [
           "CURATION_VIEW",
@@ -47,7 +51,9 @@ export async function getCurationMetrics(): Promise<CurationMetricRow[]> {
         ]
       }
     },
-    select: { type: true, source: true, metadata: true }
+    select: { type: true, source: true, metadata: true },
+    orderBy: { createdAt: "desc" },
+    take: 8000
   });
 
   const byId = new Map<string, CurationMetricRow>(

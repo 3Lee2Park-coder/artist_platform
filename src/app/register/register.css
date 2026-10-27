@@ -1,0 +1,154 @@
+.register-landing {
+  margin: 0 0 36px;
+  padding: 8px 0 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.register-page .register-hub-title {
+  max-width: 14em;
+  margin: 0 0 12px;
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.register-landing .register-b2b-lead,
+.register-page .auth-description {
+  max-width: 38em;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.register-page .auth-description {
+  margin-bottom: 24px;
+}
+
+.register-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 28px 0 14px;
+}
+
+.register-metrics div {
+  padding: 16px 16px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.register-metrics dt {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.register-metrics dd {
+  margin: 10px 0 0;
+  color: var(--everyman-ink);
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.register-metric-note {
+  max-width: 68ch;
+  margin: 0 0 20px;
+  color: var(--secondary);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.register-brand-word {
+  white-space: nowrap;
+}
+
+.register-landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.register-steps-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+@media (max-width: 720px) {
+  .register-page .register-hub-title {
+    max-width: none;
+    font-size: 32px;
+  }
+
+  .register-page h1 {
+    font-size: 28px;
+    line-height: 1.25;
+    letter-spacing: -0.03em;
+  }
+
+  .register-page .register-card,
+  .register-page .register-card.wide {
+    padding: 18px 16px 20px;
+    border-radius: 18px;
+  }
+
+  .register-landing .register-b2b-lead,
+  .register-page .auth-description {
+    font-size: 17px;
+  }
+
+  .register-form .stepper {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .register-form .stepper-item {
+    min-height: 44px;
+    padding: 8px 4px;
+    font-size: 14px;
+  }
+
+  .register-form .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .register-form .form-actions .primary-button,
+  .register-form .form-actions .secondary-button,
+  .register-form .artwork-form-list > .secondary-button {
+    width: 100%;
+  }
+
+  .register-form input,
+  .register-form select,
+  .register-form textarea {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .register-form .field-hint,
+  .register-form .field-hint code {
+    overflow-wrap: anywhere;
+  }
+
+  .register-form .checkbox-label {
+    min-height: 44px;
+  }
+
+  .register-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .register-metrics dt {
+    font-size: 16px;
+  }
+}

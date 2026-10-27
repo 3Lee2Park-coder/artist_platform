@@ -7,11 +7,13 @@
  * - Google Ads conversions: AW-… via GoogleAdsConversionTracker only
  *   (do not gtag('config') a second G- ID — that produced dual page_view / GA4-Config noise)
  *
- * Duplicate page_view prevention:
- * - gtag config uses send_page_view: false
- * - AnalyticsPageView fires page_view only after document.title is settled
- * - In GTM Admin: disable Enhanced Measurement “Page changes based on browser history”
- *   so History Change does not fire a second page_view with empty/stale title
+ * Page views:
+ * - First load: gtag config sends page_view (needed for user_engagement / 참여 세션)
+ * - Client navigations: AnalyticsPageView sends page_view after document.title settles
+ * - dataLayer pushes are for GTM preview. They do not reach GA4 unless a GTM tag
+ *   forwards them. gtag('event') with send_to is what hits G-C7TPEQPJVQ.
+ * - In GTM: disable Enhanced Measurement “Page changes based on browser history”
+ *   so history changes do not add an early page_view with a stale title.
  *
  * GA4 custom params also need Admin custom dimensions for standard reports.
  */
@@ -44,6 +46,9 @@ type TrackInput = {
 };
 
 type AnalyticsParamValue = string | number;
+
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-C7TPEQPJVQ";
 
 const EVENTLOG_TYPES = new Set<string>([
   "EXHIBITION_ENGAGE",
@@ -91,8 +96,18 @@ function pushDataLayer(payload: Record<string, unknown>) {
   w.dataLayer.push(payload);
 }
 
-function getGtag(): ((...args: unknown[]) => void) | undefined {
-  return (window as Window & { gtag?: (...args: unknown[]) => void }).gtag;
+function ensureGtag(): (...args: unknown[]) => void {
+  const w = window as Window & {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+  };
+  w.dataLayer = w.dataLayer || [];
+  if (typeof w.gtag !== "function") {
+    w.gtag = function gtag() {
+      w.dataLayer?.push(arguments);
+    };
+  }
+  return w.gtag;
 }
 
 function pageTypeFromPath(pathname: string): string {
@@ -151,11 +166,11 @@ export function trackGaEvent(
 ) {
   if (typeof window === "undefined") return;
   try {
-    pushDataLayer({ event: eventName, ...params });
-    const gtag = getGtag();
-    if (typeof gtag === "function") {
-      gtag("event", eventName, params);
-    }
+    const hit = GA_MEASUREMENT_ID
+      ? { ...params, send_to: GA_MEASUREMENT_ID }
+      : params;
+    pushDataLayer({ event: eventName, ...hit });
+    ensureGtag()("event", eventName, hit);
   } catch {
     // ignore GA failures
   }
@@ -194,10 +209,7 @@ export function setAnalyticsUserProperties(
     if (Object.keys(cleaned).length === 0) return;
 
     pushDataLayer({ event: "user_properties_set", user_properties: cleaned });
-    const gtag = getGtag();
-    if (typeof gtag === "function") {
-      gtag("set", "user_properties", cleaned);
-    }
+    ensureGtag()("set", "user_properties", cleaned);
   } catch {
     // ignore
   }

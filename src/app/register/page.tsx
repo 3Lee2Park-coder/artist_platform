@@ -9,11 +9,34 @@ export const metadata = {
   title: "등록 허브"
 };
 
+function startOfMonthKST(today: string) {
+  return new Date(`${today.slice(0, 7)}-01T00:00:00+09:00`);
+}
+
 export default async function RegisterHubPage() {
   const session = await getSession();
   const approved = Boolean(session && isApprovedArtist(session));
   const artistStatus = session?.artistStatus ?? "NONE";
   const today = getTodayKST();
+  const monthStart = startOfMonthKST(today);
+
+  const [pageOpens, openedShows, publicSpaces] = await Promise.all([
+    prisma.eventLog.count({
+      where: { type: "EXHIBITION_VIEW", createdAt: { gte: monthStart } }
+    }),
+    prisma.eventLog.groupBy({
+      by: ["exhibitionId"],
+      where: {
+        type: "EXHIBITION_VIEW",
+        createdAt: { gte: monthStart },
+        exhibitionId: { not: null }
+      }
+    }),
+    prisma.space.count({
+      where: { status: "PUBLISHED", isPublic: true }
+    })
+  ]);
+  const openedShowCount = openedShows.length;
 
   const ownedSpaceCount =
     session && approved
@@ -54,32 +77,57 @@ export default async function RegisterHubPage() {
       <Header activeTab="등록" />
       <main className="register-page">
         <section className="register-card wide">
-          <div className="register-b2b-banner">
-            <p className="register-b2b-kicker">For artists &amp; spaces · OOOF.</p>
-            <p className="register-b2b-headline">
-              Come out free.
-              <br />
-              Open your door.
-              <br />
-              Be found.
-            </p>
+          <header className="register-landing">
+            <h1 className="register-hub-title">
+              관객들에게 더 많은 전시를 보여주세요.
+            </h1>
             <p className="register-b2b-lead">
-              문을 열면, 찾아옵니다. 공간·전시·프로그램을 올리면 동네를 걷는
-              관객이 당신의 작업을 발견합니다. 단순한 등록이 아니라, 관객이
-              당신을 찾을 수 있는 자리를 만드는 일입니다.
+              전시 등록은 무료입니다. 승인 뒤 공간과 전시를 올리면 전시 목록과
+              지도에 노출됩니다. <span className="register-brand-word">OOOF.는</span> 그 전시가 관객에게 닿도록 자리를 엽니다.
             </p>
-          </div>
+            <dl className="register-metrics">
+              <div>
+                <dt>이번 달 전시 페이지가 열린 횟수</dt>
+                <dd>{pageOpens.toLocaleString("ko-KR")}</dd>
+              </div>
+              <div>
+                <dt>이번 달 노출 중인 전시</dt>
+                <dd>{openedShowCount.toLocaleString("ko-KR")}</dd>
+              </div>
+              <div>
+                <dt>공개 중인 공간</dt>
+                <dd>{publicSpaces.toLocaleString("ko-KR")}</dd>
+              </div>
+            </dl>
+            {/* <p className="register-metric-note">
+              첫 숫자는 월간 방문자 수가 아닙니다. 전시 페이지가 열린 횟수이고,
+              그중 대부분은 아직 작가 본인 등록 전시가 아닙니다. 작가 등록 전시가
+              적기 때문에, 지금 올리면 그 빈 자리에 들어갑니다.
+            </p> */}
+            <div className="register-landing-actions">
+              {!session ? (
+                <Link className="primary-button" href="/auth/signup?redirect=/register">
+                  무료로 시작하기
+                </Link>
+              ) : approved ? (
+                <Link className="primary-button" href="/register/exhibition">
+                  전시 등록하기
+                </Link>
+              ) : (
+                <Link className="primary-button" href="/register/artist">
+                  작가 승인 신청
+                </Link>
+              )}
+              <Link className="secondary-button" href="/for-artists">
+                등록 전에 안내 보기
+              </Link>
+            </div>
+          </header>
 
-          <p className="eyebrow">작가 등록</p>
-          <h1 className="register-hub-title">한 번에 하나씩, 순서대로</h1>
+          <h2 className="register-steps-title">등록 순서</h2>
           <p className="auth-description">
-            단계를 따라가면 됩니다. 작가 승인 후 공간·전시를 등록하고, 내 공간 또는
-            진행·예정 전시에 프로그램을 연결할 수 있습니다. 공간·프로그램은 관리자
-            검수 뒤 공개됩니다.
-          </p>
-          <p className="field-hint">
-            서비스를 먼저 이해하고 싶다면{" "}
-            <Link href="/for-artists">작가로 열기 안내</Link>를 읽어 보세요.
+            계정, 작가 승인, 공간, 전시 순입니다. 공간과 프로그램은 관리자 검수
+            뒤 공개됩니다.
           </p>
 
           <ol className="register-progress">
@@ -161,7 +209,7 @@ export default async function RegisterHubPage() {
               <h2>공간 등록</h2>
               <p>
                 공방·쇼룸을 먼저 올리면 프로그램·큐레이션에 연결하기 쉽습니다.
-                방문 정책(워크인/예약)을 정확히 적어 주세요.
+                방문 정책(워크인/예약)을 함께 입력해주세요.
               </p>
               {approved ? (
                 <div className="hub-actions">
@@ -180,7 +228,7 @@ export default async function RegisterHubPage() {
             <article className="hub-card">
               <p className="hub-card-step">Step 4a</p>
               <h2>전시 등록</h2>
-              <p>기간이 있는 전시와 작가와의 대화 예약을 설정합니다.</p>
+              <p>무료 전시회 노출과 선택적으로 작가와의 대화 등 예약 기획을 입력할 수 있습니다.</p>
               {approved ? (
                 <Link className="primary-button" href="/register/exhibition">
                   전시 등록하기

@@ -177,10 +177,30 @@ export function OoofCard({
               </>
             ) : null}
           </dl>
+          {onSave || onAddToDeck ? (
+            <p className="ooof-card-collect-hint">
+              카드 저장은 MY 달력에 올릴 한 장, 내 덱에 넣기는 여러 장을 코스로 묶을 때 씁니다.
+            </p>
+          ) : null}
           <div className="ooof-card-actions">
             {onSave ? (
-              <button type="button" className={card.saved ? "is-on" : ""} onClick={() => onSave(card)}>
-                {card.saved ? "담김" : "담기"}
+              <button
+                type="button"
+                className={card.saved ? "is-on" : ""}
+                onClick={() => onSave(card)}
+                title="MY 달력의 카드 담기에 나타납니다"
+              >
+                {card.saved ? "카드 저장됨" : "카드 저장"}
+              </button>
+            ) : null}
+            {onAddToDeck ? (
+              <button
+                type="button"
+                className="is-fill"
+                onClick={() => onAddToDeck(card)}
+                title="내 덱에 넣어 코스를 만듭니다"
+              >
+                내 덱에 넣기
               </button>
             ) : null}
             {onVisit ? (
@@ -205,11 +225,6 @@ export function OoofCard({
                   }}
                 />
               </>
-            ) : null}
-            {onAddToDeck ? (
-              <button type="button" className="is-fill" onClick={() => onAddToDeck(card)}>
-                덱에 담기
-              </button>
             ) : null}
             {card.source === "place" ? null : (
               <AskArtistTrigger

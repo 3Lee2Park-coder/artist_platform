@@ -8,16 +8,22 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 /**
- * Fires GA4 page_view after document.title settles on App Router navigations.
- * Pairs with gtag config { send_page_view: false } to avoid empty/(not set) titles.
+ * Client navigations only. The first load page_view comes from gtag config
+ * so GA4 can record user_engagement (참여 세션).
  */
 export function AnalyticsPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const lastKey = useRef<string | null>(null);
+  const skippedInitial = useRef(false);
 
   useEffect(() => {
     const key = `${pathname}?${searchParams.toString()}`;
+    if (!skippedInitial.current) {
+      skippedInitial.current = true;
+      lastKey.current = key;
+      return;
+    }
     if (lastKey.current === key) return;
 
     let cancelled = false;

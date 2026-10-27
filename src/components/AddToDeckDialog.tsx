@@ -70,8 +70,8 @@ export function AddToDeckDialog({ cardKey, onClose, onAdded }: AddToDeckDialogPr
     <div className="ooof-dialog" role="dialog" aria-modal="true" aria-labelledby="ooof-add-deck-title">
       <button type="button" className="ooof-dialog-scrim" aria-label="닫기" onClick={onClose} />
       <div className="ooof-dialog-card">
-        <h2 id="ooof-add-deck-title">덱에 담기</h2>
-        <p>어느 덱에 이 카드를 담을까요?</p>
+        <h2 id="ooof-add-deck-title">내 덱에 넣기</h2>
+        <p>이 카드를 어느 코스 덱에 넣을까요? 만든 덱은 MY 달력의 「덱 담기」에 나타납니다.</p>
         <ul className="ooof-deck-pick">
           {decks.map((deck) => (
             <li key={deck.id}>

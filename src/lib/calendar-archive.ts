@@ -50,6 +50,67 @@ function calendarShareDb() {
   return share ?? null;
 }
 
+function calendarDayCoverDb() {
+  const cover = (prisma as { calendarDayCover?: typeof prisma.calendarDayCover })
+    .calendarDayCover;
+  return cover ?? null;
+}
+
+/** 개발 서버가 옛 Prisma 클라이언트를 붙잡고 있어도 대표 이미지 테이블은 쓸 수 있게 SQL로 우회한다. */
+async function listDayCovers(userId: string, start: string, end: string) {
+  const coverDb = calendarDayCoverDb();
+  if (coverDb) {
+    return coverDb.findMany({
+      where: { userId, date: { gte: start, lte: end } },
+      select: { date: true, itemRef: true }
+    });
+  }
+  return prisma.$queryRaw<Array<{ date: string; itemRef: string }>>`
+    SELECT "date", "itemRef"
+    FROM "CalendarDayCover"
+    WHERE "userId" = ${userId}
+      AND "date" >= ${start}
+      AND "date" <= ${end}
+  `;
+}
+
+async function upsertDayCover(userId: string, date: string, itemRef: string) {
+  const coverDb = calendarDayCoverDb();
+  if (coverDb) {
+    return coverDb.upsert({
+      where: { userId_date: { userId, date } },
+      create: { userId, date, itemRef },
+      update: { itemRef }
+    });
+  }
+  const id = `cdc_${crypto.randomUUID().replaceAll("-", "")}`;
+  await prisma.$executeRaw`
+    INSERT INTO "CalendarDayCover" ("id", "userId", "date", "itemRef", "createdAt", "updatedAt")
+    VALUES (${id}, ${userId}, ${date}, ${itemRef}, NOW(), NOW())
+    ON CONFLICT ("userId", "date")
+    DO UPDATE SET "itemRef" = EXCLUDED."itemRef", "updatedAt" = NOW()
+  `;
+  return { id, userId, date, itemRef };
+}
+
+async function deleteDayCover(userId: string, where: { date?: string; itemRef?: string }) {
+  const coverDb = calendarDayCoverDb();
+  if (coverDb) {
+    return coverDb.deleteMany({ where: { userId, ...where } });
+  }
+  if (where.date) {
+    await prisma.$executeRaw`
+      DELETE FROM "CalendarDayCover" WHERE "userId" = ${userId} AND "date" = ${where.date}
+    `;
+    return;
+  }
+  if (where.itemRef) {
+    await prisma.$executeRaw`
+      DELETE FROM "CalendarDayCover" WHERE "userId" = ${userId} AND "itemRef" = ${where.itemRef}
+    `;
+  }
+}
+
 export function shiftDate(ymd: string, days: number) {
   const [year, month, day] = ymd.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day + days));
@@ -186,7 +247,43 @@ export async function getCalendarMonth(userId: string, yearMonth: string) {
   const cardKeys = rows.filter((row) => row.kind === "CARD" && row.cardKey).map((row) => row.cardKey as string);
   const cards = cardKeys.length ? await annotateCards(await resolveCardKeys(cardKeys), userId) : [];
   const cardMap = new Map(cards.map((card) => [card.key, card]));
-  const decks = await getUserDecks(userId);
+
+  // 달력에는 덱 전체 카드 hydrate가 필요 없다. 메타+커버만 가져온다.
+  const deckRows = await prisma.userDeck.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      title: true,
+      accentColor: true,
+      cards: {
+        orderBy: { sortOrder: "asc" },
+        take: 1,
+        select: { cardKey: true }
+      },
+      _count: { select: { cards: true } }
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 40
+  });
+  const coverKeys = deckRows
+    .map((row) => row.cards[0]?.cardKey)
+    .filter((key): key is string => Boolean(key));
+  const coverCards = coverKeys.length
+    ? await annotateCards(await resolveCardKeys(coverKeys), userId)
+    : [];
+  const coverByKey = new Map(coverCards.map((card) => [card.key, card]));
+  const decks = deckRows.map((row) => {
+    const cover = row.cards[0]?.cardKey
+      ? coverByKey.get(row.cards[0].cardKey)
+      : undefined;
+    return {
+      id: row.id,
+      title: row.title,
+      accentColor: row.accentColor,
+      cardCount: row._count.cards,
+      coverImageUrl: cover?.visitedPhotoUrl || cover?.imageUrl || null
+    };
+  });
   const deckMap = new Map(decks.map((deck) => [deck.id, deck]));
 
   const planned: CalendarDayItem[] = rows.map((row) => {
@@ -227,6 +324,19 @@ export async function getCalendarMonth(userId: string, yearMonth: string) {
     (days[item.date] ??= []).push(item);
   }
 
+  // 하루에 여러 항목이 있을 때 손님이 고른 대표 이미지
+  const covers: Record<string, string> = {};
+  try {
+    const rows = await listDayCovers(userId, start, end);
+    for (const row of rows) {
+      if ((days[row.date] ?? []).some((item) => item.id === row.itemRef)) {
+        covers[row.date] = row.itemRef;
+      }
+    }
+  } catch (error) {
+    if (!isIgnorable(error)) console.error("getCalendarMonth covers", error);
+  }
+
   const savedRows = await prisma.savedCard.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -258,9 +368,47 @@ export async function getCalendarMonth(userId: string, yearMonth: string) {
     month: yearMonth,
     weekend: upcomingWeekend(),
     days,
+    covers,
     savedCards,
     decks: pickDecks
   };
+}
+
+/** 그날 항목 중 하나를 달력 칸 대표 이미지로 지정. itemRef가 null이면 자동으로 되돌린다. */
+export async function setCalendarDayCover(
+  userId: string,
+  date: string,
+  itemRef: string | null
+) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("invalid date");
+
+  if (!itemRef) {
+    await deleteDayCover(userId, { date });
+    return null;
+  }
+
+  const belongsToDay = await coverItemExists(userId, date, itemRef);
+  if (!belongsToDay) throw new Error("item missing");
+
+  return upsertDayCover(userId, date, itemRef);
+}
+
+async function coverItemExists(userId: string, date: string, itemRef: string) {
+  if (itemRef.startsWith("visit-")) {
+    const visit = await prisma.visit.findFirst({
+      where: { id: itemRef.slice("visit-".length), userId },
+      select: { visitedAt: true }
+    });
+    return Boolean(visit) && kstDate(visit!.visitedAt) === date;
+  }
+
+  const entry = calendarEntryDb();
+  if (!entry) return false;
+  const row = await entry.findFirst({
+    where: { id: itemRef, userId, date },
+    select: { id: true }
+  });
+  return Boolean(row);
 }
 
 export async function addCalendarEntry(
@@ -302,6 +450,11 @@ export async function removeCalendarEntry(userId: string, id: string) {
   const existing = await entry.findFirst({ where: { id, userId } });
   if (!existing) return false;
   await entry.delete({ where: { id } });
+  try {
+    await deleteDayCover(userId, { itemRef: id });
+  } catch (error) {
+    if (!isIgnorable(error)) console.error("removeCalendarEntry cover", error);
+  }
   return true;
 }
 

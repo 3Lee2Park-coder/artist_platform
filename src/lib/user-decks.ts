@@ -59,15 +59,21 @@ export async function getUserDecks(userId: string): Promise<OoofDeck[]> {
     orderBy: { updatedAt: "desc" }
   });
 
-  return Promise.all(
-    rows.map(async (row) => {
-      const cards = await annotateCards(
-        await resolveCardKeys(row.cards.map((item) => item.cardKey)),
-        userId
-      );
-      return toDeck(row, cards, `/my/decks/${row.id}`);
-    })
+  if (rows.length === 0) return [];
+
+  // 덱마다 resolve/annotate 하지 않고 키를 한 번에 모은다.
+  const allKeys = Array.from(
+    new Set(rows.flatMap((row) => row.cards.map((item) => item.cardKey)))
   );
+  const resolved = await annotateCards(await resolveCardKeys(allKeys), userId);
+  const byKey = new Map(resolved.map((card) => [card.key, card]));
+
+  return rows.map((row) => {
+    const cards = row.cards
+      .map((item) => byKey.get(item.cardKey))
+      .filter((card): card is OoofCard => Boolean(card));
+    return toDeck(row, cards, `/my/decks/${row.id}`);
+  });
 }
 
 export async function getUserDeckForOwner(userId: string, id: string) {

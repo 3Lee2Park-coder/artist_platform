@@ -2,10 +2,24 @@
 
 > Soft-launch GTM SSOT.  
 > 리서치의 Phase·KPI **프레임**을 쓰되, 시장·세그먼트·가격·채널은 우리 제품 현실로 새로 정의한다.  
-> 선행 문서: [BRAND_IDENTITY.md](./BRAND_IDENTITY.md) · [SUPPLY_WEDGE.md](./SUPPLY_WEDGE.md) · [PARTNERSHIP_PROPOSAL.md](./PARTNERSHIP_PROPOSAL.md)
+> **지금 검증:** [CURRENT_FOCUS.md](./CURRENT_FOCUS.md) · **전략·수익 사고:** [STRATEGY_RESEARCH.md](./STRATEGY_RESEARCH.md)  
+> 선행: [BRAND_IDENTITY.md](./BRAND_IDENTITY.md) · [SUPPLY_WEDGE.md](./SUPPLY_WEDGE.md) · [PARTNERSHIP_PROPOSAL.md](./PARTNERSHIP_PROPOSAL.md)
 
 Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**  
 현재 라이브: Production URL (Vercel) — 배포 후 스모크는 [../ops/DEPLOY_SMOKE_CHECKLIST.md](../ops/DEPLOY_SMOKE_CHECKLIST.md)
+
+---
+
+## 0. 지금 검증하는 것 (수요)
+
+상세: [CURRENT_FOCUS.md](./CURRENT_FOCUS.md)
+
+| Primary | 신호 |
+|---------|------|
+| 검색/공유 → 전시·공간 상세 → **코스 클릭 또는 저장** | GA4 `related_course_click`, save/calendar, Organic vs Paid |
+
+**본체:** 동네 시각 예술의 발견·방문·작가 창구. 팝업은 포함·유입일 뿐 전면 전략이 아니다.  
+**싸우지 않는 전장:** NOL/예스24 티켓 스케일, shoong식 티켓 지갑, 트리플식 전국 POI.
 
 ---
 
@@ -13,13 +27,16 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 | 관찰 | 우리와의 관계 |
 |------|----------------|
-| 미술·문화 소비가 SNS·개인 일정으로 파편화 | “갈 수 있는 곳” 정보가 링크보다 지도·정책·코스로 묶일 때 가치 |
-| 개인 공방·쇼룸·팝업이 늘지만 발견 경로는 Instagram 의존 | Underserved Needs Wedge의 근거 |
-| 아트 커머스·에디션 플랫폼은 결제·배송 중심 | 우리는 **방문·만남 인프라**가 1차. 결제는 로드맵 |
-| 양면 플랫폼은 Cold Start가 치명적 | Supply First + micro-market 밀도 |
+| 미술·문화 소비가 SNS·개인 일정으로 파편화 | “갈 수 있는 곳”이 지도·정책·코스로 묶일 때 가치 |
+| **Instagram에서 발견 → 네이버 지도 저장**이 흔한 루프 | 예술용 저장·방문 카드가 비어 있음 → OOOF. wedge ([STRATEGY_RESEARCH.md](./STRATEGY_RESEARCH.md)) |
+| 음악(지니 등)은 신인에게도 상단 **바닥 노출** | 시각 예술에는 동일 구조가 약함 → 「새로 열림」후보 |
+| shoong 등: 조각난 티켓 → 하나의 지갑 | 교훈만. 우리는 **방문 의도·코스** 레이어 |
+| 검색으로 전시·공간 유입이 실제로 잡힘 | SEO·상세·코스 연결은 P0 실행 (브랜드 주어는 예술) |
+| 아트 커머스·에디션은 결제·배송 중심 | 우리는 **방문·만남** 1차. 결제는 로드맵 |
+| 양면 플랫폼 Cold Start | Supply First + micro-market + 수요 루프 검증 |
 
-우리는 “국내 아트 이커머스”와 정면 경쟁하지 않는다.  
-가까운 대안은 **지도 앱 검색 + Instagram + 지인 추천 + 기관 캘린더**의 조합이다.
+가까운 대안: **지도 저장 + Instagram + 지인 + 기관 캘린더**.  
+우리는 그 조합에서 **예술 방문 레이어**를 만든다.
 
 ---
 
@@ -27,19 +44,20 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 ### 우리가 정의하는 시장 (현 단계)
 
-**동네 단위로 작가의 공간·전시·프로그램을 발견하고 방문·예약하게 하는 방문형 아트 디스커버리 플랫폼.**
+**동네 단위로 작가의 공간·전시·프로그램을 발견·저장하고, 코스로 묶어 방문·예약하게 하는 시각 예술 방문 인프라.**
 
 | 포함 | 제외 (현 단계) |
 |------|----------------|
-| 개인 공방·쇼룸·소규모 전시 | 블루칩 1차 마켓 중개 |
+| 개인 공방·쇼룸·소규모·시즌/팝업 전시 | 블루칩 1차 마켓 중개 |
 | 오픈 스튜디오·작가 대화·워크숍 예약 | 플랫폼 내 작품 결제·배송 |
-| 동네 큐레이션 코스·지도 | 전국 무차별 리스팅 |
-| 현장 연결·판매 **지원**(정보·동선) | 매출 보장형 판매 대행 |
+| 동네 큐레이션 코스·지도·저장 | 전국 무차별 리스팅 · 티켓 통합 발급 |
+| 현장 연결·판매 **지원** | 매출 보장형 판매 대행 · 핫플 미디어 |
 
-### Beachhead (공략 시장)
+### Beachhead
 
-서울 내 **신당 · 성수 · 안국 · 망원 · 북촌** micro-market.  
-성공 정의: 해당 동네에서 “오늘 걸어볼 코스”가 실제로 채워져 있고, 작가·관객 양쪽이 재방문한다.
+서울 **신당 · 성수 · 안국 · 망원 · 북촌 · 용산** micro-market.  
+성공: (1) “오늘 걸어볼 예술 코스”가 채워짐 (2) 상세 → 코스/저장이 일어남.  
+검색 키워드에 팝업이 섞여도, **제품·브랜드 성공 정의는 예술 방문**이다.
 
 ---
 
@@ -61,8 +79,9 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 | 세그먼트 | 설명 | 우선순위 |
 |----------|------|----------|
+| **D0 예술 방문 의도자** | 검색·인스타로 전시/공간을 찾아 “갈지” 고민 → 저장·코스 니즈 | **P0 (현재 검증)** |
 | **D1 동네 산책·전시 러버** | 주말 동선, 20–40대, 저장·지도 사용 | P0 |
-| **D2 작가/작품 관심 입문자** | 첫 구매·첫 대화에 심리 장벽, 가격·방문 방식 불확실 | P0 |
+| **D2 작가/작품 관심 입문자** | 첫 만남·가격·방문 방식 불확실 | P0 |
 | **D3 로컬 크리에이터·취향 계정** | 코스 공유·UGC | P1 |
 | **D4 기업·단체 단체관람** | B2B, 이후 | P2 |
 
@@ -83,8 +102,9 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 | Jobs | Pains | Gains |
 |------|-------|-------|
 | 오늘/이번 주 갈 전시·공간 찾기 | 정보 분산, 헛걸음 | 코스·지도·“지금 가도 되는지” |
-| 작가와 가볍게 만나기 | 문턱·예약 방법 불명 | 대화·프로그램 예약 |
-| 취향 기록 | 휘발성 SNS 저장 | 저장·방문 아카이브 |
+| 인스타에서 본 장소 기억하기 | 네이버 지도 핀만 남고 전시 맥락 증발 | **예술 카드로 저장**·달력 |
+| 단건 전시 다음 동선 | 옆 공간·작가 맥락 없음 | 같은 날 편집 코스 |
+| 작가와 가볍게 만나기 | 문턱·예약 불명 | 대화·프로그램 예약 |
 
 ---
 
@@ -92,7 +112,8 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 ### 관객
 
-> 작가의 공간에서, 작품과 사람을 직접 만나는 동네 전시를 **찾아 갈 수 있게** 한다.
+> 동네에서 시각 예술을 **찾아 갈 수 있게** 한다.  
+> 발견한 공간을 지도 핀이 아니라 **방문 가능한 예술**로 남기고, 같은 날 코스로 잇는다.
 
 ### 작가
 
@@ -115,22 +136,23 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 | Phase | 이름 | 채널 초점 |
 |-------|------|-----------|
-| **1** | Pre-launch Density | 공급 아웃리치(메일 A/B/C),  Concierge 온보딩, 원페이저, `/for-artists`. 수요는 waitlist·지인 초대 수준 |
-| **2** | Launch & Bootstrap | 홈·코스 URL 공유, Instagram(릴스/캐러셀: 동선·현장), 커뮤니티·로컬 계정 협업, 소수 Meta/지역 광고 테스트. Concierge 매칭 유지 |
-| **3** | Scale & Playbook | 검증된 동네 플레이북을 인접 동네로 복제. 보조금·수동 개입 축소, 수익 모델 정식화 |
+| **1** | Pre-launch Density | 공급 아웃리치, Concierge, 원페이저, `/for-artists` |
+| **2** | Launch & Bootstrap | SEO·상세→코스/저장, Instagram(예술 장소→OOOF. 저장 메시지), 블로그. Ads는 전환 정의 후 소액 |
+| **3** | Scale & Playbook | 「새로 열림」·Plus/Studio 가설 검증 후 수익. 인접 동네 복제 |
 
 ### 채널 × 타깃
 
 | 채널 | 주 타깃 | 콘텐츠 형태 | KPI |
 |------|---------|-------------|-----|
-| 이메일 아웃리치 | Supply A/B/C | 파트너십 제안·CTA | 회신율, 승인 수 |
-| `/for-artists` · 원페이저 | Supply | 온보딩 설명 | 가입→승인 전환 |
-| Instagram | D1/D2, UGC | 코스 3분 동선, 방문 정책 카드 | 프로필 클릭, 사이트 유입 |
-| 제품 내 공유/저장 | D1 | 큐레이션·방문 카드 | 저장, 재방문 |
-| Meta/Google (소액) | D1 지역 | “지금 갈 수 있는 ○○ 코스” | 방문·RSVP·문의 (과대 약속 금지) |
-| LinkedIn 등 B2B | D4 / 이후 | 보류 | — |
+| **검색 SEO·블로그** | D0/D1 | 전시·공간·동네 코스 (예술 주어) | Organic, course_click, save |
+| 이메일 아웃리치 | Supply | 파트너십·CTA | 회신율, 승인 |
+| `/for-artists` · 원페이저 | Supply | 온보딩 | 가입→승인 |
+| Instagram | D0/D1 | 코스 동선, “여기에 저장” | 유입·저장 |
+| 제품 내 공유/저장 | D1 | 예술 카드·달력 | 저장, 재방문 |
+| Meta/Google (소액) | D0/D1 | 동네 전시·코스 | 코스 클릭·저장 (페이지뷰 전환 금지) |
 
-**규칙:** Phase 1에서 수요 유료 광고를 키우지 않는다. 공급 밀도가 코스 단위로 버틸 때만 Phase 2 광고를 연다.
+**규칙:** 공급 밀도 전에 수요 광고를 키우지 않는다. Ads 전환=페이지뷰면 확대 금지.  
+팝업 키워드로 유입이 와도 **랜딩·카피는 예술·작가·코스**로 받는다.
 
 ---
 
@@ -159,7 +181,16 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 ### 이후 수익 옵션 (미확정 · 대외 미확약)
 
-예약/프로그램 수수료, 피처링, B2B 투어, 결제 수수료 등 — **GTM Phase 3 전 별도 승인** 후에만 외부 언급.
+상세 사고: [STRATEGY_RESEARCH.md](./STRATEGY_RESEARCH.md) §4
+
+| 층 | 가설 |
+|----|------|
+| **A (말)** | 동네 예술 발견·작가 창구 |
+| **B (해자)** | 예술 저장·달력·코스 습관 |
+| **수익** | 코스 스폰서 스톱 · 「새로 열림」레일 부스트 · 작가 Studio · 브랜드/지자체 투어 제작 · (나중) 티켓 제휴 |
+| **C/D/E** | Free / Plus(데일리) / Pass(앵커) — **G0 이후** 설계. 지금 Claims에 올리지 않음 |
+
+예약 수수료·결제 등은 **Phase 3 전 별도 승인** 후에만 외부 언급.
 
 ---
 
@@ -167,9 +198,12 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 ### North Star (현 단계)
 
-**주간 ‘방문 준비 완료’ 세션**  
-= 코스/공간 상세에서 지도·방문 정책·예약 중 하나 이상까지 도달한 고유 사용자  
-(온라인 GMV가 아직 없으므로 GMV를 North Star로 쓰지 않음)
+**주간 ‘예술 방문 의도 세션’**  
+= 전시·공간·코스에 들어와 **코스 클릭 또는 저장(달력)**까지 간 고유 사용자.
+
+보조: **방문 준비 완료** = 지도·방문 정책·예약 중 하나 이상 도달.  
+GMV는 North Star로 쓰지 않음.  
+상세: [CURRENT_FOCUS.md](./CURRENT_FOCUS.md)
 
 ### 공급 지표
 
@@ -184,10 +218,12 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 | KPI | 정의 |
 |-----|------|
-| Search-to-meaningful action | 검색/코스 진입 후 저장·예약·공유·길찾기 클릭 |
-| Reservation requests | 프로그램·대화 예약 수 |
-| Returning visitors (product) | 7/30일 재방문 |
-| Organic acquisition | 비유료 유입 비중 |
+| Search → course / save | Organic 랜딩 후 course_click 또는 save |
+| Scroll depth 50%+ | page_type별 |
+| Search-to-meaningful action | 저장·예약·공유·길찾기 |
+| Reservation requests | 프로그램·대화 예약 |
+| Returning visitors | 7/30일 |
+| Organic vs Paid | Ads만으로 성공 단정 금지 |
 
 ### 마켓플레이스 건강
 
@@ -201,6 +237,7 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 | 게이트 | 조건 (가이던스) | 다음 행동 |
 |--------|-----------------|-----------|
+| G0 Visit intent | 주간 예술 방문 의도 세션 상승·안정 | 밀도·「새로 열림」·저장 UX. 덱 UI는 그다음 |
 | G1 Density | 핵심 동네 30–50 활성 공급 + 빈 코스 없음 | Phase 2 수요 채널 확대 |
 | G2 Liquidity | Time-to-First Transaction* 중앙값이 운영 목표 내 | Concierge 비중 축소 |
 | G3 Playbook | 한 동네에서 공급 잔존·재방문이 안정 | 인접 동네 복제 |
@@ -211,9 +248,9 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 
 | 주 | 초점 |
 |----|------|
-| 1–4 | 공급 아웃리치 A/B → 온보딩 DoD → 코스 밀도. Identity·제안서 카피로 통일 |
-| 5–8 | 관객 스모크: 코스 URL 공유, Instagram 동선 콘텐츠, 예약 1건 이상 성사 목표 |
-| 9–12 | KPI 리뷰 → G1 충족 시 소액 지역 광고. 미충족 시 공급·Concierge에 재집중 |
+| 1–4 | 상세→코스/저장 측정. 히트 동네 덱 **밀도**. 공급 아웃리치. 브랜드 카피=예술 주어 |
+| 5–8 | Organic·저장 리뷰. Instagram에 “예술로 저장” 메시지. 「새로 열림」목업·작가 5명 인터뷰 ([STRATEGY_RESEARCH.md](./STRATEGY_RESEARCH.md)) |
+| 9–12 | G0 리뷰 → 충족 시 레일·Plus 가설. 미충족 시 연결·밀도 재집중 (팝업 미디어화·티켓 지갑 금지) |
 
 ---
 
@@ -224,3 +261,7 @@ Official brand: **OOOF.** · Full name: **Olly Olly Oxen Free**
 | 2026-08-04 | Beachhead = 5개 동네 micro-market | 제품·Brief와 동일. 전국 확장 전 밀도 |
 | 2026-08-04 | North Star = 방문 준비 완료 세션 (비-GMV) | 결제 전 단계에서 올바른 성공 정의 |
 | 2026-08-04 | 등록 무료 유지, 수익 모델 대외 미확약 | Claims·신뢰 우선 |
+| 2026-09-19 | North Star = 예술 방문 의도 (코스 또는 저장) | 예술 부흥 + 인스타→지도 습관 |
+| 2026-09-19 | Beachhead에 용산 유지, 팝업은 채널이지 전면 아님 | Brand Owner 정정 |
+| 2026-09-19 | shoong 따라가기 보류, A/B/CDE는 가설만 | STRATEGY_RESEARCH |
+| 2026-09-19 | 업그레이드 후보 = 「새로 열림」+ 예술 저장 | 지니·행동 인사이트 |

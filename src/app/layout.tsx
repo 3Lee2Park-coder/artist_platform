@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { Suspense } from "react";
 import { AnalyticsIdentity } from "@/components/AnalyticsIdentity";
@@ -22,6 +22,12 @@ const poppins = Poppins({
   variable: "--font-latin",
   display: "swap"
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover"
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),

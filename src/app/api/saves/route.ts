@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { makeCardKey } from "@/lib/cards";
 import { logEvent } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -31,8 +32,15 @@ export async function POST(request: Request) {
     where: { userId_exhibitionId: { userId: session.id, exhibitionId } }
   });
 
+  const cardKey = makeCardKey("exhibition", exhibitionId);
+
   if (existing) {
     await prisma.saveExhibition.delete({ where: { id: existing.id } });
+    try {
+      await prisma.savedCard.deleteMany({ where: { userId: session.id, cardKey } });
+    } catch (error) {
+      console.error("saveExhibition unlink card", error);
+    }
     await logEvent({
       type: "SAVE_REMOVE",
       userId: session.id,
@@ -46,6 +54,15 @@ export async function POST(request: Request) {
   await prisma.saveExhibition.create({
     data: { userId: session.id, exhibitionId }
   });
+  try {
+    await prisma.savedCard.upsert({
+      where: { userId_cardKey: { userId: session.id, cardKey } },
+      create: { userId: session.id, cardKey },
+      update: {}
+    });
+  } catch (error) {
+    console.error("saveExhibition link card", error);
+  }
   await logEvent({
     type: "SAVE_CREATE",
     userId: session.id,

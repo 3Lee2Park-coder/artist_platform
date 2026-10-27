@@ -55,9 +55,15 @@ type MyInboxSectionProps = {
   intakeQuestions?: IntakeAskedQuestion[];
 };
 
+type MyNoticesSectionProps = {
+  notices: InboxNotice[];
+  onOpenReceivedQuestions?: () => void;
+};
+
 export function MyNoticesSection({
-  notices
-}: Pick<MyInboxSectionProps, "notices">) {
+  notices,
+  onOpenReceivedQuestions
+}: MyNoticesSectionProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const unread = useMemo(
@@ -77,13 +83,19 @@ export function MyNoticesSection({
   }
 
   async function openNotice(notice: InboxNotice) {
+    const opensReceivedQuestions =
+      notice.type === "QUESTION_RECEIVED" ||
+      Boolean(notice.href?.includes("received-questions"));
+
     if (!notice.readAt) await mark(notice.id);
-    if (notice.href) {
-      router.push(notice.href);
+
+    if (opensReceivedQuestions && onOpenReceivedQuestions) {
+      onOpenReceivedQuestions();
       return;
     }
-    if (notice.type === "QUESTION_RECEIVED") {
-      router.push("/my?view=artist#received-questions");
+
+    if (notice.href) {
+      router.push(notice.href);
     }
   }
 
@@ -122,7 +134,7 @@ export function MyNoticesSection({
                 </p>
                 {notice.body ? <p>{notice.body}</p> : null}
               </div>
-              {notice.href ? (
+              {notice.href || notice.type === "QUESTION_RECEIVED" ? (
                 <button
                   type="button"
                   className="secondary-button"

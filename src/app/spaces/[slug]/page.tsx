@@ -1,4 +1,5 @@
 import { AskArtistTrigger } from "@/components/AskArtistDialog";
+import { CollectActions } from "@/components/CollectActions";
 import { ExhibitionCard } from "@/components/ExhibitionCard";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -7,6 +8,7 @@ import { ShareActionButton } from "@/components/ShareActionButton";
 import { StoryRenderer } from "@/components/StoryRenderer";
 import { VisitToggleButton } from "@/components/VisitToggleButton";
 import { getSession } from "@/lib/auth";
+import { isCardSaved, makeCardKey } from "@/lib/cards";
 import { getTodayKST } from "@/lib/date";
 import { logEvent } from "@/lib/events";
 import { getAllExhibitions } from "@/lib/exhibitions";
@@ -80,13 +82,17 @@ export default async function SpaceDetailPage({ params }: SpaceDetailPageProps) 
     programs.map((program) => program.id)
   );
 
-  const visited = session
-    ? Boolean(
-        await prisma.visit.findFirst({
-          where: { userId: session.id, spaceId: space.id }
-        })
-      )
-    : false;
+  const cardKey = makeCardKey("space", space.id);
+  const [visited, cardSaved] = await Promise.all([
+    session
+      ? prisma.visit
+          .findFirst({
+            where: { userId: session.id, spaceId: space.id }
+          })
+          .then(Boolean)
+      : Promise.resolve(false),
+    isCardSaved(session?.id, cardKey)
+  ]);
 
   const ownerExhibitions = space.owner
     ? allExhibitions
@@ -167,6 +173,12 @@ export default async function SpaceDetailPage({ params }: SpaceDetailPageProps) 
                 metadata={{ spaceId: space.id }}
               />
             </div>
+            <CollectActions
+              cardKey={cardKey}
+              isLoggedIn={Boolean(session)}
+              loginRedirect={`/spaces/${space.slug}`}
+              initialSaved={cardSaved}
+            />
           </div>
         </section>
 

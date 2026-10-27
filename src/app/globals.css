@@ -63,6 +63,11 @@
     letter-spacing: -0.02em;
   }
 
+  p {
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
   h1,
   h2,
   .font-display {
@@ -539,7 +544,7 @@
   .platform-strength-card p {
     margin: 0;
     color: var(--secondary);
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.65;
     word-break: keep-all;
   }
@@ -667,7 +672,7 @@
   .card-location {
     margin-bottom: 0;
     color: var(--secondary);
-    font-size: 14px;
+    font-size: 16px;
   }
   
   .card-location {
@@ -858,7 +863,9 @@
   
   .map-shell {
     min-height: calc(100vh - 92px);
+    min-height: calc(100dvh - 92px);
     height: calc(100vh - 92px);
+    height: calc(100dvh - 92px);
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
     border-left: 1px solid var(--border);
@@ -873,6 +880,7 @@
     background: #ffffff;
     overflow-y: auto;
     height: calc(100vh - 92px);
+    height: calc(100dvh - 92px);
   }
   
   .map-panel-heading h1 {
@@ -938,7 +946,7 @@
 
   .exhibition-card.map-compact .card-copy p,
   .exhibition-card.map-compact .card-location {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .exhibition-card.map-compact .card-footer {
@@ -1233,7 +1241,7 @@
 
   .place-card-memos p {
     margin: 0;
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.45;
     color: var(--primary);
   }
@@ -1258,7 +1266,7 @@
   .my-list-card p {
     margin: 0;
     color: var(--secondary);
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .my-archive-summary {
@@ -1594,7 +1602,9 @@
     order: 1;
     position: relative;
     min-height: calc(100vh - 92px);
+    min-height: calc(100dvh - 92px);
     height: calc(100vh - 92px);
+    height: calc(100dvh - 92px);
   }
 
   .map-zoom-hint {
@@ -1677,7 +1687,7 @@
   .map-floating-card p {
     margin: 5px 0 0;
     color: var(--secondary);
-    font-size: 14px;
+    font-size: 16px;
   }
   
   .detail-page {
@@ -1998,7 +2008,7 @@
 
   .exhibition-course-desc {
     color: var(--secondary);
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .exhibition-course-rail {
@@ -2221,6 +2231,7 @@
     .map-shell {
       grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
       height: calc(100vh - 92px);
+      height: calc(100dvh - 92px);
       border: 0;
     }
   
@@ -2229,11 +2240,14 @@
       border-right: 0;
       border-bottom: 0;
       height: calc(100vh - 92px);
+      height: calc(100dvh - 92px);
     }
   
     .naver-map-panel {
       min-height: calc(100vh - 92px);
+      min-height: calc(100dvh - 92px);
       height: calc(100vh - 92px);
+      height: calc(100dvh - 92px);
       border-radius: 0;
       margin-bottom: 0;
     }
@@ -2265,7 +2279,7 @@
     }
   
     body {
-      padding-bottom: 80px;
+      padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
     }
   
     h1 {
@@ -2326,8 +2340,9 @@
       right: 0;
       bottom: 0;
       z-index: 30;
-      height: 64px;
-      padding: 0 4px env(safe-area-inset-bottom, 0);
+      height: auto;
+      min-height: calc(64px + env(safe-area-inset-bottom, 0px));
+      padding: 0 4px env(safe-area-inset-bottom, 0px);
       border-top: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(18px);
@@ -2854,7 +2869,7 @@
 
   .register-b2b-lead {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.55;
     color: var(--secondary);
   }
@@ -2952,6 +2967,7 @@
     border: 1px solid var(--border);
     border-radius: 14px;
     background: #ffffff;
+    font-size: 16px;
   }
 
   .auth-form textarea,
@@ -2993,7 +3009,7 @@
   .field-hint {
     margin: -8px 0 0;
     color: var(--secondary);
-    font-size: 13px;
+    font-size: 16px;
   }
 
   .field-hint code {
@@ -3902,8 +3918,10 @@
     transition: all 0.15s ease;
   }
 
-  .taste-chip:hover {
-    border-color: var(--primary);
+  @media (hover: hover) and (pointer: fine) {
+    .taste-chip:hover {
+      border-color: var(--primary);
+    }
   }
 
   .taste-chip.active {
@@ -4006,7 +4024,7 @@
   .review-section-lead {
     margin: 6px 0 0;
     color: var(--secondary);
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.5;
   }
 
@@ -4371,7 +4389,7 @@
   .home-section-desc {
     margin: 8px 0 0;
     max-width: 560px;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.5;
     color: var(--secondary);
   }
@@ -4509,7 +4527,7 @@
 
   .hidden-place-tip-bar p {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--primary);
   }
@@ -5132,7 +5150,7 @@
   .artwork-hrow .artwork-card h3,
   .artwork-hrow .artwork-card p,
   .artwork-hrow .artwork-card span {
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.35;
     margin: 0;
   }
@@ -5281,7 +5299,7 @@
 
   .curation-detail-desc {
     margin: 0 0 10px;
-    font-size: 15px;
+    font-size: 16px;
     color: var(--secondary);
     line-height: 1.7;
     max-width: 720px;
@@ -5392,7 +5410,7 @@
 
   .curation-list-heading p {
     margin: 4px 0 0;
-    font-size: 12px;
+    font-size: 15px;
     color: var(--muted);
   }
 
@@ -7568,7 +7586,7 @@
   .map-stop-meta {
     margin: 2px 0 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 15px;
   }
 
   .map-curation-detail-link {
@@ -9278,7 +9296,7 @@
     }
 
     .home-section-desc {
-      font-size: 13px;
+      font-size: 16px;
     }
 
     .home-wire > .home-focus-hero {
@@ -9588,7 +9606,7 @@
   .exhub-hero-copy p {
     margin: 0;
     max-width: 54ch;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.65;
     color: var(--secondary);
   }
@@ -9683,7 +9701,7 @@
 
   .exhub-section-head p {
     margin: 0;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--secondary);
   }
 
@@ -9809,7 +9827,7 @@
   .exhub-coldstart p {
     margin: 0;
     max-width: 48ch;
-    font-size: 14px;
+    font-size: 16px;
     color: var(--secondary);
   }
 
@@ -9844,7 +9862,7 @@
   .exhub-nearby p {
     margin: 0;
     max-width: 42ch;
-    font-size: 13px;
+    font-size: 15px;
     color: rgba(245, 242, 236, 0.78);
   }
 
@@ -10682,7 +10700,7 @@
 
   .dk-archive-stage-bar p {
     margin: 0;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--muted);
   }
@@ -10699,7 +10717,7 @@
   .dk-archive-stage-foot p {
     margin: 0;
     max-width: 40ch;
-    font-size: 13.5px;
+    font-size: 15.5px;
     color: var(--secondary);
   }
 
@@ -10765,7 +10783,7 @@
 
   .dk-shelf-copy p {
     margin: 4px 0 0;
-    font-size: 12.5px;
+    font-size: 16px;
     color: var(--muted);
   }
 
@@ -10955,7 +10973,7 @@
 
   .home-hero-visual-note p {
     margin: 5px 0 0;
-    font-size: 13px;
+    font-size: 16px;
     color: rgba(255, 255, 255, 0.88);
   }
 
@@ -11042,7 +11060,7 @@
   .home-hero-lead {
     margin: 0 0 16px;
     max-width: 46ch;
-    font-size: clamp(14.5px, 2.1vw, 17px);
+    font-size: clamp(16px, 2.1vw, 18px);
     color: var(--secondary);
     line-height: 1.6;
     word-break: keep-all;
@@ -11221,8 +11239,8 @@
     .home-hero-intro .home-hero-lead {
       margin-bottom: 12px;
       max-width: 38ch;
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: 16px;
+      line-height: 1.55;
       color: rgba(255, 255, 255, 0.9);
     }
 
@@ -11665,17 +11683,35 @@
   .walker-unlisted-link {
     margin: 0 0 8px;
     text-align: center;
-    font-size: 13px;
+    font-size: 17px;
+    line-height: 1.55;
+    container-type: inline-size;
   }
 
   .walker-unlisted-link .text-link {
+    display: inline-block;
+    max-width: 100%;
     background: none;
     border: none;
     padding: 0;
     cursor: pointer;
     font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.55;
     color: var(--explorer);
     text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    .walker-unlisted-link,
+    .walker-unlisted-link .text-link {
+      font-size: 15px;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
   }
 
   .ask-dialog-backdrop {
@@ -11834,7 +11870,7 @@
 
   .ooof-archive-row p {
     margin: -8px 0 16px;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--muted);
   }
 
@@ -12174,7 +12210,7 @@
   }
 
   .ooof-deck-head.is-compact p {
-    font-size: 10px;
+    font-size: 13px;
   }
 
   .ooof-deck-head.is-embedded {
@@ -12183,7 +12219,7 @@
 
   .ooof-deck-head p {
     margin: 0;
-    font-size: 11px;
+    font-size: 15px;
     letter-spacing: 0.16em;
     font-weight: 700;
     color: var(--muted);
@@ -12641,7 +12677,7 @@
     border: 1px solid rgba(26, 26, 26, 0.28);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.82);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.08em;
     color: var(--ooof-ink);
@@ -12665,7 +12701,7 @@
   .ooof-card-fact p,
   .ooof-card-meta dd {
     margin: 4px 0 0;
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.45;
   }
 
@@ -13195,7 +13231,7 @@
   .ooof-my-decks-list-head p {
     margin: 0 0 16px;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .day-calendar-weekend {
@@ -13501,7 +13537,7 @@
   .ooof-my-decks-list-lead {
     margin: 0 0 14px;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .ooof-my-deck-compact {
@@ -13824,7 +13860,7 @@
 }
 
 .exhibition-ask-lead {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
@@ -13870,7 +13906,7 @@
 
 .exhibition-ask-hint {
   color: var(--secondary);
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.4;
 }
 
@@ -13930,4 +13966,37 @@
   .admin-intake {
     grid-template-columns: 1fr;
   }
+}
+
+/* Mobile-native: touch, safe area, no stuck hover. See DESIGN.md. */
+button,
+a,
+.taste-chip,
+.bottom-tab a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+.taste-chip,
+.primary-button,
+.secondary-button,
+.bottom-tab a {
+  touch-action: manipulation;
+}
+
+.bottom-tab a {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.exhub-search input,
+.filter-search input,
+.ooof-dialog-card input,
+.exhibition-ask-form input,
+.exhibition-ask-form textarea {
+  font-size: 16px;
+}
+
+.exhub-filter-row .taste-chip {
+  min-height: 44px;
 }

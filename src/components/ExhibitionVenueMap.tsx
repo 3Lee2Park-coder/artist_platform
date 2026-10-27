@@ -1,6 +1,7 @@
 "use client";
 
 import { NaverMap, type MapMarker } from "@/components/NaverMap";
+import { trackProductEvent } from "@/lib/client-analytics";
 import Link from "next/link";
 
 type ExhibitionVenueMapProps = {
@@ -63,6 +64,14 @@ export function ExhibitionVenueMap({
           <Link
             className="secondary-button"
             href={`/map?layer=exhibition&focus=${encodeURIComponent(exhibitionId)}`}
+            onClick={() =>
+              void trackProductEvent({
+                type: "EXHIBITION_ENGAGE",
+                exhibitionId,
+                source: "venue_map",
+                metadata: { action: "ooof_map" }
+              })
+            }
           >
             지도 화면에서 보기
           </Link>
@@ -72,6 +81,14 @@ export function ExhibitionVenueMap({
               href={`https://map.naver.com/p/search/${encodeURIComponent(address || `${venue} ${district}`)}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                void trackProductEvent({
+                  type: "EXHIBITION_ENGAGE",
+                  exhibitionId,
+                  source: "venue_map",
+                  metadata: { action: "naver_map" }
+                })
+              }
             >
               네이버 지도
             </a>

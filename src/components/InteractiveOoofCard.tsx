@@ -104,7 +104,9 @@ export function InteractiveOoofCard({
         catalog={catalog}
         onSave={async () => {
           const ok = await patch("save");
-          if (ok) setAddOpen(true);
+          if (ok) {
+            setMessage("카드를 저장했습니다. MY 달력의 「카드 담기」에서 날짜에 올릴 수 있습니다.");
+          }
         }}
         onVisit={() => patch("visit")}
         onAddToDeck={() => {
@@ -121,7 +123,9 @@ export function InteractiveOoofCard({
         <AddToDeckDialog
           cardKey={model.key}
           onClose={() => setAddOpen(false)}
-          onAdded={() => setMessage("덱에 담았습니다.")}
+          onAdded={() =>
+            setMessage("내 덱에 넣었습니다. MY 달력의 「덱 담기」에서 날짜에 올릴 수 있습니다.")
+          }
         />
       ) : null}
     </div>

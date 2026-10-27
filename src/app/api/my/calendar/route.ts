@@ -5,6 +5,7 @@ import {
   getCalendarMonth,
   getWeekendPreview,
   removeCalendarEntry,
+  setCalendarDayCover,
   shareCalendarDay
 } from "@/lib/calendar-archive";
 import { NextResponse } from "next/server";
@@ -71,6 +72,37 @@ export async function DELETE(request: Request) {
   }
   const ok = await removeCalendarEntry(session.id, id);
   return NextResponse.json({ ok });
+}
+
+const coverSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  itemRef: z.string().min(1).nullable()
+});
+
+// 달력 칸 대표 이미지 지정
+export async function PUT(request: Request) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  const parsed = coverSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "날짜와 항목을 골라 주세요." }, { status: 400 });
+  }
+  try {
+    await setCalendarDayCover(session.id, parsed.data.date, parsed.data.itemRef);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "";
+    if (reason === "item missing") {
+      return NextResponse.json({ error: "그날 일정에서 항목을 찾지 못했습니다." }, { status: 400 });
+    }
+    console.error("calendar cover", error);
+    return NextResponse.json(
+      { error: "대표 이미지를 바꾸지 못했습니다." },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(request: Request) {

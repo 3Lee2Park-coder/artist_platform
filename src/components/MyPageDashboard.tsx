@@ -481,7 +481,19 @@ export function MyPageDashboard({
 
         {message ? <p className="form-success">{message}</p> : null}
         </section>
-        <MyNoticesSection notices={notices} />
+        <MyNoticesSection
+          notices={notices}
+          onOpenReceivedQuestions={() => {
+            setTab("artist");
+            router.push("/my?view=artist#received-questions");
+            window.setTimeout(() => {
+              document.getElementById("received-questions")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+              });
+            }, 80);
+          }}
+        />
       </div>
 
       {tab === "member" && (
@@ -594,76 +606,6 @@ export function MyPageDashboard({
             </label>
           </section>
 
-          <section
-            id="received-questions"
-            className="register-card wide my-section"
-          >
-            <h2>받은 질문 ({artistQuestions.length})</h2>
-            <p className="auth-description">
-              운영 확인을 마친 질문입니다. 답변을 작성하면 질문한 관람객의 MY와
-              이메일로 바로 전달됩니다.
-            </p>
-            {artistQuestions.length > 0 ? (
-              <div className="my-list">
-                {artistQuestions.map((question) => (
-                  <article key={question.id} className="my-list-card">
-                    <div>
-                      <h3>{question.fromName}</h3>
-                      <p className="field-hint">
-                        {QUESTION_TOPICS[
-                          question.topic as keyof typeof QUESTION_TOPICS
-                        ] ?? question.topic}
-                        {" · "}
-                        {question.status === "ANSWERED" ? "답변 완료" : "답변 대기"}
-                      </p>
-                      <p>{question.body}</p>
-                      {question.answer ? (
-                        <p className="field-hint">내 답변: {question.answer}</p>
-                      ) : (
-                        <form
-                          className="artist-question-reply"
-                          onSubmit={(event) => {
-                            event.preventDefault();
-                            void answerQuestion(question.id);
-                          }}
-                        >
-                          <label className="field">
-                            <span>관람객에게 보낼 답변</span>
-                            <textarea
-                              rows={4}
-                              placeholder="관람객에게 전할 답변을 작성해 주세요."
-                              value={answerDrafts[question.id] ?? ""}
-                              onChange={(event) =>
-                                setAnswerDrafts((prev) => ({
-                                  ...prev,
-                                  [question.id]: event.target.value
-                                }))
-                              }
-                            />
-                          </label>
-                          <button
-                            type="submit"
-                            className="primary-button"
-                            disabled={
-                              questionBusyId === question.id ||
-                              !answerDrafts[question.id]?.trim()
-                            }
-                          >
-                            {questionBusyId === question.id
-                              ? "보내는 중…"
-                              : "관람객에게 답변 보내기"}
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="auth-description">아직 전달된 질문이 없습니다.</p>
-            )}
-          </section>
-
           <div className="register-b2b-banner my-artist-growth">
             <p className="register-b2b-kicker">Come out free · OOOF.</p>
             <p className="register-b2b-headline">
@@ -672,12 +614,12 @@ export function MyPageDashboard({
               Be found.
             </p>
             <p className="register-b2b-lead">
-              문을 열면, 찾아옵니다. 공간·전시·프로그램을 직접 열고, 동네를 걷는
+              문을 열어야, 찾아옵니다. 공간·전시·프로그램을 직접 열고, 동네를 걷는
               관객이 당신의 작업을 발견하게 하세요.
             </p>
             <div className="hub-actions my-artist-growth-actions">
               <Link className="primary-button" href="/register">
-                등록 허브 열기
+                전시 등록(0원)
               </Link>
               <Link className="secondary-button" href="/for-artists">
                 작가 안내 보기
@@ -690,9 +632,9 @@ export function MyPageDashboard({
             artistPrograms.length > 0) && (
             <section className="my-artist-block ownership-notice">
               <p className="eyebrow">연결된 항목</p>
-              <h2>운영이 연결한 공간·전시를 여기서 관리할 수 있습니다</h2>
+              <h2>공간·전시·프로그램을 관리합니다.</h2>
               <p className="auth-description">
-                대리 등록 후 소유권이 연결된 항목도 아래에 표시됩니다. 사진·방문
+                사전 등록된 전시도 권한이 인정되면 아래 항목에 표시됩니다. 사진·방문
                 정책·일정을 확인해 주세요.
               </p>
             </section>
@@ -701,10 +643,10 @@ export function MyPageDashboard({
           <section className="my-artist-block">
             <div className="my-section-heading">
               <div>
-                <h2>새 등록</h2>
+                <h2>등록 시작하기</h2>
                 <p className="auth-description">
                   공간·전시·프로그램을 올릴 수 있습니다. 공간과 프로그램은 검수 후
-                  공개됩니다.
+                  공개됩니다. <br></br>아래 버튼을 클릭해주세요.
                 </p>
               </div>
               <div className="hub-actions">
@@ -726,7 +668,7 @@ export function MyPageDashboard({
               <div>
                 <h2>내 공간</h2>
                 <p className="auth-description">
-                  등록한 공방·쇼룸을 수정합니다. DRAFT는 관리자 검수 후 공개됩니다.
+                  등록한 공방·쇼룸을 수정합니다. 관리자 검수 후 공개됩니다.
                 </p>
               </div>
             </div>
@@ -1012,6 +954,76 @@ export function MyPageDashboard({
               </div>
             ) : (
               <div className="empty-state">예약 로그가 없습니다.</div>
+            )}
+          </section>
+
+          <section
+            id="received-questions"
+            className="register-card wide my-section"
+          >
+            <h2>받은 질문 ({artistQuestions.length})</h2>
+            <p className="auth-description">
+              운영 확인을 마친 질문입니다. 답변을 작성하면 질문한 관람객의 MY와
+              이메일로 바로 전달됩니다.
+            </p>
+            {artistQuestions.length > 0 ? (
+              <div className="my-list">
+                {artistQuestions.map((question) => (
+                  <article key={question.id} className="my-list-card">
+                    <div>
+                      <h3>{question.fromName}</h3>
+                      <p className="field-hint">
+                        {QUESTION_TOPICS[
+                          question.topic as keyof typeof QUESTION_TOPICS
+                        ] ?? question.topic}
+                        {" · "}
+                        {question.status === "ANSWERED" ? "답변 완료" : "답변 대기"}
+                      </p>
+                      <p>{question.body}</p>
+                      {question.answer ? (
+                        <p className="field-hint">내 답변: {question.answer}</p>
+                      ) : (
+                        <form
+                          className="artist-question-reply"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void answerQuestion(question.id);
+                          }}
+                        >
+                          <label className="field">
+                            <span>관람객에게 보낼 답변</span>
+                            <textarea
+                              rows={4}
+                              placeholder="관람객에게 전할 답변을 작성해 주세요."
+                              value={answerDrafts[question.id] ?? ""}
+                              onChange={(event) =>
+                                setAnswerDrafts((prev) => ({
+                                  ...prev,
+                                  [question.id]: event.target.value
+                                }))
+                              }
+                            />
+                          </label>
+                          <button
+                            type="submit"
+                            className="primary-button"
+                            disabled={
+                              questionBusyId === question.id ||
+                              !answerDrafts[question.id]?.trim()
+                            }
+                          >
+                            {questionBusyId === question.id
+                              ? "보내는 중…"
+                              : "관람객에게 답변 보내기"}
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="auth-description">아직 전달된 질문이 없습니다.</p>
             )}
           </section>
         </div>

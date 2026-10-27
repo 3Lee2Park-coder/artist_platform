@@ -18,6 +18,7 @@ type CalendarPayload = {
   month: string;
   weekend: { saturday: string; sunday: string; label: string };
   days: Record<string, CalendarDayItem[]>;
+  covers?: Record<string, string>;
   savedCards: CalendarPickCard[];
   decks: CalendarPickDeck[];
   prevMonth: string;
@@ -81,6 +82,9 @@ export function DayCalendarArchive({ decks, isLoggedIn }: DayCalendarArchiveProp
   const cells = useMemo(() => cellsForMonth(month), [month]);
   const dayItems = openDate && data ? (data.days[openDate] ?? []) : [];
   const weekend = data?.weekend;
+  const openCoverRef = openDate ? data?.covers?.[openDate] : undefined;
+  // 사진이 둘 이상일 때만 «대표로» 선택을 보여 준다
+  const canPickCover = dayItems.filter((item) => item.imageUrl).length > 1;
 
   useEffect(() => {
     if (!openDeck) return;
@@ -111,6 +115,55 @@ export function DayCalendarArchive({ decks, isLoggedIn }: DayCalendarArchiveProp
       setMessage(payload.error ?? "담지 못했습니다.");
       return;
     }
+    await load(month);
+  }
+
+  async function pickCover(itemRef: string | null) {
+    if (!openDate) return;
+    setBusy(true);
+    setMessage("");
+    const response = await fetch("/api/my/calendar", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: openDate, itemRef })
+    });
+    const payload = await response.json().catch(() => ({}));
+    setBusy(false);
+    if (!response.ok) {
+      setMessage(payload.error ?? "대표 이미지를 바꾸지 못했습니다.");
+      return;
+    }
+    setMessage(itemRef ? "이 사진을 달력 대표로 두었습니다." : "대표 이미지를 자동으로 되돌렸습니다.");
+    await load(month);
+  }
+
+  // 다녀온 기록의 대표사진 교체 — 다녀온 날짜는 그대로 둔다
+  async function changePhoto(item: CalendarDayItem, file: File) {
+    if (!item.cardKey) return;
+    setBusy(true);
+    setMessage("");
+    const body = new FormData();
+    body.set("file", file);
+    body.set("folder", "visited");
+    const upload = await fetch("/api/upload", { method: "POST", body });
+    const uploaded = await upload.json().catch(() => ({}));
+    if (!upload.ok) {
+      setBusy(false);
+      setMessage(uploaded.error ?? "사진을 올리지 못했습니다.");
+      return;
+    }
+    const response = await fetch("/api/cards/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardKey: item.cardKey, action: "visit", photoUrl: uploaded.url })
+    });
+    const data = await response.json().catch(() => ({}));
+    setBusy(false);
+    if (!response.ok) {
+      setMessage(data.error ?? "사진을 연결하지 못했습니다.");
+      return;
+    }
+    setMessage("사진을 바꿨습니다.");
     await load(month);
   }
 
@@ -222,7 +275,12 @@ export function DayCalendarArchive({ decks, isLoggedIn }: DayCalendarArchiveProp
         {cells.map((date, index) => {
           if (!date) return <div key={`pad-${index}`} className="day-calendar-cell is-empty" />;
           const items = data?.days[date] ?? [];
-          const cover = items.find((item) => item.imageUrl)?.imageUrl;
+          const coverRef = data?.covers?.[date];
+          const chosen = coverRef
+            ? items.find((item) => item.id === coverRef && item.imageUrl)
+            : undefined;
+          const cover = chosen?.imageUrl ?? items.find((item) => item.imageUrl)?.imageUrl;
+          const tone = chosen?.tone ?? items[0]?.tone ?? undefined;
           const isToday = data?.today === date;
           const isWeekend =
             weekend && (date === weekend.saturday || date === weekend.sunday);
@@ -235,8 +293,8 @@ export function DayCalendarArchive({ decks, isLoggedIn }: DayCalendarArchiveProp
               style={
                 cover
                   ? { backgroundImage: `url(${cover})` }
-                  : items[0]?.tone
-                    ? { background: items[0].tone }
+                  : tone
+                    ? { background: tone }
                     : undefined
               }
             >
@@ -258,46 +316,89 @@ export function DayCalendarArchive({ decks, isLoggedIn }: DayCalendarArchiveProp
             {dayItems.length === 0 ? (
               <p className="auth-description">아직 비어 있습니다. 카드나 덱을 올려 코스를 만들어 보세요.</p>
             ) : (
-              <ul className="day-calendar-list">
-                {dayItems.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      className="day-calendar-entry"
-                      onClick={() =>
-                        item.kind === "DECK" ? inspectDeck(item) : void inspectCard(item)
-                      }
-                    >
-                      <span
-                        className="day-calendar-thumb"
-                        style={
-                          item.imageUrl
-                            ? { backgroundImage: `url(${item.imageUrl})` }
-                            : item.tone
-                              ? { background: item.tone }
-                              : undefined
-                        }
-                      />
-                      <span>
-                        <strong>{item.title}</strong>
-                        <small>
-                          {item.kind === "DECK" ? "덱 · 펼쳐보기" : item.locked ? "다녀온 기록" : "카드"}
-                        </small>
-                      </span>
-                    </button>
-                    {item.locked ? null : (
-                      <button
-                        type="button"
-                        className="day-calendar-remove"
-                        disabled={busy}
-                        onClick={() => void removeItem(item.id)}
-                      >
-                        빼기
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <>
+                {canPickCover ? (
+                  <p className="day-calendar-cover-hint">
+                    달력 칸에 보일 사진을 고를 수 있습니다. 고르지 않으면 맨 위 사진이 올라갑니다.
+                  </p>
+                ) : null}
+                <ul className="day-calendar-list">
+                  {dayItems.map((item) => {
+                    const isCover = openCoverRef === item.id;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          className="day-calendar-entry"
+                          onClick={() =>
+                            item.kind === "DECK" ? inspectDeck(item) : void inspectCard(item)
+                          }
+                        >
+                          <span
+                            className={`day-calendar-thumb${isCover ? " is-cover" : ""}`}
+                            style={
+                              item.imageUrl
+                                ? { backgroundImage: `url(${item.imageUrl})` }
+                                : item.tone
+                                  ? { background: item.tone }
+                                  : undefined
+                            }
+                          />
+                          <span>
+                            <strong>{item.title}</strong>
+                            <small>
+                              {item.kind === "DECK"
+                                ? "덱 · 펼쳐보기"
+                                : item.locked
+                                  ? "다녀온 기록"
+                                  : "카드"}
+                              {isCover ? " · 달력 대표" : ""}
+                            </small>
+                          </span>
+                        </button>
+                        <span className="day-calendar-entry-actions">
+                          {item.locked && item.cardKey ? (
+                            <label className="day-calendar-photo">
+                              사진 바꾸기
+                              <input
+                                type="file"
+                                accept="image/*"
+                                disabled={busy}
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0];
+                                  event.target.value = "";
+                                  if (file) void changePhoto(item, file);
+                                }}
+                              />
+                            </label>
+                          ) : null}
+                          {canPickCover && item.imageUrl ? (
+                            <button
+                              type="button"
+                              className={`day-calendar-cover-pick${isCover ? " is-on" : ""}`}
+                              disabled={busy}
+                              aria-pressed={isCover}
+                              onClick={() => void pickCover(isCover ? null : item.id)}
+                            >
+                              {isCover ? "대표 해제" : "대표로"}
+                            </button>
+                          ) : null}
+                          {item.locked ? null : (
+                            <button
+                              type="button"
+                              className="day-calendar-remove"
+                              disabled={busy}
+                              onClick={() => void removeItem(item.id)}
+                            >
+                              빼기
+                            </button>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             )}
             <div className="day-calendar-actions">
               <button type="button" onClick={() => setPicker("CARD")} disabled={busy}>
@@ -314,7 +415,10 @@ export function DayCalendarArchive({ decks, isLoggedIn }: DayCalendarArchiveProp
               <div className="day-calendar-picker">
                 <p>저장해 둔 카드</p>
                 {(data?.savedCards ?? []).length === 0 ? (
-                  <p>아직 담아 둔 카드가 없습니다. 카드를 저장한 뒤 날짜에 올려 보세요.</p>
+                  <p>
+                    아직 저장한 카드가 없습니다. 카드 뒷면이나 전시·장소 페이지에서
+                    「카드 저장」을 누르면 여기에 나타납니다.
+                  </p>
                 ) : (
                   <ul>
                     {data?.savedCards.map((card) => (
@@ -332,7 +436,10 @@ export function DayCalendarArchive({ decks, isLoggedIn }: DayCalendarArchiveProp
               <div className="day-calendar-picker">
                 <p>나의 덱</p>
                 {(data?.decks ?? []).length === 0 ? (
-                  <p>먼저 아래쪽에서 덱을 만들어 주세요.</p>
+                  <p>
+                    아직 만든 덱이 없습니다. 카드 뒷면이나 상세 페이지의 「내 덱에 넣기」로
+                    코스를 묶은 뒤 여기에 올려 보세요.
+                  </p>
                 ) : (
                   <ul>
                     {data?.decks.map((deck) => (

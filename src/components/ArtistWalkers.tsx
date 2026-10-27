@@ -55,7 +55,7 @@ export function ArtistWalkers({ walkers }: ArtistWalkersProps) {
             setUnlisted(true);
           }}
         >
-          찾는 작가가 목록에 없나요? OOOF.가 대신 물어볼게요
+          전시를 보다 궁금한게 생겼나요? OOOF.가 대신 물어볼게요
         </button>
       </p>
 

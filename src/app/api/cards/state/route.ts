@@ -59,6 +59,8 @@ export async function POST(request: Request) {
 
     const photoUrl = parsed.data.photoUrl;
     const now = new Date();
+    // 사진만 바꾸는 요청은 다녀온 날짜를 그대로 둔다 (달력에서 날짜가 밀리지 않게)
+    const visitUpdate = photoUrl ? { photoUrl } : { visitedAt: now };
     let visit: { visitedAt: Date; photoUrl: string | null };
 
     if (card.source === "exhibition") {
@@ -72,10 +74,7 @@ export async function POST(request: Request) {
           visitedAt: now,
           photoUrl: photoUrl ?? null
         },
-        update: {
-          visitedAt: now,
-          ...(photoUrl ? { photoUrl } : {})
-        }
+        update: visitUpdate
       });
       await logEvent({
         type: "VISIT_CREATE",
@@ -94,10 +93,7 @@ export async function POST(request: Request) {
           visitedAt: now,
           photoUrl: photoUrl ?? null
         },
-        update: {
-          visitedAt: now,
-          ...(photoUrl ? { photoUrl } : {})
-        }
+        update: visitUpdate
       });
     } else {
       visit = await prisma.visit.upsert({
@@ -110,10 +106,7 @@ export async function POST(request: Request) {
           visitedAt: now,
           photoUrl: photoUrl ?? null
         },
-        update: {
-          visitedAt: now,
-          ...(photoUrl ? { photoUrl } : {})
-        }
+        update: visitUpdate
       });
     }
 

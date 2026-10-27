@@ -116,7 +116,7 @@ export default async function ExhibitionsPage({
               지도에서 찾기
             </Link>
             <Link className="secondary-button" href="/register/exhibition">
-              내 전시 드러내기
+              전시 등록(0원)
             </Link>
           </div>
         </header>

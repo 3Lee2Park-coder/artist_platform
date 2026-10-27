@@ -6,6 +6,8 @@
 
 | 문서 | 용도 | 단계 |
 |------|------|------|
+| [CURRENT_FOCUS.md](./CURRENT_FOCUS.md) | **지금 검증 · 비전 · 하지 않을 일** (실행 SSOT) | 상시 |
+| [STRATEGY_RESEARCH.md](./STRATEGY_RESEARCH.md) | **성공·수익·업그레이드 사고** (shoong·지니·A/B/CDE) | 상시 |
 | [BRAND_IDENTITY.md](./BRAND_IDENTITY.md) | 아키타입 · Why · 키워드 · 동력/기피 · 목소리 | 1 |
 | [VISUAL_SYSTEM.md](./VISUAL_SYSTEM.md) | 컬러 · 폰트 · 보이스 큐 · 이미지 톤 (UI SSOT) | UI |
 | [SUPPLY_WEDGE.md](./SUPPLY_WEDGE.md) | NFX Wedge · ICP · 공급 KPI | 2 |
@@ -19,3 +21,9 @@
 | [ONE_PAGER_OUTLINE.md](./ONE_PAGER_OUTLINE.md) | 작가용 원페이저 목차 | 상시 |
 
 운영: [../ops/OUTREACH_DOR.md](../ops/OUTREACH_DOR.md), [../ops/ARTIST_OPS_SHEET.csv](../ops/ARTIST_OPS_SHEET.csv), [../ops/DEPLOY_SMOKE_CHECKLIST.md](../ops/DEPLOY_SMOKE_CHECKLIST.md)
+
+### 지금 한 줄 (2026-09)
+
+> 동네 **시각 예술**의 발견·방문·작가 창구. 팝업은 포함이지 전면이 아니다.  
+> 검증: 상세 → 코스/저장. 다음 업그레이드 후보: 「새로 열림」레일 · 예술 저장 습관.  
+> → [CURRENT_FOCUS.md](./CURRENT_FOCUS.md) · [STRATEGY_RESEARCH.md](./STRATEGY_RESEARCH.md)
