@@ -16,6 +16,7 @@
         "db:seed": "tsx prisma/seed.ts",
         "db:setup": "prisma migrate deploy && tsx prisma/seed.ts",
         "ops:transfer-rehearse": "tsx scripts/rehearse-ownership-transfer.ts",
+        "seo:hide-dupes": "tsx scripts/hide-duplicate-exhibitions.ts",
         "postinstall": "prisma generate"
     },
     "prisma": {
