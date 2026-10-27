@@ -1,51 +1,35 @@
-import { getSiteUrl } from "@/lib/site";
-import { prisma } from "@/lib/prisma";
 import { getTodayKST } from "@/lib/date";
+import { getPublishedCurations } from "@/lib/exhibitions";
+import { prisma } from "@/lib/prisma";
+import { isDeckListable, isExhibitionListable } from "@/lib/sitemap-eligibility";
+import { getSiteUrl } from "@/lib/site";
 import type { MetadataRoute } from "next";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
+
+function latest(dates: Date[]) {
+  if (dates.length === 0) return undefined;
+  return dates.reduce((max, date) => (date > max ? date : max));
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
   const today = getTodayKST();
 
-  const staticRoutes: MetadataRoute.Sitemap = [
-    "",
-    "/exhibitions",
-    "/decks",
-    "/spaces",
-    "/programs",
-    "/map",
-    "/about",
-    "/for-artists",
-    "/llms.txt",
-    "/llms/decks.md",
-    "/llms/places.md",
-    "/llms/exhibitions.md"
-  ].map((path) => ({
-    url: `${siteUrl}${path || "/"}`,
-    lastModified: new Date(),
-    changeFrequency: path === "" || path === "/exhibitions" ? "daily" : "weekly",
-    priority:
-      path === ""
-        ? 1
-        : path === "/exhibitions" || path === "/map"
-          ? 0.9
-          : path === "/decks"
-            ? 0.85
-            : path === "/about" || path.startsWith("/llms")
-              ? 0.6
-              : 0.7
-  }));
-
-  const [exhibitions, spaces, programs, curations, artists, places] =
+  const [exhibitionRows, spaces, programs, curations, artists, places] =
     await Promise.all([
       prisma.exhibition.findMany({
         where: {
           status: "PUBLISHED",
-          endDate: { gte: today }
+          OR: [{ endDate: { gte: today } }, { lifecycleOverride: "EXTENDED" }]
         },
-        select: { id: true, updatedAt: true },
+        select: {
+          id: true,
+          updatedAt: true,
+          startDate: true,
+          endDate: true,
+          lifecycleOverride: true
+        },
         orderBy: { updatedAt: "desc" },
         take: 5000
       }),
@@ -65,12 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         orderBy: { updatedAt: "desc" },
         take: 2000
       }),
-      prisma.curation.findMany({
-        where: { published: true },
-        select: { id: true, updatedAt: true },
-        orderBy: { updatedAt: "desc" },
-        take: 500
-      }),
+      getPublishedCurations(),
       prisma.user.findMany({
         where: { artistStatus: "APPROVED" },
         select: { id: true, updatedAt: true },
@@ -84,6 +63,53 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         take: 2000
       })
     ]);
+
+  const exhibitions = exhibitionRows.filter((item) =>
+    isExhibitionListable(item, today)
+  );
+  const decks = curations
+    .filter((curation) => isDeckListable(curation, today))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 500);
+  const exhibitionUpdated = latest(exhibitions.map((item) => item.updatedAt));
+  const deckUpdated = latest(decks.map((item) => new Date(item.updatedAt)));
+  const homeUpdated = latest(
+    [exhibitionUpdated, deckUpdated].filter((date): date is Date => Boolean(date))
+  );
+  const staticLastModified: Record<string, Date | undefined> = {
+    "": homeUpdated,
+    "/exhibitions": exhibitionUpdated,
+    "/decks": deckUpdated
+  };
+
+  const staticRoutes: MetadataRoute.Sitemap = [
+    "",
+    "/exhibitions",
+    "/decks",
+    "/spaces",
+    "/programs",
+    "/map",
+    "/about",
+    "/for-artists",
+    "/llms.txt",
+    "/llms/decks.md",
+    "/llms/places.md",
+    "/llms/exhibitions.md"
+  ].map((path) => ({
+    url: `${siteUrl}${path || "/"}`,
+    ...(staticLastModified[path] ? { lastModified: staticLastModified[path] } : {}),
+    changeFrequency: path === "" || path === "/exhibitions" ? "daily" : "weekly",
+    priority:
+      path === ""
+        ? 1
+        : path === "/exhibitions" || path === "/map"
+          ? 0.9
+          : path === "/decks"
+            ? 0.85
+            : path === "/about" || path.startsWith("/llms")
+              ? 0.6
+              : 0.7
+  }));
 
   return [
     ...staticRoutes,
@@ -105,10 +131,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily" as const,
       priority: 0.6
     })),
-    // 덱은 3~4일 간격으로 다시 묶으므로 daily로 알린다
-    ...curations.map((item) => ({
+    ...decks.map((item) => ({
       url: `${siteUrl}/decks/${item.id}`,
-      lastModified: item.updatedAt,
+      lastModified: new Date(item.updatedAt),
       changeFrequency: "daily" as const,
       priority: 0.85
     })),

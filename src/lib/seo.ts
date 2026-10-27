@@ -251,6 +251,8 @@ export function exhibitionJsonLd(input: {
   image?: string | null;
   lat?: number | null;
   lng?: number | null;
+  lifecycleOverride?: string | null;
+  lifecycle?: string | null;
 }) {
   const url = absoluteUrl(input.canonical);
   const locationName = input.district || input.venue;
@@ -262,7 +264,10 @@ export function exhibitionJsonLd(input: {
       url,
       inLanguage: "ko-KR",
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-      eventStatus: "https://schema.org/EventScheduled",
+      eventStatus:
+        input.lifecycleOverride === "CANCELLED" || input.lifecycle === "cancelled"
+          ? "https://schema.org/EventCancelled"
+          : "https://schema.org/EventScheduled",
       startDate: input.startDate,
       endDate: input.endDate,
       image: input.image || undefined,
