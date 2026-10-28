@@ -29,10 +29,8 @@ export async function generateMetadata({
     keywords: entityKeywords(
       curation.title,
       curation.neighborhood,
-      "데이트 코스",
       "전시 코스",
-      "가볼만한 곳",
-      "전시 데이트"
+      "가볼만한 곳"
     )
   });
 }

@@ -122,9 +122,9 @@ export default function RootLayout({
                 url: getSiteUrl(),
                 description: BRAND.seoDescription,
                 knowsAbout: [
-                  "서울 가볼만한 곳",
-                  "전시 데이트 코스",
-                  "동네 전시",
+                  "서울 동네 전시",
+                  "서울 전시 코스",
+                  "작가 공간",
                   "전시 근처 카페"
                 ]
               }

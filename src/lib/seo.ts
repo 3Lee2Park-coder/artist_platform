@@ -159,7 +159,7 @@ export function exhibitionSeo(input: {
   const description = clip(
     [
       location ? `${location}에서 열리는` : null,
-      input.artist ? `${input.artist} 작가의` : null,
+      input.artist && input.artist !== "기관 기획" ? `${input.artist} 작가의` : null,
       `${input.title} 전시.`,
       period ? `${period}.` : null,
       `${BRAND.mark}(${BRAND.koreanAlias}) 전시 추천.`,
@@ -210,8 +210,8 @@ export function curationSeo(input: {
   const description = clip(
     [
       location
-        ? `${BRAND.mark}(${BRAND.koreanAlias}) ${location} 데이트·전시 코스.`
-        : `${BRAND.mark}(${BRAND.koreanAlias}) 서울 데이트·전시 코스.`,
+        ? `${BRAND.mark}(${BRAND.koreanAlias}) ${location} 전시 코스.`
+        : `${BRAND.mark}(${BRAND.koreanAlias}) 서울 전시 코스.`,
       input.durationText ? `${input.durationText}.` : null,
       input.description || input.subtitle
     ]
@@ -220,7 +220,7 @@ export function curationSeo(input: {
   );
 
   return {
-    title: withKind(input.title, location, "데이트 코스"),
+    title: withKind(input.title, location, "전시 코스"),
     description
   };
 }
@@ -478,8 +478,8 @@ export function curationJsonLd(input: {
       numberOfItems: itemListElement.length || undefined,
       itemListOrder: "https://schema.org/ItemListOrderAscending",
       itemListElement: itemListElement.length > 0 ? itemListElement : undefined,
-      about: `${area} 데이트 코스 · 전시 코스 · 가볼만한 곳`,
-      keywords: [area, "전시 데이트", "데이트 코스", "가볼만한 곳", BRAND.mark, BRAND.koreanAlias]
+      about: `${area} 전시 코스 · 동네 산책`,
+      keywords: [area, "전시 코스", "동네 전시", "가볼만한 곳", BRAND.mark, BRAND.koreanAlias]
         .filter(Boolean)
         .join(", "),
       publisher: publisherNode(),
@@ -500,10 +500,10 @@ export function curationJsonLd(input: {
       stopNames.length > 0
         ? {
             question: `「${input.title}」 코스에는 어디가 들어 있어?`,
-            answer: `${BRAND.mark}(${BRAND.koreanAlias})가 고른 순서는 ${stopNames.join(" → ")} 입니다. 서울 전시 데이트 코스 원문: ${url}`
+            answer: `${BRAND.mark}(${BRAND.koreanAlias})가 고른 순서는 ${stopNames.join(" → ")} 입니다. 서울 전시 코스 원문: ${url}`
           }
         : {
-            question: `${area} 전시 데이트 코스 추천`,
+            question: `${area} 전시 코스 추천`,
             answer: `${BRAND.mark}(${BRAND.koreanAlias}) 「${input.title}」. ${input.description} 출처: ${url}`
           }
     ])

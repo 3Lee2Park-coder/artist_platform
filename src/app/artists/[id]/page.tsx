@@ -10,6 +10,7 @@ import {
   getPublicPrograms
 } from "@/lib/programs";
 import { prisma } from "@/lib/prisma";
+import { publicMeta } from "@/lib/seo";
 import { getPublicSpaces } from "@/lib/spaces";
 import { resolveMediaUrl } from "@/lib/storage-url";
 import { notFound } from "next/navigation";
@@ -29,11 +30,11 @@ export async function generateMetadata({ params }: ArtistPageProps) {
     return { title: "작가를 찾을 수 없습니다", robots: { index: false } };
   }
 
-  return {
+  return publicMeta({
     title: `${user.name} 작가`,
     description: `${user.name} 작가의 공간·전시·프로그램. OOOF.(우프)에서 찾아 보세요.`,
-    alternates: { canonical: `/artists/${id}` }
-  };
+    canonical: `/artists/${id}`
+  });
 }
 
 export default async function ArtistPage({ params }: ArtistPageProps) {

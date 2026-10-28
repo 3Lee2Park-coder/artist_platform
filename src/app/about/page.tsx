@@ -2,11 +2,13 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { AboutSpotlight } from "@/components/AboutSpotlight";
 import { BRAND } from "@/lib/brand";
+import { publicMeta } from "@/lib/seo";
 import Link from "next/link";
 
-export const metadata = {
+export const metadata = publicMeta({
   title: "회사소개 | 동네 예술을 잇는 숨바꼭질, OOOF.",
   description: `${BRAND.mark}(${BRAND.koreanAlias}) 는 일상 속 숨겨진 동네 전시와 예술 공간을 발견하고 연결하는 아트 플랫폼입니다. 걸어서 만나는 동네 예술 코스를 지금 확인해 보세요.`,
+  canonical: "/about",
   keywords: [
     BRAND.mark,
     BRAND.koreanAlias,
@@ -16,9 +18,8 @@ export const metadata = {
     "전시 큐레이션",
     "예술 공간",
     "동네 예술 플랫폼"
-  ],
-  alternates: { canonical: "/about" }
-};
+  ]
+});
 
 const PILLARS = [
   {

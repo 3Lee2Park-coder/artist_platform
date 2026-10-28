@@ -5,30 +5,30 @@ export const BRAND = {
   koreanAlias: "우프",
   fullName: "Olly Olly Oxen Free",
   descriptor:
-    "서울 가볼만한 곳, 동네 전시·작가 공간, 데이트 코스를 찾아 알려주는 플랫폼",
+    "서울 동네 전시와 작가 공간, 전시 곁 산책 코스를 골라 알려주는 플랫폼",
   /**
    * Home `<title>` after the brand mark.
    * Campaign line 「못 찾겠다, 꾀꼬리?」 is reserved until brand recall is stronger.
    */
-  seoTitle: "서울 가볼만한 곳 · 전시 데이트 코스",
+  seoTitle: "서울 동네 전시 · 작가 · 산책 코스",
   /** Meta description — search queries people actually type */
   seoDescription:
-    "OOOF.(우프) — 서울 가볼만한 곳, 숨은 동네 전시·작가 공간, 데이트·놀거리 코스를 찾아 알려주는 플랫폼. Olly Olly Oxen Free.",
+    "OOOF.(우프) — 지금 열린 서울 동네 전시와 작가 공간을 고르고, 전시 곁 카페·산책까지 코스로 묶어 알려드려요.",
   seoKeywords: [
     "OOOF",
     "OOOF.",
     "우프",
     "Olly Olly Oxen Free",
     "서울 가볼만한 곳",
-    "서울 데이트 코스",
-    "전시 데이트",
+    "서울 전시",
     "동네 전시",
+    "서울 전시 일정",
+    "전시 코스",
+    "작가 공간",
+    "서울 산책 코스",
     "전시 추천",
     "전시 지도",
-    "작가 공간",
     "큐레이션",
-    "전시 코스",
-    "놀거리",
     "숨은 전시",
     "전시 근처 카페",
     "서울 숨은 장소",
