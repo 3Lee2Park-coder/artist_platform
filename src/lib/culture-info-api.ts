@@ -1,4 +1,5 @@
 import { getTodayKST } from "@/lib/date";
+import { EXHIBITION_REDIRECTS } from "@/lib/exhibition-redirects";
 import {
   normalizePublicHeroImageUrl,
   stripHtml,
@@ -335,7 +336,7 @@ async function upsertItem(
       categories: JSON.stringify(mapCategories(item.realmName)),
       exhibitionType: "갤러리 초대전/기획전 전시",
       heroTone: "linear-gradient(135deg, #e8eef3 0%, #8fa4b8 50%, #3a4a5a 100%)",
-      status: "PUBLISHED"
+      status: EXHIBITION_REDIRECTS[id] ? "HIDDEN" : "PUBLISHED"
     }
   });
   result.imported += 1;
