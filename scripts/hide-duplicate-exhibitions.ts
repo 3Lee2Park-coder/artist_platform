@@ -221,25 +221,34 @@ async function apply(prisma: PrismaClient) {
   }
 
   const hideIds = rows.filter((row) => row.action === "hide").map((row) => row.id);
+  const eventsByKeeper = new Map<string, string[]>();
+  for (const event of events) {
+    const list = eventsByKeeper.get(event.afterExhibitionId) ?? [];
+    list.push(event.id);
+    eventsByKeeper.set(event.afterExhibitionId, list);
+  }
   try {
-    await prisma.$transaction(async (tx) => {
-      for (const id of hideIds) {
-        const current = await tx.exhibition.findUnique({
-          where: { id },
-          select: { status: true }
-        });
-        if (current?.status !== "PUBLISHED") {
-          throw new Error(`${id} status changed before write (${current?.status ?? "MISSING"})`);
+    await prisma.$transaction(
+      async (tx) => {
+        for (const id of hideIds) {
+          const current = await tx.exhibition.findUnique({
+            where: { id },
+            select: { status: true }
+          });
+          if (current?.status !== "PUBLISHED") {
+            throw new Error(`${id} status changed before write (${current?.status ?? "MISSING"})`);
+          }
+          await tx.exhibition.update({ where: { id }, data: { status: "HIDDEN" } });
         }
-        await tx.exhibition.update({ where: { id }, data: { status: "HIDDEN" } });
-      }
-      for (const event of events) {
-        await tx.eventLog.update({
-          where: { id: event.id },
-          data: { exhibitionId: event.afterExhibitionId }
-        });
-      }
-    });
+        for (const [keeperId, ids] of eventsByKeeper) {
+          await tx.eventLog.updateMany({
+            where: { id: { in: ids } },
+            data: { exhibitionId: keeperId }
+          });
+        }
+      },
+      { maxWait: 20_000, timeout: 180_000 }
+    );
   } catch (error) {
     console.error("transaction failed. database was not changed. backup kept for inspection only.");
     console.error(error);
@@ -313,20 +322,29 @@ async function revert(prisma: PrismaClient, path: string | undefined, write: boo
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    for (const row of hides) {
-      await tx.exhibition.update({
-        where: { id: row.id },
-        data: { status: row.beforeStatus }
-      });
-    }
-    for (const event of events) {
-      await tx.eventLog.update({
-        where: { id: event.id },
-        data: { exhibitionId: event.beforeExhibitionId }
-      });
-    }
-  });
+  const eventsByBefore = new Map<string, string[]>();
+  for (const event of events) {
+    const list = eventsByBefore.get(event.beforeExhibitionId) ?? [];
+    list.push(event.id);
+    eventsByBefore.set(event.beforeExhibitionId, list);
+  }
+  await prisma.$transaction(
+    async (tx) => {
+      for (const row of hides) {
+        await tx.exhibition.update({
+          where: { id: row.id },
+          data: { status: row.beforeStatus }
+        });
+      }
+      for (const [loserId, ids] of eventsByBefore) {
+        await tx.eventLog.updateMany({
+          where: { id: { in: ids } },
+          data: { exhibitionId: loserId }
+        });
+      }
+    },
+    { maxWait: 20_000, timeout: 180_000 }
+  );
   for (const row of hides) console.log(`${row.id} ${row.afterStatus} → ${row.beforeStatus}`);
   console.log(`reverted ${hides.length} exhibitions and ${events.length} event logs`);
 }
