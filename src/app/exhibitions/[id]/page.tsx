@@ -138,6 +138,7 @@ export default async function ExhibitionDetailPage({
           artist: exhibition.artist,
           startDate: exhibition.startDate,
           endDate: exhibition.endDate,
+          lifecycle: exhibition.lifecycle,
           image: exhibition.heroImageUrl,
           lat: exhibition.mapPosition?.lat,
           lng: exhibition.mapPosition?.lng

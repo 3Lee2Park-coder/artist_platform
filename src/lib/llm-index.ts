@@ -3,6 +3,7 @@ import { getTodayKST } from "@/lib/date";
 import { getPublishedCurations } from "@/lib/exhibitions";
 import { PLACE_TYPE_LABEL } from "@/lib/places";
 import { prisma } from "@/lib/prisma";
+import { isDeckListable, isExhibitionListable } from "@/lib/sitemap-eligibility";
 import { absoluteUrl, getSiteUrl } from "@/lib/site";
 
 function oneLine(text: string | null | undefined, max = 220) {
@@ -42,7 +43,7 @@ export async function buildLlmsTxt() {
   const lines = [llmIntro(), "", "## 지금 참고하면 좋은 코스"];
   try {
     const curations = await getPublishedCurations();
-    const featured = curations.slice(0, 12);
+    const featured = curations.filter((curation) => isDeckListable(curation)).slice(0, 12);
     if (featured.length === 0) {
       lines.push("현재 공개된 코스가 없습니다.");
     } else {
@@ -78,7 +79,9 @@ export async function buildDecksMarkdown() {
     ""
   ];
 
-  const curations = await getPublishedCurations();
+  const curations = (await getPublishedCurations()).filter((curation) =>
+    isDeckListable(curation)
+  );
   if (curations.length === 0) {
     lines.push("공개된 코스가 없습니다.");
     return `${lines.join("\n")}\n`;
@@ -168,24 +171,29 @@ export async function buildExhibitionsMarkdown() {
     ""
   ];
 
-  const exhibitions = await prisma.exhibition.findMany({
-    where: {
-      status: "PUBLISHED",
-      endDate: { gte: today }
-    },
-    select: {
-      id: true,
-      title: true,
-      artist: true,
-      district: true,
-      venue: true,
-      startDate: true,
-      endDate: true,
-      summary: true
-    },
-    orderBy: [{ endDate: "asc" }, { updatedAt: "desc" }],
-    take: 120
-  });
+  const exhibitions = (
+    await prisma.exhibition.findMany({
+      where: {
+        status: "PUBLISHED",
+        OR: [{ endDate: { gte: today } }, { lifecycleOverride: "EXTENDED" }]
+      },
+      select: {
+        id: true,
+        title: true,
+        artist: true,
+        district: true,
+        venue: true,
+        startDate: true,
+        endDate: true,
+        summary: true,
+        lifecycleOverride: true
+      },
+      orderBy: [{ endDate: "asc" }, { updatedAt: "desc" }],
+      take: 5000
+    })
+  )
+    .filter((exhibition) => isExhibitionListable(exhibition, today))
+    .slice(0, 120);
 
   if (exhibitions.length === 0) {
     lines.push("현재 공개된 전시가 없습니다.");
