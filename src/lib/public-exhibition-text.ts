@@ -1,5 +1,7 @@
 /** 공공 API 텍스트/HTML 정규화 */
 
+import { upgradeImageUrl } from "@/lib/https-image";
+
 export function decodeHtmlEntities(value: string) {
   return value
     .replace(/&nbsp;/gi, " ")
@@ -35,7 +37,7 @@ export function trustPublicHeroImageUrl(rawUrl?: string): string | undefined {
   const url = rawUrl?.trim();
   if (!url || !/^https?:\/\//i.test(url)) return undefined;
   if (!looksLikeImageUrl(url)) return undefined;
-  return url;
+  return upgradeImageUrl(url);
 }
 
 export async function normalizePublicHeroImageUrl(
@@ -46,14 +48,16 @@ export async function normalizePublicHeroImageUrl(
     return trustPublicHeroImageUrl(rawUrl);
   }
 
-  const url = rawUrl?.trim();
-  if (!url || !/^https?:\/\//i.test(url)) {
+  const raw = rawUrl?.trim();
+  if (!raw || !/^https?:\/\//i.test(raw)) {
     return undefined;
   }
 
-  if (!looksLikeImageUrl(url)) {
+  if (!looksLikeImageUrl(raw)) {
     return undefined;
   }
+
+  const url = upgradeImageUrl(raw) ?? raw;
 
   try {
     const response = await fetch(url, {

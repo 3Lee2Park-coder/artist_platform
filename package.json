@@ -9,6 +9,7 @@
         "start": "next start",
         "lint": "eslint",
         "test:question-intake": "tsx --test src/lib/question-intake.test.ts",
+        "test:https-image": "tsx --test src/lib/https-image.test.ts",
         "test:ui": "playwright test",
         "db:generate": "prisma generate",
         "db:migrate": "prisma migrate dev",
@@ -18,6 +19,7 @@
         "ops:transfer-rehearse": "tsx scripts/rehearse-ownership-transfer.ts",
         "seo:dupes": "tsx scripts/find-duplicate-exhibitions.ts",
         "seo:hide-dupes": "tsx scripts/hide-duplicate-exhibitions.ts",
+        "seo:upgrade-http-images": "tsx scripts/upgrade-http-images.ts",
         "postinstall": "prisma generate"
     },
     "prisma": {

@@ -1,6 +1,7 @@
 /** Per-page title/description helpers for Place · Curation · Exhibition. */
 
 import { BRAND } from "@/lib/brand";
+import { upgradeImageUrl } from "@/lib/https-image";
 import { absoluteUrl, getSiteUrl, ogImage } from "@/lib/site";
 
 function clip(text: string, max = 155) {
@@ -114,9 +115,9 @@ export function publicMeta(input: {
   images?: Array<string | null | undefined>;
   keywords?: string[];
 }) {
-  const images = (input.images ?? []).filter(
-    (url): url is string => Boolean(url)
-  );
+  const images = (input.images ?? [])
+    .map((url) => upgradeImageUrl(url))
+    .filter((url): url is string => Boolean(url));
   // 페이지가 openGraph를 정의하면 루트 이미지를 물려받지 못하므로 기본 커버로 채운다
   const ogImages = images.length > 0 ? images : [ogImage().url];
   return {
@@ -270,7 +271,7 @@ export function exhibitionJsonLd(input: {
           : "https://schema.org/EventScheduled",
       startDate: input.startDate,
       endDate: input.endDate,
-      image: input.image || undefined,
+      image: upgradeImageUrl(input.image) || undefined,
       performer: input.artist
         ? { "@type": "Person", name: input.artist }
         : undefined,
@@ -334,7 +335,7 @@ export function placeJsonLd(input: {
       name: input.name,
       description: input.description,
       url,
-      image: input.image || undefined,
+      image: upgradeImageUrl(input.image) || undefined,
       sameAs: input.sameAs || undefined,
       additionalType: kind,
       address: {
@@ -472,7 +473,7 @@ export function curationJsonLd(input: {
       name: input.title,
       description: input.description,
       url,
-      image: input.image || undefined,
+      image: upgradeImageUrl(input.image) || undefined,
       inLanguage: "ko-KR",
       numberOfItems: itemListElement.length || undefined,
       itemListOrder: "https://schema.org/ItemListOrderAscending",

@@ -1,3 +1,4 @@
+import { upgradeImageUrl } from "@/lib/https-image";
 import { STORAGE_BUCKET } from "@/lib/supabase";
 
 export function getStoragePublicUrl(storagePath: string): string {
@@ -19,6 +20,7 @@ export function resolveMediaUrl(stored: string | null | undefined): string | und
 
   const value = stored.trim();
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  let resolved = value;
 
   if (value.includes("/storage/v1/object/public/") && baseUrl) {
     const publicSegment = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
@@ -26,36 +28,30 @@ export function resolveMediaUrl(stored: string | null | undefined): string | und
 
     if (index >= 0) {
       const path = value.slice(index + publicSegment.length);
-      return getStoragePublicUrl(decodeURIComponent(path));
+      resolved = getStoragePublicUrl(decodeURIComponent(path));
     }
+  } else if (!value.startsWith("http")) {
+    resolved = getStoragePublicUrl(value);
+  } else {
+    const bucketPath = value.match(
+      new RegExp(`${STORAGE_BUCKET}/([^?]+)`)
+    )?.[1];
 
-    return value;
-  }
+    if (bucketPath && baseUrl) {
+      resolved = getStoragePublicUrl(decodeURIComponent(bucketPath));
+    } else if (baseUrl && value.startsWith(baseUrl) && !value.includes("/object/public/")) {
+      const objectPath = value.match(/object\/(?:sign\/)?([^?]+)/)?.[1];
 
-  if (!value.startsWith("http")) {
-    return getStoragePublicUrl(value);
-  }
+      if (objectPath) {
+        const segments = objectPath.split("/");
+        const bucketIndex = segments.indexOf(STORAGE_BUCKET);
 
-  const bucketPath = value.match(
-    new RegExp(`${STORAGE_BUCKET}/([^?]+)`)
-  )?.[1];
-
-  if (bucketPath && baseUrl) {
-    return getStoragePublicUrl(decodeURIComponent(bucketPath));
-  }
-
-  if (baseUrl && value.startsWith(baseUrl) && !value.includes("/object/public/")) {
-    const objectPath = value.match(/object\/(?:sign\/)?([^?]+)/)?.[1];
-
-    if (objectPath) {
-      const segments = objectPath.split("/");
-      const bucketIndex = segments.indexOf(STORAGE_BUCKET);
-
-      if (bucketIndex >= 0) {
-        return getStoragePublicUrl(segments.slice(bucketIndex + 1).join("/"));
+        if (bucketIndex >= 0) {
+          resolved = getStoragePublicUrl(segments.slice(bucketIndex + 1).join("/"));
+        }
       }
     }
   }
 
-  return value;
+  return upgradeImageUrl(resolved);
 }
