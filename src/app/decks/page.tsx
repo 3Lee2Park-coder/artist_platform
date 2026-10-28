@@ -12,14 +12,14 @@ export const revalidate = 60;
 
 const PAGE_TITLE = "덱 · 전시와 동네를 잇는 코스";
 const PAGE_DESCRIPTION =
-  "OOOF.(우프)가 함께 둘러보기 좋은 전시·공간·동네 장소를 카드로 묶은 서울 전시 데이트 코스입니다.";
+  "OOOF.(우프)가 전시·작가 공간·동네 장소를 걷기 좋은 순서로 카드에 묶은 서울 전시 코스입니다.";
 
 export async function generateMetadata() {
   return publicMeta({
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
     canonical: "/decks",
-    keywords: entityKeywords("발견 코스", "전시 코스", "데이트 코스")
+    keywords: entityKeywords("발견 코스", "전시 코스")
   });
 }
 
@@ -44,7 +44,7 @@ export default async function DecksIndexPage() {
             url: absoluteUrl(deck.href),
             numberOfItems: deck.cardCount
           })),
-          about: "서울 전시 데이트 코스 · 가볼만한 곳",
+          about: "서울 전시 코스 · 동네 산책",
           publisher: {
             "@type": "Organization",
             name: `${BRAND.mark}(${BRAND.koreanAlias})`,

@@ -2,16 +2,17 @@ import { ExhibitionsDirectoryClient } from "@/components/ExhibitionsDirectoryCli
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getListedExhibitions } from "@/lib/exhibitions";
+import { publicMeta } from "@/lib/seo";
 import Link from "next/link";
 
 export const revalidate = 60;
 
-export const metadata = {
-  title: "서울 전시 · 가볼만한 곳",
+export const metadata = publicMeta({
+  title: "지금 열린 서울 전시 · 동네별 일정",
   description:
-    "서울 동네 전시와 작가 공간을 한곳에서. 데이트·주말 코스로 찾고, 지도에서 동선까지 이으세요.",
-  alternates: { canonical: "/exhibitions" }
-};
+    "지금 열린 서울 동네 전시와 작가 공간을 날짜·동네별로. 지도에서 근처 카페·산책 동선까지 이어 보세요.",
+  canonical: "/exhibitions"
+});
 
 type ExhibitionsPageProps = {
   searchParams: Promise<{
