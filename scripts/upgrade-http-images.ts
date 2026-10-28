@@ -193,32 +193,53 @@ function group(changes: ColumnChange[]) {
   return map;
 }
 
+const TRANSACTION_OPTIONS = { maxWait: 20_000, timeout: 180_000 } as const;
+
+async function applyOne(
+  tx: {
+    exhibition: PrismaClient["exhibition"];
+    place: PrismaClient["place"];
+    space: PrismaClient["space"];
+    curation: PrismaClient["curation"];
+  },
+  change: ColumnChange,
+  value: string
+) {
+  if (change.table === "Exhibition") {
+    await tx.exhibition.update({
+      where: { id: change.id },
+      data: { [change.column]: value }
+    });
+    return;
+  }
+  if (change.table === "Place") {
+    await tx.place.update({
+      where: { id: change.id },
+      data: { [change.column]: value }
+    });
+    return;
+  }
+  if (change.table === "Space") {
+    await tx.space.update({
+      where: { id: change.id },
+      data: { [change.column]: value }
+    });
+    return;
+  }
+  if (change.table === "Curation") {
+    await tx.curation.update({
+      where: { id: change.id },
+      data: { [change.column]: value }
+    });
+  }
+}
+
 async function applyChanges(prisma: PrismaClient, changes: ColumnChange[]) {
   await prisma.$transaction(async (tx) => {
     for (const change of changes) {
-      if (change.table === "Exhibition") {
-        await tx.exhibition.update({
-          where: { id: change.id },
-          data: { [change.column]: change.after }
-        });
-      } else if (change.table === "Place") {
-        await tx.place.update({
-          where: { id: change.id },
-          data: { [change.column]: change.after }
-        });
-      } else if (change.table === "Space") {
-        await tx.space.update({
-          where: { id: change.id },
-          data: { [change.column]: change.after }
-        });
-      } else if (change.table === "Curation") {
-        await tx.curation.update({
-          where: { id: change.id },
-          data: { [change.column]: change.after }
-        });
-      }
+      await applyOne(tx, change, change.after);
     }
-  });
+  }, TRANSACTION_OPTIONS);
 }
 
 async function restore(prisma: PrismaClient, path: string, write: boolean) {
@@ -245,29 +266,9 @@ async function restore(prisma: PrismaClient, path: string, write: boolean) {
 
   await prisma.$transaction(async (tx) => {
     for (const change of backup.changes) {
-      if (change.table === "Exhibition") {
-        await tx.exhibition.update({
-          where: { id: change.id },
-          data: { [change.column]: change.before }
-        });
-      } else if (change.table === "Place") {
-        await tx.place.update({
-          where: { id: change.id },
-          data: { [change.column]: change.before }
-        });
-      } else if (change.table === "Space") {
-        await tx.space.update({
-          where: { id: change.id },
-          data: { [change.column]: change.before }
-        });
-      } else if (change.table === "Curation") {
-        await tx.curation.update({
-          where: { id: change.id },
-          data: { [change.column]: change.before }
-        });
-      }
+      await applyOne(tx, change, change.before);
     }
-  });
+  }, TRANSACTION_OPTIONS);
   console.log(`restored ${backup.changes.length} values from ${path}`);
 }
 
